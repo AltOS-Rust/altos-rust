@@ -1,0 +1,48 @@
+[root]
+name = "cortex_m0"
+version = "0.1.0"
+dependencies = [
+ "altos_core 0.1.0",
+ "arm 0.1.0",
+]
+
+[[package]]
+name = "alloc"
+version = "0.1.0"
+
+[[package]]
+name = "altos_core"
+version = "0.1.0"
+dependencies = [
+ "alloc 0.1.0",
+ "bump_allocator 0.1.0",
+ "cm0_atomic 0.1.0",
+ "collections 0.1.0",
+]
+
+[[package]]
+name = "altos_rust"
+version = "0.1.0"
+dependencies = [
+ "cortex_m0 0.1.0",
+]
+
+[[package]]
+name = "arm"
+version = "0.1.0"
+
+[[package]]
+name = "bump_allocator"
+version = "0.1.0"
+
+[[package]]
+name = "cm0_atomic"
+version = "0.1.0"
+
+[[package]]
+name = "collections"
+version = "0.1.0"
+dependencies = [
+ "alloc 0.1.0",
+]
+

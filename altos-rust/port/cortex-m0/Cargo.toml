@@ -1,0 +1,11 @@
+[package]
+name = "cortex_m0"
+version = "0.1.0"
+authors = ["Daniel Seitz <dnseitz@gmail.com>"]
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+altos_core = { path = "../../altos-core" }
+arm = { path = "libs/arm" }

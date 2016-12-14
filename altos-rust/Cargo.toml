@@ -1,0 +1,37 @@
+[package]
+name = "altos_rust"
+version = "0.1.0"
+authors = ["Daniel Seitz <dnseitz@gmail.com>"]
+
+[lib]
+crate-type = ["staticlib"]
+
+[target.cortex-m0.dependencies]
+cortex_m0 = { path = "port/cortex-m0" }
+
+[profile.dev]
+opt-level = 1
+debug = true
+debug-assertions = true
+lto = false
+codegen-units = 1
+panic = "abort"
+
+[profile.release]
+opt-level = 3
+debug = false
+debug-assertions = false
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[profile.test]
+opt-level = 0
+debug = true
+rpath = false
+lto = false
+debug-assertions = true
+codegen-units = 1
+panic = "unwind"
+
+[workspace]

@@ -1,9 +1,9 @@
+// Zero
+const ZERO: usize: 0x0000_0000;
+
 // Base addresses for USART 1 and 2
 const USART1: usize = 0x4001_3800;
 const USART2: usize = 0x4000_4400;
-
-// Zero
-const ZERO: usize: 0x0000_0000;
 
 // Mem. Offsets
 const CR2_off: usize = 0x0000_0004;

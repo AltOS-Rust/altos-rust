@@ -53,7 +53,7 @@ impl Register for CR1 {
 }
 
 impl CR1 {
-    fn enable(&self, enable: bool) -> bool {
+    fn enable_usart(&self, enable: bool) { // TODO: Do I need a return type here??
         let mask = match enable {
             false => ZERO,
             true => CR1_UE,
@@ -61,8 +61,13 @@ impl CR1 {
 
         unsafe {
             let mut reg = self.addr();
-            *reg &= !(CR1_UE);
-            *reg |= mask;
+            if enable {
+                *reg |= mask;
+            }
+            else {
+                *reg &= !(CR1_UE);
+            }
+            // TODO: Do I need to check if it was disabled properly??
         }
     }
 

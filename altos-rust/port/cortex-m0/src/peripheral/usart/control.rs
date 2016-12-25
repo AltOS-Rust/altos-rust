@@ -31,6 +31,10 @@ impl USART_CR {
     pub fn set_word_length(&self, length: WordLength) {
         self.cr1.set_word_length(length);
     }
+
+    pub fn enable_usart(&self, enable: bool) {
+        self.cr1.enable_usart(enable);
+    }
 }
 
 #[derive(Copy, Clone)]
@@ -84,6 +88,10 @@ impl CR1 {
             *reg |= mask;
         }
     }
+
+    fn enable_rx_tx(&self, rx_enable: bool, tx_enable: bool) {
+
+    }
 }
 
 #[derive(Copy, Clone)]
@@ -103,6 +111,10 @@ impl Register for CR2 {
     fn mem_offset(&self) -> usize {
         CR2_off
     }
+}
+
+impl CR2 {
+
 }
 
 #[derive(Copy, Clone)]

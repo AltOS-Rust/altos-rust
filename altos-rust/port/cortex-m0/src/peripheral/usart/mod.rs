@@ -3,9 +3,12 @@
 //
 // Created by Daniel Seitz on 11/30/16
 mod usart;
+mod control;
+mod defs;
+mod baudr;
 
 use peripheral::{gpio, rcc};
-use self::usart::USART
+use self::usart::USART;
 
 fn init() {
   let rcc = rcc::rcc();
@@ -31,6 +34,4 @@ fn init() {
 
   pa9.set_pull(gpio::Pull::Up);
   pa10.set_pull(gpio::Pull::Up);
-
-
 }

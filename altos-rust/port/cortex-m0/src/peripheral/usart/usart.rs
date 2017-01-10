@@ -1,11 +1,8 @@
-mod defs;
-mod control;
-mod baudr;
-
-use super::Control;
+use super::super::Control;
 use volatile::Volatile;
 use self::control::USART_CR;
-use self::baudr::USART_BRR;
+use super::baudr::USART_BRR;
+use super::defs::*;
 
 #[derive(Copy, Clone)]
 enum USARTx {

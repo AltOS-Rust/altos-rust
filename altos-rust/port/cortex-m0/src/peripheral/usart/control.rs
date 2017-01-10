@@ -1,15 +1,7 @@
 // Daniel Seitz and RJ Russell
 
 use super::super::Register;
-use self::defs
-
-/// Word length can be 7, 8, or 9 bits.
-#[derive(Copy, Clone)]
-pub enum WordLength {
-    Seven,
-    Eight,
-    Nine,
-}
+use self::defs;
 
 /// Three USART control registers.
 #[derive(Copy, Clone)]
@@ -19,8 +11,16 @@ pub struct USART_CR {
     cr3: CR3,
 }
 
+/// Word length can be 7, 8, or 9 bits.
+#[derive(Copy, Clone)]
+pub enum WordLength {
+    Seven,
+    Eight,
+    Nine,
+}
+
 impl USART_CR {
-    pub fn new(base_addr: usize) -> Self {
+    pub fn new(base_addr: u32) -> Self {
         USART_CR {
             cr1: CR1::new(base_addr),
             cr2: CR2::new(base_addr),
@@ -39,19 +39,19 @@ impl USART_CR {
 
 #[derive(Copy, Clone)]
 struct CR1 {
-    base_addr: usize,
+    base_addr: u32,
 }
 
 impl Register for CR1 {
-    fn new(base_addr: usize) -> Self {
+    fn new(base_addr: u32) -> Self {
         CR1 { base_addr: base_addr }
     }
 
-    fn base_addr(&self) -> usize {
+    fn base_addr(&self) -> u32 {
         self.base_addr
     }
 
-    fn mem_offset(&self) -> usize {
+    fn mem_offset(&self) -> u32 {
         ZERO
     }
 }
@@ -96,20 +96,20 @@ impl CR1 {
 
 #[derive(Copy, Clone)]
 struct CR2 {
-    base_addr: usize,
+    base_addr: u32,
 }
 
 impl Register for CR2 {
-    fn new(base_addr: usize) -> Self {
+    fn new(base_addr: u32) -> Self {
         CR2 { base_addr: base_addr }
     }
 
-    fn base_addr(&self) -> usize {
+    fn base_addr(&self) -> u32 {
         self.base_addr
     }
 
-    fn mem_offset(&self) -> usize {
-        CR2_off
+    fn mem_offset(&self) -> u32 {
+        CR2_offset
     }
 }
 
@@ -118,19 +118,19 @@ impl CR2 {
 }
 
 #[derive(Copy, Clone)]
-struct CR3 { base_addr: usize,
+struct CR3 { base_addr: u32,
 }
 
 impl Register for CR3 {
-    fn new(base_addr: usize) -> Self {
+    fn new(base_addr: u32) -> Self {
         CR3 { base_addr: base_addr }
     }
 
-    fn base_addr(&self) -> usize {
+    fn base_addr(&self) -> u32 {
         self.base_addr
     }
 
-    fn mem_offset(&self) -> usize {
-        CR3_off
+    fn mem_offset(&self) -> u32 {
+        CR3_offset
     }
 }

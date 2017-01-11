@@ -1,7 +1,7 @@
 // Daniel Seitz and RJ Russell
 
 use super::super::Register;
-use self::defs;
+use super::defs::*;
 
 /// Three USART control registers.
 #[derive(Copy, Clone)]
@@ -58,15 +58,10 @@ impl Register for CR1 {
 
 impl CR1 {
     fn enable_usart(&self, enable: bool) { // TODO: Do I need a return type here??
-        let mask = match enable {
-            false => ZERO,
-            true => CR1_UE,
-        };
-
         unsafe {
             let mut reg = self.addr();
             if enable {
-                *reg |= mask;
+                *reg |= CR1_UE;
             }
             else {
                 *reg &= !(CR1_UE);
@@ -77,14 +72,14 @@ impl CR1 {
 
     fn set_word_length(&self, length: WordLength) {
         let mask = match length {
-            WordLength::Seven => M1,
+            WordLength::Seven => CR1_M1,
             WordLength::Eight => ZERO,
-            WordLength::Nine => M0,
+            WordLength::Nine => CR1_M0,
         };
 
         unsafe {
             let mut reg = self.addr();
-            *reg &= !(M0 | M1);
+            *reg &= !(CR1_M0 | CR1_M1);
             *reg |= mask;
         }
     }

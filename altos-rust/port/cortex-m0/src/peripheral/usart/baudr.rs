@@ -8,7 +8,7 @@ pub struct USART_BRR {
 }
 
 impl USART_BRR {
-    pub fn new(base_addr: usize) -> Self {
+    pub fn new(base_addr: u32) -> Self {
         USART_BRR { br: BRR::new(base_addr) }
     }
 
@@ -19,19 +19,19 @@ impl USART_BRR {
 
 #[derive(Copy, Clone)]
 struct BRR {
-    base_addr: usize,
+    base_addr: u32,
 }
 
 impl Register for BRR {
-    fn new(base_addr: usize) -> Self {
+    fn new(base_addr: u32) -> Self {
         BRR { base_addr: base_addr }
     }
 
-    fn base_addr(&self) -> usize {
+    fn base_addr(&self) -> u32 {
         self.base_addr
     }
 
-    fn mem_offset(&self) -> usize {
+    fn mem_offset(&self) -> u32 {
         0x0C
     }
 }

@@ -1,8 +1,8 @@
 use super::super::Control;
 use volatile::Volatile;
-use self::control::USART_CR;
+use super::control::USART_CR;
 use super::baudr::USART_BRR;
-use super::defs::*;
+use peripheral::usart::defs::*;
 
 #[derive(Copy, Clone)]
 enum USARTx {
@@ -10,15 +10,15 @@ enum USARTx {
     USART2,
 }
 
-struct USART {
-    mem_addr: usize,
+pub struct USART {
+    mem_addr: u32,
     control: USART_CR,
     baud: USART_BRR,
 }
 
 impl Control for USART {
-    unsafe fn mem_addr(&self) -> Volatile<usize> {
-        Volatile::new(self.mem_addr as *const usize)
+    unsafe fn mem_addr(&self) -> Volatile<u32> {
+        Volatile::new(self.mem_addr as *const u32)
     }
 }
 
@@ -26,14 +26,14 @@ impl USART {
     fn new(x: USARTx) -> Self {
         match x {
             USARTx::USART1 => USART {
-                mem_addr: USART1,
-                control: USART_CR::new(USART1),
-                baud: USART_BRR::new(USART1),
+                mem_addr: USART1_ADDR,
+                control: USART_CR::new(USART1_ADDR),
+                baud: USART_BRR::new(USART1_ADDR),
             },
             USARTx::USART2 => USART {
-                mem_addr: USART2,
-                control: USART_CR::new(USART2),
-                baud: USART_BRR::new(USART2),
+                mem_addr: USART2_ADDR,
+                control: USART_CR::new(USART2_ADDR),
+                baud: USART_BRR::new(USART2_ADDR),
             },
         }
     }

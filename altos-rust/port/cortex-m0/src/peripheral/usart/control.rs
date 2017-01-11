@@ -11,14 +11,6 @@ pub struct USART_CR {
     cr3: CR3,
 }
 
-/// Word length can be 7, 8, or 9 bits.
-#[derive(Copy, Clone)]
-pub enum WordLength {
-    Seven,
-    Eight,
-    Nine,
-}
-
 impl USART_CR {
     pub fn new(base_addr: u32) -> Self {
         USART_CR {
@@ -35,6 +27,18 @@ impl USART_CR {
     pub fn enable_usart(&self, enable: bool) {
         self.cr1.enable_usart(enable);
     }
+}
+
+// ------------------------------------
+/// CR1
+// ------------------------------------
+
+/// Word length can be 7, 8, or 9 bits.
+#[derive(Copy, Clone)]
+pub enum WordLength {
+    Seven,
+    Eight,
+    Nine,
 }
 
 #[derive(Copy, Clone)]
@@ -85,8 +89,20 @@ impl CR1 {
     }
 
     fn enable_rx_tx(&self, rx_enable: bool, tx_enable: bool) {
-
+        // TODO: FINISH THIS!
     }
+}
+
+// ------------------------------------
+/// CR2
+// ------------------------------------
+
+/// There are four stop bit settings: .5, 1, 1.5, 2
+pub enum Stoplength {
+    Half,
+    One,
+    One_and_Half,
+    Two,
 }
 
 #[derive(Copy, Clone)]
@@ -109,11 +125,24 @@ impl Register for CR2 {
 }
 
 impl CR2 {
-
+    fn set_stop_bits(&self, length: Stoplength) {
+        let mask = match length {
+            Stoplength::Half => !(CR2_STOP_BIT0 | CR2_STOP_BIT1),
+            Stoplength::One => !(CR2_STOP_BIT0) | CR2_STOP_BIT1,
+            Stoplength::One_and_Half => CR2_STOP_BIT0 | !(CR2_STOP_BIT0),
+            Stoplength::Two => CR2_STOP_BIT0 | CR2_STOP_BIT1,
+        };
+        unsafe {
+            let mut reg = self.addr();
+            *reg &= !(CR2_STOP_BIT0 | CR2_STOP_BIT1);
+            *reg |= mask;
+        }
+    }
 }
 
 #[derive(Copy, Clone)]
-struct CR3 { base_addr: u32,
+struct CR3 {
+    base_addr: u32,
 }
 
 impl Register for CR3 {

@@ -1,6 +1,6 @@
 use peripheral::{gpio, rcc};
 
-pub fn init() {
+pub fn gpio_init() {
   let rcc = rcc::rcc();
   let cr = rcc.get_system_clock_rate();
 

@@ -6,7 +6,6 @@ pub const USART1_ADDR: u32 = 0x4001_3800;
 pub const USART2_ADDR: u32 = 0x4000_4400;
 
 // USART1 Mem. Offsets
-pub const CR2_offset: u32 = 0x0000_0004;
 pub const CR3_offset: u32 = 0x0000_0008;
 pub const BRR_offset: u32 = 0x0000_000C;
 
@@ -40,6 +39,10 @@ pub const CR1_M1:     u32 = 1 << 28;
 // ------------------------------------
 // USART1 - CR2 bit definitions
 // ------------------------------------
+pub const CR2_offset: u32 = 0x0000_0004;
+
+pub const CR2_STOP_BIT0: u32 = 1 << 12;
+pub const CR2_STOP_BIT1: u32 = 1 << 13;
 
 
 // ------------------------------------

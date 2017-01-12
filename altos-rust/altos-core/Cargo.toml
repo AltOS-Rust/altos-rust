@@ -6,14 +6,14 @@ authors = ["Daniel Seitz <dnseitz@gmail.com>"]
 [lib]
 crate-type = ["rlib"]
 
+[features]
+default = ["bump_alloc"]
+
+bump_alloc = ["bump_allocator"]
+
 [dependencies]
-bump_allocator = { path = "libs/heap/bump_allocator" }
+bump_allocator = { path = "libs/heap/bump_allocator", optional = true }
+volatile = { path = "../libs/volatile" }
 
 [target.cortex-m0.dependencies]
-alloc = { path = "libs/alloc" }
-collections = { path = "libs/collections" }
 cm0_atomic = { path = "libs/cm0_atomic" }
-
-[[test]]
-name = "cm0-atomic"
-path = "libs/cm0_atomic/src/lib.rs"

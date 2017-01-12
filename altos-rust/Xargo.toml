@@ -1,0 +1,3 @@
+
+[target.cortex-m0.dependencies]
+collections = {}

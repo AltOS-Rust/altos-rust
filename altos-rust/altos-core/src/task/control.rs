@@ -1,20 +1,30 @@
-// task/task_control.rs
-// AltOSRust
+// task/control.rs
+// AltOS Rust
 //
-// Created by Daniel Seitz
+// Created by Daniel Seitz on 1/11/17
 
-use alloc::boxed::Box;
-use collections::Vec;
-use volatile::Volatile;
+use super::stack::Stack;
 use super::args::Args;
-use super::NUM_PRIORITIES;
+use alloc::boxed::Box;
 use sync::CriticalSection;
 
+pub const NUM_PRIORITIES: usize = 4;
 
-const VALID_TASK: usize = 0xBADB0100;
-const INVALID_TASK: usize = 0x0;
+pub const VALID_TASK: usize = 0xBADB0100;
+pub const INVALID_TASK: usize = 0x0;
 
 type HandleResult<T> = Result<T, ()>;
+
+mod tid {
+  use atomic::{ATOMIC_USIZE_INIT, AtomicUsize, Ordering};
+
+  static CURRENT_TID: AtomicUsize = ATOMIC_USIZE_INIT;
+  
+  /// Atomically increment the task id and return the old value
+  pub fn fetch_next_tid() -> usize {
+    CURRENT_TID.fetch_add(1, Ordering::Relaxed)
+  }
+}
 
 /// Priorities that a task can have.
 ///
@@ -91,9 +101,7 @@ pub enum State {
 #[repr(C)]
 #[doc(hidden)]
 pub struct TaskControl {
-  stack: usize, /* stack pointer MUST be first field */
-  stack_base: usize,
-  stack_depth: usize,
+  stack: Stack, /*** stack MUST be the first field of the struct ***/
   args: Box<Args>,
   tid: usize,
   name: &'static str,
@@ -106,23 +114,23 @@ pub struct TaskControl {
   pub state: State,
 }
 
+unsafe impl Send for TaskControl {}
+unsafe impl Sync for TaskControl {}
+
 impl TaskControl {
   /// Creates a new `TaskControl` initialized and ready to be scheduled.
   ///
   /// All of the arguments to this function are the same as the `new_task` kernel function.
   pub fn new(code: fn(&mut Args), args: Args, depth: usize, priority: Priority, name: &'static str) -> Self {
-    let stack_mem: Vec<u8> = Vec::with_capacity(depth);
+    let stack = Stack::new(depth);
+
     // Arguments struct stored right above the stack
     let args_mem: Box<Args> = Box::new(args);
 
-    let stack = stack_mem.as_ptr() as usize;
-    // Don't free the heap space, we'll clean up when we drop the TaskControl
-    ::core::mem::forget(stack_mem);
     let tid = tid::fetch_next_tid();
+
     let mut task = TaskControl {
-      stack: stack + depth,
-      stack_base: stack,
-      stack_depth: depth,
+      stack: stack,
       args: args_mem,
       tid: tid,
       name: name,
@@ -162,10 +170,7 @@ impl TaskControl {
   /// This initializes the task's stack. This method MUST only be called once, calling it more than
   /// once could at best waste some stack space and at worst corrupt an active stack.
   fn initialize(&mut self, code: fn(&mut Args)) {
-    unsafe {
-      let stack_ptr = Volatile::new(self.stack as *const usize);
-      self.stack = ::initialize_stack(stack_ptr, code, &self.args);
-    }
+    self.stack.initialize(code, &self.args);
     self.state = State::Ready;
   }
 
@@ -177,22 +182,7 @@ impl TaskControl {
     // TODO: Add some stack guard bytes to check if we've overflowed during execution?
     //  This would add some extra overhead, maybe have some #[cfg] that determines if we should add
     //  this extra security?
-    // FIXME: If the stack has overflowed, then that means that it's overflowed into our
-    //  TaskControl! So this check actually does very little when it comes to stack safety.
-    //  Possibly reordering how the TaskControl and stack are layed out in memory could help a lot
-    //  with avoiding this, or adding some guard bytes (though with our memory constraints, too
-    //  many of these could cause a lot of space overhead).
-    self.stack <= self.stack_base
-  }
-}
-
-impl Drop for TaskControl {
-  fn drop(&mut self) {
-    // Rebuild stack vec then drop stack memory
-    let size = self.stack_depth;
-    unsafe { 
-      drop(Vec::from_raw_parts(self.stack_base as *mut u8, size, size));
-    }
+    self.stack.check_overflow()
   }
 }
 
@@ -229,8 +219,9 @@ impl TaskHandle {
   /// # Examples
   ///
   /// ```rust,no_run
-  /// # use altos_core::task::{new_task, TaskHandle, Priority};
-  /// # use altos_core::task::args::Args;
+  /// # use altos_core::{TaskHandle, Priority};
+  /// # use altos_core::syscall::new_task;
+  /// # use altos_core::args::Args;
   ///
   /// let handle = new_task(test_task, Args::empty(), 512, Priority::Normal, "new_task_name");
   ///
@@ -248,6 +239,12 @@ impl TaskHandle {
   pub fn destroy(&self) -> bool {
     // FIXME: If the task has allocated any dynamic memory on it own, this will be leaked when the
     //  task is destroyed.
+    //    A possible solution... allocate a heap space for each task. Pass a heap allocation
+    //    interface to the task implicitly and do all dynamic memory allocation through this
+    //    interface. When the task is destroyed we can just free the whole task-specific heap so we
+    //    wont have to worry about leaking memory. This means we would likely have to disallow core 
+    //    library `Box` allocations within the task. Or... we just don't allow dynamic allocation 
+    //    within tasks. - Daniel Seitz
     if self.is_valid() {
       let task = self.task_ref_mut();
       let critical_guard = CriticalSection::begin();
@@ -268,8 +265,9 @@ impl TaskHandle {
   /// # Examples
   ///
   /// ```rust,no_run
-  /// # use altos_core::task::{new_task, TaskHandle, Priority};
-  /// # use altos_core::task::args::Args;
+  /// # use altos_core::{TaskHandle, Priority};
+  /// # use altos_core::syscall::new_task;
+  /// # use altos_core::args::Args;
   ///
   /// let handle = new_task(test_task, Args::empty(), 512, Priority::Normal, "new_task_name");
   ///
@@ -303,8 +301,9 @@ impl TaskHandle {
   /// # Examples
   ///
   /// ```rust,no_run
-  /// # use altos_core::task::{new_task, TaskHandle, Priority};
-  /// # use altos_core::task::args::Args;
+  /// # use altos_core::{TaskHandle, Priority};
+  /// # use altos_core::syscall::new_task;
+  /// # use altos_core::args::Args;
   ///
   /// let handle = new_task(test_task, Args::empty(), 512, Priority::Normal, "new_task_name");
   ///
@@ -339,8 +338,9 @@ impl TaskHandle {
   /// # Examples
   ///
   /// ```rust,no_run
-  /// # use altos_core::task::{new_task, TaskHandle, Priority};
-  /// # use altos_core::task::args::Args;
+  /// # use altos_core::{TaskHandle, Priority};
+  /// # use altos_core::syscall::new_task;
+  /// # use altos_core::args::Args;
   ///
   /// let handle = new_task(test_task, Args::empty(), 512, Priority::Normal, "new_task_name");
   ///
@@ -370,8 +370,9 @@ impl TaskHandle {
   /// Returns the task's name.
   ///
   /// ```rust,no_run
-  /// # use altos_core::task::{new_task, TaskHandle, Priority};
-  /// # use altos_core::task::args::Args;
+  /// # use altos_core::{TaskHandle, Priority};
+  /// # use altos_core::syscall::new_task;
+  /// # use altos_core::args::Args;
   ///
   /// let handle = new_task(test_task, Args::empty(), 512, Priority::Normal, "new_task_name");
   /// 
@@ -403,8 +404,9 @@ impl TaskHandle {
   /// # Examples
   ///
   /// ```rust,no_run
-  /// # use altos_core::task::{new_task, TaskHandle, Priority};
-  /// # use altos_core::task::args::Args;
+  /// # use altos_core::{TaskHandle, Priority};
+  /// # use altos_core::syscall::new_task;
+  /// # use altos_core::args::Args;
   ///
   /// let handle = new_task(test_task, Args::empty(), 512, Priority::Normal, "new_task_name");
   ///
@@ -424,7 +426,7 @@ impl TaskHandle {
   pub fn stack_size(&self) -> HandleResult<usize> {
     if self.is_valid() {
       let task = self.task_ref();
-      Ok(task.stack_depth)
+      Ok(task.stack.depth())
     }
     else {
       Err(())
@@ -443,16 +445,5 @@ impl TaskHandle {
 
   fn task_ref_mut(&self) -> &mut TaskControl {
     unsafe { &mut *(self.0 as *mut TaskControl) }
-  }
-}
-
-mod tid {
-  use atomic::{ATOMIC_USIZE_INIT, AtomicUsize, Ordering};
-
-  static CURRENT_TID: AtomicUsize = ATOMIC_USIZE_INIT;
-  
-  /// Atomically increment the task id and return the old value
-  pub fn fetch_next_tid() -> usize {
-    CURRENT_TID.fetch_add(1, Ordering::SeqCst)
   }
 }

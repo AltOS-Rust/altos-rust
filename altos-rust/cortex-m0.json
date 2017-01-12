@@ -7,7 +7,7 @@
         "llvm-target": "thumbv6m-none-eabi",
         "max-atomic-width": 0,
         "no-compiler-rt": true,
-        "os": "none",
+        "os": "altos-cm0",
         "pre-link-args": ["-Trust.ld", "-nostartfiles"],
         "relocation-model": "static",
         "target-endian": "little",

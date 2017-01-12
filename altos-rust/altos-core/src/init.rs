@@ -3,6 +3,10 @@
 //
 // Created by Daniel Seitz on 12/9/16
 
+// FIXME: Try to see if there's a better way to handle this for testing
+// We do this cfg for testing purposes, this allows doctests to run without any compilation errors.
+#![cfg(any(target_os="altos-cm0"))]
+
 //! Contains functions used for initialization of the kernel
 
 /// Initialize the heap so memory can be dynamically allocated
@@ -33,6 +37,5 @@
 ///   }
 /// ```
 pub fn init_heap(heap_start: usize, heap_size: usize) {
-  #[cfg(not(test))]
-  ::bump_allocator::init_heap(heap_start, heap_size);
+  ::allocator::init_heap(heap_start, heap_size);
 }

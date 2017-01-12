@@ -60,7 +60,7 @@ impl<T: ?Sized> Mutex<T> {
     while self.lock.compare_and_swap(false, true, Ordering::Acquire) != false {
       // let another process run if we can't get the lock
       let wchan = self.wchan();
-      ::task::sleep(wchan);
+      ::syscall::sleep(wchan);
     }
   }
 
@@ -153,7 +153,7 @@ impl<'mx, T: ?Sized> Drop for MutexGuard<'mx, T> {
     // Do we care if we get pre-empted and another thread steals the lock before we wake the
     // sleeping tasks?
     self.lock.store(false, Ordering::SeqCst);
-    ::task::wake(self.wchan);
+    ::syscall::wake(self.wchan);
   }
 }
 

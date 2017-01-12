@@ -28,7 +28,9 @@ unsafe impl Sync for CondVar {}
 impl CondVar {
   /// Creates a new `CondVar` which is ready to be used.
   pub const fn new() -> Self {
-    CondVar { mutex: ATOMIC_USIZE_INIT }
+    CondVar { 
+      mutex: ATOMIC_USIZE_INIT,
+    }
   }
 
   /// Blocks the current task until this condition variable recieves a notification
@@ -37,8 +39,19 @@ impl CondVar {
   /// the current task. Calls to notify after the mutex is unlocked can wake up this task. When
   /// this call returns the lock will have been reacquired.
   pub fn wait<'a, T>(&self, guard: MutexGuard<'a, T>) -> MutexGuard<'a, T> {
-    self.verify(::sync::mutex::mutex_from_guard(&guard));
-    ::task::condvar_wait(self as *const _ as usize, guard)
+    // Get a reference to the locked mutex
+    let mutex = ::sync::mutex_from_guard(&guard);
+
+    self.verify(mutex);
+
+    // unlock the mutex
+    drop(guard);
+
+    // Sleep on the cond var channel
+    ::syscall::sleep(self as *const _ as usize);
+    
+    // re-acquire lock before returning
+    mutex.lock()
   }
 
   /// Wakes up all tasks that are blocked on this condition variable.
@@ -47,7 +60,7 @@ impl CondVar {
   /// are not buffered in any way, calling `wait()` on another thread after calling `notify_all()` will
   /// still block the thread.
   pub fn notify_all(&self) {
-    ::task::wake(self as *const _ as usize);
+    ::syscall::wake(self as *const _ as usize);
   }
 
   fn verify<T>(&self, mutex: &Mutex<T>) {

@@ -6,18 +6,20 @@
 //! Arguments used in tasks.
 //!
 //! This module contains implementations for structs that help pass arguments into a task. The
-//! `Builder` struct provides an interface specifying what values the arguments to a task should
-//! have. Begin by specifying how many arguments a task should take by creating a new `Builder`
-//! with that capacity, and use the `add_arg_box()` and `add_arg_num()` methods to give each 
+//! `ArgsBuilder` struct provides an interface specifying what values the arguments to a task should
+//! have. Begin by specifying how many arguments a task should take by creating a new `ArgsBuilder`
+//! with that capacity, and use the `add_box()` and `add_num()` methods to give each 
 //! argument a value. Once you have added all the arguments required, call the `finalize()` method 
 //! to finish up the creation and return a usable `Args` object. For example:
 //!
 //! ```rust,no_run
-//! use altos_core::task::args::{Builder, Args};
-//! use altos_core::task::{Priority, new_task};
+//! use altos_core::args::{ArgsBuilder, Args};
+//! use altos_core::Priority;
+//! use altos_core::syscall::new_task;
 //!
-//! let mut args = Builder::new(2);
-//! args = args.add_arg_num(100).add_arg_num(500);
+//! let mut args = ArgsBuilder::new(2);
+//! args.add_num(100)
+//!     .add_num(500);
 //!
 //! new_task(test_task, args.finalize(), 512, Priority::Normal, "args");
 //!
@@ -37,13 +39,13 @@ type RawPtr = usize;
 ///
 /// Use this to construct a new list of arguments to pass into a task. The arguments should be
 /// either a pointer to an object or a word length integer.
-pub struct Builder {
+pub struct ArgsBuilder {
   cap: usize,
   len: usize,
   vec: Vec<RawPtr>,
 }
 
-impl Builder {
+impl ArgsBuilder {
   /// Returns an empty `Args` object.
   ///
   /// Use this if the task you are creating should not take any arguments.
@@ -56,7 +58,7 @@ impl Builder {
   /// The number of arguments for a task should be known before hand in order to avoid unnecessary
   /// reallocations. Attempting to exceed this capacity will panic the kernel.
   pub fn new(cap: usize) -> Self {
-    Builder { 
+    ArgsBuilder { 
       cap: cap,
       len: 0,
       vec: Vec::with_capacity(cap),
@@ -72,17 +74,17 @@ impl Builder {
   /// # Examples
   ///
   /// ```rust,no_run
-  /// use altos_core::task::args::Builder;
+  /// use altos_core::args::ArgsBuilder;
   ///
-  /// let mut args = Builder::new(2);
-  /// args = args.add_arg_box(Box::new(400u16)).add_arg_box(Box::new(100u32));
+  /// let mut args = ArgsBuilder::new(2);
+  /// args.add_box(Box::new(400u16)).add_box(Box::new(100u32));
   /// ```
   ///
   /// # Panics
   ///
   /// This method will panic if you attempt to add more arguments than the capacity allocated.
   #[inline(never)]
-  pub fn add_arg_box<T>(mut self, arg: Box<T>) -> Self {
+  pub fn add_box<T>(&mut self, arg: Box<T>) -> &mut Self {
     if self.len >= self.cap {
       panic!("ArgsBuilder::add_arg - added too many arguments!");
     }
@@ -102,16 +104,16 @@ impl Builder {
   /// # Examples
   ///
   /// ```rust,no_run
-  /// use altos_core::task::args::Builder;
+  /// use altos_core::args::ArgsBuilder;
   ///
-  /// let mut args = Builder::new(2);
-  /// args = args.add_arg_num(500).add_arg_num(100);
+  /// let mut args = ArgsBuilder::new(2);
+  /// args.add_num(500).add_num(100);
   /// ```
   ///
   /// # Panics
   ///
   /// This method will panic if you attempt to add more arguments than the capacity allocated.
-  pub fn add_arg_num(mut self, arg: usize) -> Self {
+  pub fn add_num(&mut self, arg: usize) -> &mut Self {
     if self.len >= self.cap {
       panic!("ArgsBuilder::add_copy - added too many arguments!");
     }
@@ -132,10 +134,10 @@ impl Builder {
   /// # Examples
   ///
   /// ```rust,no_run
-  /// use altos_core::task::args::Builder;
+  /// use altos_core::args::ArgsBuilder;
   ///
-  /// let mut args = Builder::new(2);
-  /// args = args.add_arg_num(100).add_arg_num(500);
+  /// let mut args = ArgsBuilder::new(2);
+  /// args.add_num(100).add_num(500);
   /// let finalized_args = args.finalize();
   /// ```
   pub fn finalize(mut self) -> Args {
@@ -172,14 +174,14 @@ impl Args {
   /// # Examples
   ///
   /// ```rust,no_run
-  /// use altos_core::task::args::Builder;
+  /// use altos_core::args::ArgsBuilder;
   /// use altos_core::alloc::boxed::Box;
   ///
   /// struct Data(usize);
   ///
-  /// let mut args = Builder::new(1);
+  /// let mut args = ArgsBuilder::new(1);
   ///
-  /// args = args.add_arg_box(Box::new(Data(100)));
+  /// args.add_box(Box::new(Data(100)));
   ///
   /// let mut my_args = args.finalize();
   ///
@@ -202,11 +204,11 @@ impl Args {
   /// # Examples
   ///
   /// ```rust,no_run
-  /// use altos_core::task::args::Builder;
+  /// use altos_core::args::ArgsBuilder;
   ///
-  /// let mut args = Builder::new(1);
+  /// let mut args = ArgsBuilder::new(1);
   ///
-  /// args = args.add_arg_num(100);
+  /// args.add_num(100);
   ///
   /// let mut my_args = args.finalize();
   ///

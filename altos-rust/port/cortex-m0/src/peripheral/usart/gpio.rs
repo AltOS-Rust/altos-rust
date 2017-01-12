@@ -1,6 +1,9 @@
 use peripheral::{gpio, rcc};
 
 pub fn gpio_init() {
+    // TODO Need to set clocks for whole usart (and get freq for baud rate)
+    // TODO Does this need to live here? Should the Peripheral be used
+    //  for the USART struct as well? or should they be separate?
   let rcc = rcc::rcc();
   let cr = rcc.get_system_clock_rate();
 

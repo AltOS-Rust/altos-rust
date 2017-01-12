@@ -9,3 +9,9 @@ mod baudr;
 mod gpio;
 
 use self::usart::USART;
+use self::usart::USARTx;
+
+// TODO
+//pub fn init() {
+//    let usart1: USART = USART::new(USARTx::USART1);
+//}

@@ -20,12 +20,20 @@ impl USART_CR {
         }
     }
 
+    pub fn enable_usart(&self) {
+        self.cr1.enable_usart(true);
+    }
+
+    pub fn disable_usart(&self) {
+        self.cr1.enable_usart(false);
+    }
+
     pub fn set_word_length(&self, length: WordLength) {
         self.cr1.set_word_length(length);
     }
 
-    pub fn enable_usart(&self, enable: bool) {
-        self.cr1.enable_usart(enable);
+    pub fn is_usart_enabled(&self) -> bool {
+        self.cr1.is_usart_enabled()
     }
 }
 
@@ -71,6 +79,12 @@ impl CR1 {
                 *reg &= !(CR1_UE);
             }
             // TODO: Do I need to check if it was disabled properly??
+        }
+    }
+
+    fn is_usart_enabled(&self) -> bool {
+        unsafe {
+            *self.addr() & CR1_UE != 0
         }
     }
 

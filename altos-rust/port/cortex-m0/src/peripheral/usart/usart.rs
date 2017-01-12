@@ -5,7 +5,7 @@ use super::baudr::USART_BRR;
 use peripheral::usart::defs::*;
 
 #[derive(Copy, Clone)]
-enum USARTx {
+pub enum USARTx {
     USART1,
     USART2,
 }
@@ -23,7 +23,7 @@ impl Control for USART {
 }
 
 impl USART {
-    fn new(x: USARTx) -> Self {
+    pub fn new(x: USARTx) -> Self {
         match x {
             USARTx::USART1 => USART {
                 mem_addr: USART1_ADDR,

@@ -5,6 +5,7 @@
 
 #![no_std]
 #![feature(core_intrinsics)]
+#![deny(trivial_casts, trivial_numeric_casts)]
 
 //! Volatile memory operations.
 //!
@@ -71,7 +72,7 @@ impl<T: Copy> Volatile<T> {
     // TODO: See https://github.com/rust-lang/rust/issues/39056
     //  Change this back to a regular multiply once this gets fixed so we have overflow checking
     let offset = count.wrapping_mul(size_of::<T>() as isize);
-    let addr = (base + offset as isize) as *const T;
+    let addr = (base + offset) as *const T;
     Volatile::new(addr)
   }
 }
@@ -100,7 +101,7 @@ impl<T: Copy> RawVolatile<T> {
 
   /// Loads a value from the address pointed at.
   pub unsafe fn load(&self) -> T {
-    volatile_load(self.0 as *const T)
+    volatile_load(self.0)
   }
 }
 

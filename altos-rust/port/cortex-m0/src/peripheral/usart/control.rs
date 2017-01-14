@@ -43,6 +43,10 @@ impl USART_CR {
         self.cr1.set_mode(mode);
     }
 
+    pub fn set_parity(&self, parity: Parity) {
+        self.cr1.set_parity(parity);
+    }
+
     pub fn set_stop_bits(&self, length: Stoplength) {
         self.cr2.set_stop_bits(length);
     }
@@ -70,6 +74,12 @@ pub enum Mode {
     RxTx,
 }
 
+pub enum Parity {
+    None,
+    Even,
+    Odd,
+}
+
 #[derive(Copy, Clone)]
 struct CR1 {
     base_addr: u32,
@@ -90,6 +100,7 @@ impl Register for CR1 {
 }
 
 impl CR1 {
+    // Enables and disables USARTx based on bool variable passed in.
     fn enable_usart(&self, enable: bool) { // TODO: Do I need a return type here??
         unsafe {
             let mut reg = self.addr();
@@ -103,16 +114,18 @@ impl CR1 {
         }
     }
 
+    // Checks if usart is enabled.
     fn is_usart_enabled(&self) -> bool {
         unsafe {
             *self.addr() & CR1_UE != 0
         }
     }
 
+    // Sets wordlength to 7, 8, or 9 bits.
     fn set_word_length(&self, length: WordLength) {
         let mask = match length {
             WordLength::Seven => CR1_M1,
-            WordLength::Eight => ZERO,
+            WordLength::Eight => !(CR1_M1 | CR1_M0),
             WordLength::Nine => CR1_M0,
         };
 
@@ -123,16 +136,32 @@ impl CR1 {
         }
     }
 
+    // Sets mode for receive(Rx), transmit(Tx) or both(RxTx)
     fn set_mode(&self, mode: Mode) {
         let mask = match mode {
             Mode::Rx => CR1_RE,
             Mode::Tx => CR1_TE,
-            Mode::RxTx => CR1_RE | CR1_TE,
-        }
+            Mode::RxTx => (CR1_RE | CR1_TE),
+        };
 
         unsafe {
             let mut reg = self.addr();
-            *reg &= !(CR1_RE | CR1_TE)
+            *reg &= !(CR1_RE | CR1_TE);
+            *reg |= mask;
+        }
+    }
+
+    // Sets parity to even or odd.
+    fn set_parity(&self, parity: Parity) {
+        let mask = match parity {
+            Parity::None => !(CR1_PS | CR1_PCE),
+            Parity::Even => CR1_PCE,
+            Parity::Odd => CR1_PS | CR1_PCE,
+        };
+
+        unsafe {
+            let mut reg = self.addr();
+            *reg &= !(CR1_PCE | CR1_PS);
             *reg |= mask;
         }
     }

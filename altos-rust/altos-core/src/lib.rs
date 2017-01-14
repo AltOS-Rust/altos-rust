@@ -30,12 +30,11 @@ pub extern crate collections;
 pub extern crate cm0_atomic as atomic;
 pub extern crate volatile;
 
-#[cfg(target_os="altos-cm0")]
+#[cfg(all(not(test), target_arch="arm", feature="cm0"))]
 #[path = "arch/cm0.rs"]
 mod arch;
 
-// FIXME: Figure out this cfg
-#[cfg(any(test, not(target_os="altos-cm0")))]
+#[cfg(test)]
 #[path = "arch/test.rs"]
 mod arch;
 

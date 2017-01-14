@@ -7,10 +7,6 @@
 #![feature(asm)]
 #![feature(naked_functions)]
 
-mod math;
-mod mem;
 pub mod asm;
-
-pub use math::*;
-pub use mem::*;
-
+pub mod math;
+//pub mod mem;

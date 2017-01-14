@@ -7,5 +7,12 @@ authors = ["Daniel Seitz <dnseitz@gmail.com>"]
 crate-type = ["rlib"]
 
 [dependencies]
-altos_core = { path = "../../altos-core" }
+#compiler_builtins = { git = "https://github.com/rust-lang-nursery/compiler-builtins" }
 arm = { path = "libs/arm" }
+
+[dependencies.altos_core]
+path = "../../altos-core"
+features = ["cm0"]
+
+#[dependencies.compiler_builtins]
+#git = "https://github.com/rust-lang-nursery/compiler-builtins"

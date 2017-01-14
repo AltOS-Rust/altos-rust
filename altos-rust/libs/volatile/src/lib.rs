@@ -18,6 +18,7 @@ mod tests;
 
 use core::ops::*;
 use core::intrinsics::{volatile_load, volatile_store};
+use core::mem::size_of;
 
 /// A volatile pointer.
 ///
@@ -29,14 +30,15 @@ use core::intrinsics::{volatile_load, volatile_store};
 /// # Examples
 ///
 /// ```rust,no_run
-/// use altos_core::volatile::Volatile;
+/// use volatile::Volatile;
 /// 
-/// let mem_port: *const usize = 0x4000_2000 as *const usize; // Some memory mapped I/O port
+/// let value: i32 = 0;
 /// unsafe {
-///   let mut ptr = Volatile::new(mem_port);
+///   let mut ptr = Volatile::new(&value);
 ///   let mask = 0x0F0F;
 ///   *ptr |= mask;
 /// }
+/// assert_eq!(value, 0x0F0F);
 /// ```
 #[derive(Copy, Clone)]
 pub struct Volatile<T: Copy>(RawVolatile<T>);
@@ -51,7 +53,7 @@ impl<T: Copy> Volatile<T> {
   /// This is unsafe because the address could be potentially anywhere, and forcing a write to a
   /// memory address could cause undefined behavior if the wrong address is chosen.
   pub unsafe fn new(ptr: *const T) -> Self {
-    Volatile(RawVolatile::new(ptr))
+    Volatile(RawVolatile(ptr))
   }
 
   /// Returns the inner pointer.
@@ -62,6 +64,15 @@ impl<T: Copy> Volatile<T> {
   /// Returns the inner pointer mutably.
   pub fn as_mut(self) -> *mut T {
     (self.0).0 as *mut T
+  }
+
+  pub unsafe fn offset(self, count: isize) -> Self {
+    let base = self.as_ptr() as isize;
+    // TODO: See https://github.com/rust-lang/rust/issues/39056
+    //  Change this back to a regular multiply once this gets fixed so we have overflow checking
+    let offset = count.wrapping_mul(size_of::<T>() as isize);
+    let addr = (base + offset as isize) as *const T;
+    Volatile::new(addr)
   }
 }
 
@@ -79,41 +90,9 @@ impl<T: Copy> DerefMut for Volatile<T> {
   }
 }
 
-impl<T: Add<Output=T> + Copy> Add<T> for Volatile<T> where usize: Add<T, Output=usize> {
-  type Output = Volatile<T>;
-
-  fn add(self, rhs: T) -> Self::Output {
-    Volatile(RawVolatile(((self.0).0 as usize + rhs) as *const T))
-  }
-}
-
-impl<T: Add<Output=T> + Copy> AddAssign<T> for Volatile<T> where usize: Add<T, Output=usize> {
-  fn add_assign(&mut self, rhs: T) {
-    self.0 = RawVolatile(((self.0).0 as usize + rhs) as *const T);
-  }
-}
-
-impl<T: Sub<Output=T> + Copy> Sub<T> for Volatile<T> where usize: Sub<T, Output=usize> { 
-  type Output = Volatile<T>;
-
-  fn sub(self, rhs: T) -> Self::Output {
-    Volatile(RawVolatile(((self.0).0 as usize - rhs) as *const T))
-  }
-}
-
-impl<T: Sub<Output=T> + Copy> SubAssign<T> for Volatile<T> where usize: Sub<T, Output=usize> {
-  fn sub_assign(&mut self, rhs: T) {
-    self.0 = RawVolatile(((self.0).0 as usize - rhs) as *const T);
-  }
-}
-
 /*** Raw Volatile Implementation ***/
 
 impl<T: Copy> RawVolatile<T> {
-  fn new(ptr: *const T) -> Self {
-    RawVolatile(ptr)
-  }
-
   /// Stores a value into the address pointed at.
   pub unsafe fn store(&mut self, rhs: T) {
     volatile_store(self.0 as *mut T, rhs);

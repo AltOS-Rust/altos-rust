@@ -10,10 +10,11 @@ crate-type = ["rlib"]
 default = ["bump_alloc"]
 
 bump_alloc = ["bump_allocator"]
+cm0 = []
 
 [dependencies]
 bump_allocator = { path = "libs/heap/bump_allocator", optional = true }
 volatile = { path = "../libs/volatile" }
 
-[target.cortex-m0.dependencies]
+[target.thumbv6m-none-eabi.dependencies]
 cm0_atomic = { path = "libs/cm0_atomic" }

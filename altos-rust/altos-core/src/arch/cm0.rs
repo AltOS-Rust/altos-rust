@@ -17,20 +17,15 @@ pub fn yield_cpu() {
   }
 }
 
-pub fn initialize_stack(mut stack_ptr: Volatile<usize>, code: fn(&mut Args), args: &Box<Args>) -> usize {
+pub fn initialize_stack(stack_ptr: Volatile<usize>, code: fn(&mut Args), args: &Box<Args>) -> usize {
   const INITIAL_XPSR: usize = 0x0100_0000;
   unsafe {
-    // Offset added to account for way MCU uses stack on entry/exit of interrupts
-    stack_ptr -= 4;
-    stack_ptr.store(INITIAL_XPSR); /* xPSR */
-    stack_ptr -= 4;
-    stack_ptr.store(code as usize); /* PC */
-    stack_ptr -= 4;
-    stack_ptr.store(exit_error as usize); /* LR */
-    stack_ptr -= 20; /* R12, R3, R2, R1 */
-    stack_ptr.store(&**args as *const _ as usize); /* R0 */
-    stack_ptr -= 32; /* R11..R4 */
-    stack_ptr.as_ptr() as usize
+    // Initial offset added to account for way MCU uses stack on entry/exit of interrupts
+    stack_ptr.offset(-1).store(INITIAL_XPSR); /* xPSR */
+    stack_ptr.offset(-2).store(code as usize); /* PC */
+    stack_ptr.offset(-3).store(exit_error as usize); /* LR */
+    stack_ptr.offset(-8).store(&**args as *const _ as usize); /* R0 */
+    stack_ptr.offset(-16).as_ptr() as usize
   }
 }
 

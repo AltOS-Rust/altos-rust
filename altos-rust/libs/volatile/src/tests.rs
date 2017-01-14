@@ -8,44 +8,28 @@
 use super::Volatile;
 
 #[test]
-fn add_assign_volatile_ptr() {
+fn ptr_positive_offset() {
   unsafe {
-    let mut ptr = Volatile::new(100 as *const _);
-    ptr += 100;
-
-    assert_eq!(ptr.as_ptr() as usize, 200);
+    let ptr = Volatile::new(100 as *const u32);
+    assert_eq!(ptr.offset(5).as_ptr() as usize, 120);
   }
 }
 
 #[test]
-fn add_volatile_ptr() {
+fn ptr_negative_offset() {
   unsafe {
-    let ptr = Volatile::new(100 as *const _);
-    let ptr2 = ptr + 100;
-
-    assert_eq!(ptr.as_ptr() as usize, 100);
-    assert_eq!(ptr2.as_ptr() as usize, 200);
+    let ptr = Volatile::new(100 as *const u32);
+    assert_eq!(ptr.offset(-5).as_ptr() as usize, 80);
   }
 }
 
 #[test]
-fn sub_assign_volatile_ptr() {
+fn ptr_deref_offset() {
   unsafe {
-    let mut ptr = Volatile::new(100 as *const _);
-    ptr -= 50;
-
-    assert_eq!(ptr.as_ptr() as usize, 50);
-  }
-}
-
-#[test]
-fn sub_volatile_ptr() {
-  unsafe {
-    let ptr = Volatile::new(100 as *const _);
-    let ptr2 = ptr - 50;
-
-    assert_eq!(ptr.as_ptr() as usize, 100);
-    assert_eq!(ptr2.as_ptr() as usize, 50);
+    let array = [0; 10];
+    let ptr = Volatile::new(array.as_ptr());
+    *ptr.offset(5) += 100;
+    assert_eq!(array[5], 100);
   }
 }
 

@@ -10,11 +10,13 @@
 #![feature(drop_types_in_const)] // Probably can come back and remove this later
 #![allow(dead_code)]
 #![feature(linkage)]
+//#![feature(compiler_builtins_lib)] // Keep this around in case we want to try and get it working
 #![no_std]
 
 extern crate altos_core;
 
 pub extern crate arm;
+//pub extern crate compiler_builtins; // See above comment
 
 mod exceptions;
 pub mod peripheral;

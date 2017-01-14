@@ -5,7 +5,7 @@
 
 // FIXME: Try to see if there's a better way to handle this for testing
 // We do this cfg for testing purposes, this allows doctests to run without any compilation errors.
-#![cfg(any(target_os="altos-cm0"))]
+#![cfg(not(test))]
 
 //! Contains functions used for initialization of the kernel
 

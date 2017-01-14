@@ -1,7 +1,7 @@
 binary = altos_rust
 static_lib = lib$(binary).a
 linker_script = rust.ld
-target = cortex-m0
+target = thumbv6m-none-eabi
 core_lib = altos_core
 
 build_path = build/
@@ -21,8 +21,11 @@ cargo_args = --target $(target)
 ### TEST ###
 test_dependencies = altos_core \
 										arm \
+										volatile \
 
-test_args = $(foreach dep, $(test_dependencies),-p $(dep))
+# --lib flag only runs the unit test suite, doc tests are currently and issue for cross-compiled 
+#  platforms. See: https://github.com/rust-lang/cargo/issues/1789
+test_args = $(foreach dep, $(test_dependencies),-p $(dep)) --lib
 
 ### LINKER ###
 linker = arm-none-eabi-ld
@@ -41,6 +44,8 @@ st_gdb_flags = $(gdb_flags) -eval-command="target remote :$(st_port)"
 ocd_gdb_flags = $(gdb_flags) -eval-command="target remote :$(ocd_port)"
 
 ### Make targets ###
+
+.PHONY: debug release clean
 
 all: debug
 

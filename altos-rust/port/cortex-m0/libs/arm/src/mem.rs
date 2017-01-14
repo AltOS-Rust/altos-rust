@@ -3,6 +3,7 @@
 //
 // Created by Daniel Seitz on 12/6/16
 
+/*
 #[no_mangle]
 pub unsafe extern fn __aeabi_memclr4(dest: *mut u32, mut n: isize) {
   while n > 0 {
@@ -18,6 +19,7 @@ pub unsafe extern fn __aeabi_memmove(dest: *mut u8, src: *const u8, len: isize) 
   panic!("Don't Reallocate Memory yet!");
   //if dest.offset(0) >= src.offset(len) 
 }
+*/
 
 #[cfg(test)]
 mod tests {

@@ -11,6 +11,9 @@ pub struct USART_CR {
     cr3: CR3,
 }
 
+// TODO Need to implement a clear mask for each register to ensure that
+// all register bits are set to zero before re-initializing register to
+// necessary values for a specific usart configuration.
 impl USART_CR {
     pub fn new(base_addr: u32) -> Self {
         USART_CR {
@@ -24,6 +27,10 @@ impl USART_CR {
         self.cr1.enable_usart(true);
     }
 
+    pub fn is_usart_enabled(&self) -> bool {
+        self.cr1.is_usart_enabled()
+    }
+
     pub fn disable_usart(&self) {
         self.cr1.enable_usart(false);
     }
@@ -32,8 +39,16 @@ impl USART_CR {
         self.cr1.set_word_length(length);
     }
 
-    pub fn is_usart_enabled(&self) -> bool {
-        self.cr1.is_usart_enabled()
+    pub fn set_mode(&self, mode: Mode) {
+        self.cr1.set_mode(mode);
+    }
+
+    pub fn set_stop_bits(&self, length: Stoplength) {
+        self.cr2.set_stop_bits(length);
+    }
+
+    pub fn clear_stop_bits(&self) {
+        self.cr2.clear_stop_bits();
     }
 }
 
@@ -47,6 +62,12 @@ pub enum WordLength {
     Seven,
     Eight,
     Nine,
+}
+
+pub enum Mode {
+    Rx,
+    Tx,
+    RxTx,
 }
 
 #[derive(Copy, Clone)]
@@ -102,8 +123,18 @@ impl CR1 {
         }
     }
 
-    fn enable_rx_tx(&self, rx_enable: bool, tx_enable: bool) {
-        // TODO: FINISH THIS!
+    fn set_mode(&self, mode: Mode) {
+        let mask = match mode {
+            Mode::Rx => CR1_RE,
+            Mode::Tx => CR1_TE,
+            Mode::RxTx => CR1_RE | CR1_TE,
+        }
+
+        unsafe {
+            let mut reg = self.addr();
+            *reg &= !(CR1_RE | CR1_TE)
+            *reg |= mask;
+        }
     }
 }
 
@@ -139,6 +170,7 @@ impl Register for CR2 {
 }
 
 impl CR2 {
+    // TODO: Talk about this method vs previous method
     fn set_stop_bits(&self, length: Stoplength) {
         let mask = match length {
             Stoplength::Half => !(CR2_STOP_BIT0 | CR2_STOP_BIT1),
@@ -146,10 +178,18 @@ impl CR2 {
             Stoplength::One_and_Half => CR2_STOP_BIT0 | !(CR2_STOP_BIT0),
             Stoplength::Two => CR2_STOP_BIT0 | CR2_STOP_BIT1,
         };
+
         unsafe {
             let mut reg = self.addr();
             *reg &= !(CR2_STOP_BIT0 | CR2_STOP_BIT1);
             *reg |= mask;
+        }
+    }
+
+    fn clear_stop_bits(&self) {
+        unsafe {
+            let mut reg = self.addr();
+            *reg &= !(CR2_STOP_BIT0 | CR2_STOP_BIT1);
         }
     }
 }

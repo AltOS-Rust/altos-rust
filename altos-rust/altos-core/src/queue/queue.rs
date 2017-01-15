@@ -159,8 +159,10 @@ impl<T> Queue<T> {
     else {
       self.head = queue.head.take();
     }
-
-    self.tail = queue.tail;
+    
+    if !queue.tail.is_null() {
+      self.tail = queue.tail;
+    }
   }
 
   /// Modifies all the elements of the queue with the block passed in.
@@ -453,6 +455,26 @@ mod tests {
     list1.enqueue(Box::new(Node::new(2)));
 
     list1.append(list2);
+
+    assert_eq!(list1.dequeue().map(|n| n.data), Some(1));
+    assert_eq!(list1.dequeue().map(|n| n.data), Some(2));
+
+    assert!(list1.dequeue().is_none());
+  }
+
+  #[test]
+  fn append_empty_twice() {
+    // This case is for a bug that was caused by appending an empty list twice and losing the whole
+    // list...
+    let mut list1 = Queue::new();
+    let list2 = Queue::new();
+    let list3 = Queue::new();
+
+    list1.enqueue(Box::new(Node::new(1)));
+    list1.enqueue(Box::new(Node::new(2)));
+
+    list1.append(list2);
+    list1.append(list3);
 
     assert_eq!(list1.dequeue().map(|n| n.data), Some(1));
     assert_eq!(list1.dequeue().map(|n| n.data), Some(2));

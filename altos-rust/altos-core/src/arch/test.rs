@@ -8,14 +8,16 @@
 use volatile::Volatile;
 use task::args::Args;
 use alloc::boxed::Box;
+use sched;
 
 pub fn yield_cpu() {
   // no-op
+  sched::switch_context();
 }
 
-pub fn initialize_stack(_stack_ptr: Volatile<usize>, _code: fn(&mut Args), _args: &Box<Args>) -> usize {
+pub fn initialize_stack(stack_ptr: Volatile<usize>, _code: fn(&mut Args), _args: &Box<Args>) -> usize {
   // no-op
-  0
+  stack_ptr.as_ptr() as usize
 }
 
 pub fn start_first_task() {

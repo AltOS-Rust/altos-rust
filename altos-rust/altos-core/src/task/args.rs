@@ -17,7 +17,7 @@
 //! use altos_core::Priority;
 //! use altos_core::syscall::new_task;
 //!
-//! let mut args = ArgsBuilder::new(2);
+//! let mut args = ArgsBuilder::with_capacity(2);
 //! args.add_num(100)
 //!     .add_num(500);
 //!
@@ -39,6 +39,7 @@ type RawPtr = usize;
 ///
 /// Use this to construct a new list of arguments to pass into a task. The arguments should be
 /// either a pointer to an object or a word length integer.
+#[derive(Debug)]
 pub struct ArgsBuilder {
   cap: usize,
   len: usize,
@@ -57,7 +58,7 @@ impl ArgsBuilder {
   ///
   /// The number of arguments for a task should be known before hand in order to avoid unnecessary
   /// reallocations. Attempting to exceed this capacity will panic the kernel.
-  pub fn new(cap: usize) -> Self {
+  pub fn with_capacity(cap: usize) -> Self {
     ArgsBuilder { 
       cap: cap,
       len: 0,
@@ -76,7 +77,7 @@ impl ArgsBuilder {
   /// ```rust,no_run
   /// use altos_core::args::ArgsBuilder;
   ///
-  /// let mut args = ArgsBuilder::new(2);
+  /// let mut args = ArgsBuilder::with_capacity(2);
   /// args.add_box(Box::new(400u16)).add_box(Box::new(100u32));
   /// ```
   ///
@@ -106,7 +107,7 @@ impl ArgsBuilder {
   /// ```rust,no_run
   /// use altos_core::args::ArgsBuilder;
   ///
-  /// let mut args = ArgsBuilder::new(2);
+  /// let mut args = ArgsBuilder::with_capacity(2);
   /// args.add_num(500).add_num(100);
   /// ```
   ///
@@ -136,7 +137,7 @@ impl ArgsBuilder {
   /// ```rust,no_run
   /// use altos_core::args::ArgsBuilder;
   ///
-  /// let mut args = ArgsBuilder::new(2);
+  /// let mut args = ArgsBuilder::with_capacity(2);
   /// args.add_num(100).add_num(500);
   /// let finalized_args = args.finalize();
   /// ```
@@ -153,6 +154,7 @@ impl ArgsBuilder {
 /// order and type of arguments passed into it in order to correctly interpret them. Unfortunately
 /// we can not keep type safety across the task initialization barrier in order to keep tasks
 /// uniform.
+#[derive(Debug)]
 pub struct Args {
   args: Vec<RawPtr>,
 }
@@ -179,7 +181,7 @@ impl Args {
   ///
   /// struct Data(usize);
   ///
-  /// let mut args = ArgsBuilder::new(1);
+  /// let mut args = ArgsBuilder::with_capacity(1);
   ///
   /// args.add_box(Box::new(Data(100)));
   ///
@@ -206,7 +208,7 @@ impl Args {
   /// ```rust,no_run
   /// use altos_core::args::ArgsBuilder;
   ///
-  /// let mut args = ArgsBuilder::new(1);
+  /// let mut args = ArgsBuilder::with_capacity(1);
   ///
   /// args.add_num(100);
   ///
@@ -222,7 +224,100 @@ impl Args {
     self.args.pop().unwrap()
   }
 
-  fn new(args: Vec<RawPtr>) -> Self {
+  fn new(mut args: Vec<RawPtr>) -> Self {
+    args.reverse();
     Args { args: args }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_args_builder_smoke() {
+    let mut builder = ArgsBuilder::with_capacity(3);
+    assert_eq!(builder.cap, 3);
+    assert_eq!(builder.len, 0);
+    builder.add_num(10).add_num(20).add_num(30);
+    assert_eq!(builder.len, 3);
+    builder.finalize();
+  }
+
+  #[test]
+  #[should_panic]
+  fn test_args_builder_exceeds_capacity_panics() {
+    let mut builder = ArgsBuilder::with_capacity(1);
+    builder.add_num(10).add_num(20);
+  }
+
+  #[test]
+  fn test_args_builder_add_box_same_type() {
+    let mut builder = ArgsBuilder::with_capacity(2);
+    builder.add_box(Box::new(1.0f32)).add_box(Box::new(4.2f32));
+    assert_eq!(builder.len, 2);
+    builder.finalize();
+  }
+
+  #[test]
+  fn test_args_builder_add_box_different_type() {
+    let mut builder = ArgsBuilder::with_capacity(2);
+    builder.add_box(Box::new(1.0f32)).add_box(Box::new(42u64));
+    assert_eq!(builder.len, 2);
+    builder.finalize();
+  }
+
+  #[test]
+  fn test_args_pop_num() {
+    let mut builder = ArgsBuilder::with_capacity(4);
+    builder.add_num(1).add_num(2).add_num(3).add_num(4);
+    assert_eq!(builder.len, 4);
+    let mut args = builder.finalize();
+
+    assert_eq!(args.pop_num(), 1);
+    assert_eq!(args.pop_num(), 2);
+    assert_eq!(args.pop_num(), 3);
+    assert_eq!(args.pop_num(), 4);
+  }
+
+  #[test]
+  #[should_panic]
+  fn test_args_pop_num_too_many_times_panics() {
+    let mut builder = ArgsBuilder::with_capacity(1);
+    builder.add_num(10usize);
+
+    let mut args = builder.finalize();
+
+    args.pop_num();
+    args.pop_num();
+  }
+
+  #[test]
+  fn test_args_pop_box() {
+    let mut builder = ArgsBuilder::with_capacity(4);
+    builder.add_box(Box::new(10u8))
+           .add_box(Box::new(20u32))
+           .add_box(Box::new(30isize))
+           .add_box(Box::new(40i32));
+    assert_eq!(builder.len, 4);
+
+    let mut args = builder.finalize();
+
+    assert_eq!(unsafe { *args.pop_box::<u8>() }, 10u8);
+    assert_eq!(unsafe { *args.pop_box::<u32>() }, 20u32);
+    assert_eq!(unsafe { *args.pop_box::<isize>() }, 30isize);
+    assert_eq!(unsafe { *args.pop_box::<i32>() }, 40i32);
+  }
+
+  #[test]
+  #[should_panic]
+  fn test_args_pop_box_too_many_times_panics() {
+    let mut builder = ArgsBuilder::with_capacity(1);
+    builder.add_box(Box::new(10usize));
+
+    let mut args = builder.finalize();
+
+    unsafe { args.pop_box::<usize>() };
+    unsafe { args.pop_box::<usize>() };
   }
 }

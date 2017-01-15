@@ -5,8 +5,8 @@
 
 //! Syscall interface for the AltOS kernel
 
-use sched::{CURRENT_TASK, DELAY_QUEUE, OVERFLOW_DELAY_QUEUE, PRIORITY_QUEUES};
-use task::{State, Priority};
+use sched::{CURRENT_TASK, SLEEP_QUEUE, DELAY_QUEUE, OVERFLOW_DELAY_QUEUE, PRIORITY_QUEUES};
+use task::{Delay, State, Priority};
 use task::args::Args;
 use task::{TaskHandle, TaskControl};
 use queue::Node;
@@ -15,7 +15,8 @@ use tick;
 use sync::CriticalSection;
 use arch;
 
-/// An alias for the channel to sleep on that will never be awoken
+/// An alias for the channel to sleep on that will never be awoken by a wakeup signal, it will
+/// still be woken after a timeout
 pub const FOREVER_CHAN: usize = 0;
 
 /// Creates a new task and put it into the task queue for running. It returns a `TaskHandle` to
@@ -45,7 +46,6 @@ pub const FOREVER_CHAN: usize = 0;
 ///   loop {}
 /// }
 /// ```
-#[inline(never)]
 pub fn new_task(code: fn(&mut Args), args: Args, stack_depth: usize, priority: Priority, name: &'static str) -> TaskHandle {
   // Make sure the task is allocated in one fell swoop
   let g = CriticalSection::begin();
@@ -55,6 +55,44 @@ pub fn new_task(code: fn(&mut Args), args: Args, stack_depth: usize, priority: P
   let handle = TaskHandle::new(&**task);
   PRIORITY_QUEUES[task.priority].enqueue(task); 
   handle
+}
+
+/// Exits and destroys the currently running task. 
+/// 
+/// This function must only be called from within task code. Doing so from elsewhere (like an
+/// interrupt handler, for example) will still destroy the currently running task, since something
+/// like an interrupt handler can interrupt any task there's no way to determine which task it 
+/// would destroy. 
+/// 
+/// It marks the currently running task to be destroyed then immediatly yields to the scheduler
+/// to allow another task to run.
+/// 
+/// # Examples
+/// 
+/// ```rust,no_run
+/// use altos_core::syscall;
+/// 
+/// fn test_task(_args: &mut Args) {
+///   // Do some stuff
+///   
+///   syscall::exit();
+/// }
+/// ```
+/// 
+/// # Panics
+/// 
+/// This function will panic if the task is not successfully destroyed (i.e. it gets scheduled
+/// after this function is called), but this should never happen.
+pub fn exit() -> ! {
+  // UNSAFE: This can only be called from the currently running task, so we know we're the only one
+  // with a reference to the task. The destroy method is atomic so we don't have to worry about any
+  // threading issues
+  unsafe { 
+    debug_assert!(CURRENT_TASK.is_some());
+    CURRENT_TASK.as_mut().unwrap().destroy();
+  }
+  sched_yield();
+  panic!("syscall::exit - task returned from exit!");
 }
 
 /// Yield the current task to the scheduler so another task can run.
@@ -115,15 +153,24 @@ pub fn sleep(wchan: usize) {
 /// sleep_for(FOREVER_CHAN, 300);
 /// ```
 pub fn sleep_for(wchan: usize, delay: usize) {
+  // Make the critical section for the whole function, wouldn't want to be rude and make a task
+  // give up its time slice for no reason
   let _g = CriticalSection::begin();
+  // UNSAFE: Accessing CURRENT_TASK
   unsafe {
     if let Some(current) = CURRENT_TASK.as_mut() {
       let ticks = tick::get_tick();
+      current.delay_type = if delay == 0 && wchan != FOREVER_CHAN {
+        Delay::Sleep
+      }
+      else {
+        Delay::Timeout
+      };
       current.wchan = wchan;
       current.state = State::Blocked;
-      current.delay = ticks + delay;
-      if ticks + delay < ticks {
-        current.overflowed = true;
+      current.delay = ticks.wrapping_add(delay);
+      if current.delay < ticks {
+        current.delay_type = Delay::Overflowed;
       }
     }
     else {
@@ -138,8 +185,11 @@ pub fn sleep_for(wchan: usize, delay: usize) {
 /// `wake` takes a `usize` argument that acts as an identifier to only wake up tasks sleeping on
 /// that same identifier. 
 pub fn wake(wchan: usize) {
+  // Since we're messing around with all the task queues, lets make sure everything gets done at 
+  // once
   let _g = CriticalSection::begin();
-  let mut to_wake = DELAY_QUEUE.remove(|task| task.wchan == wchan);
+  let mut to_wake = SLEEP_QUEUE.remove(|task| task.wchan == wchan);
+  to_wake.append(DELAY_QUEUE.remove(|task| task.wchan == wchan));
   to_wake.append(OVERFLOW_DELAY_QUEUE.remove(|task| task.wchan == wchan));
   for mut task in to_wake.into_iter() {
     task.wchan = 0;
@@ -148,17 +198,21 @@ pub fn wake(wchan: usize) {
   }
 }
 
+/// Update the system tick count and wake up any delayed tasks that need to be woken
+/// 
+/// This function will wake any tasks that have a delay 
 #[doc(hidden)]
 pub fn system_tick() {
   debug_assert!(arch::in_kernel_mode());
 
+  // TODO: Do we need a critical section here? We should be in the tick handler
   let _g = CriticalSection::begin();
   tick::tick();
 
   // wake up all tasks sleeping until the current tick
   let ticks = tick::get_tick();
   
-  let to_wake = DELAY_QUEUE.remove(|task| task.delay <= ticks && task.wchan == FOREVER_CHAN);
+  let to_wake = DELAY_QUEUE.remove(|task| task.delay <= ticks);
   for mut task in to_wake.into_iter() {
     task.wchan = 0;
     task.state = State::Ready;
@@ -167,13 +221,11 @@ pub fn system_tick() {
   }
 
   if ticks == !0 {
-    let mut overflowed = OVERFLOW_DELAY_QUEUE.remove_all();
-    for task in overflowed.iter_mut() {
-      task.overflowed = false;
-    }
+    let overflowed = OVERFLOW_DELAY_QUEUE.remove_all();
     DELAY_QUEUE.append(overflowed);
   }
 
+  // UNSAFE: Accessing CURRENT_TASK
   let current_priority = unsafe { 
     match CURRENT_TASK.as_ref() {
       Some(task) => task.priority,
@@ -188,4 +240,244 @@ pub fn system_tick() {
       break;
     }
   }
+}
+
+#[cfg(test)]
+mod tests {
+  use test;
+  use super::*;
+  use task::args::Args;
+  use sched::start_scheduler;
+
+  #[test]
+  fn test_new_task() {
+    let _g = test::set_up();
+    let handle = new_task(test_task, Args::empty(), 512, Priority::Normal, "test creation task");
+    assert_eq!(handle.name(), Ok("test creation task"));
+    assert_eq!(handle.priority(), Ok(Priority::Normal));
+    assert_eq!(handle.state(), Ok(State::Ready));
+    assert_eq!(handle.stack_size(), Ok(512));
+
+    assert_not!(PRIORITY_QUEUES[Priority::Normal].remove_all().is_empty());
+  }
+
+  #[test]
+  fn test_sched_yield() {
+    // This isn't the greatest test, as the functionality of this method is really just dependent
+    // on the platform implementation... but at least we can make sure it's working properly for
+    // the test suite
+    let _g = test::set_up();
+    let (handle_1, handle_2) = test::create_two_tasks();
+
+    start_scheduler();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+
+    sched_yield();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+  }
+
+  #[test]
+  fn test_sleep() {
+    let _g = test::set_up();
+    let (handle_1, handle_2) = test::create_two_tasks();
+    
+    start_scheduler();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+
+    // There's some special logic when something sleeps on FOREVER_CHAN, so make sure we don't
+    // sleep on it
+    sleep(!FOREVER_CHAN);
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+    sched_yield();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+    sched_yield();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+  }
+
+  #[test]
+  fn test_wake() {
+    let _g = test::set_up();
+    let (handle_1, handle_2) = test::create_two_tasks();
+    
+    start_scheduler();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+
+    // There's some special logic when something sleeps on FOREVER_CHAN, so make sure we don't
+    // sleep on it
+    sleep(!FOREVER_CHAN);
+    assert_eq!(handle_1.state(), Ok(State::Blocked));
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+    sched_yield();
+    assert_eq!(handle_1.state(), Ok(State::Blocked));
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+
+    wake(!FOREVER_CHAN);
+    assert_ne!(handle_1.state(), Ok(State::Blocked));
+    // wake should NOT yield the task, so we should still be running task 2
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+    sched_yield();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+  }
+
+  #[test]
+  fn test_system_tick() {
+    let _g = test::set_up();
+    let (handle_1, handle_2) = test::create_two_tasks();
+    
+    start_scheduler();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+
+    let old_tick = tick::get_tick();
+    system_tick();
+    assert_eq!(old_tick + 1, tick::get_tick());
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+  }
+
+  #[test]
+  fn test_sleep_for_forever() {
+    let _g = test::set_up();
+    let (handle_1, handle_2) = test::create_two_tasks();
+    
+    start_scheduler();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+
+    sleep_for(FOREVER_CHAN, 4);
+    assert_eq!(handle_1.state(), Ok(State::Blocked));
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+    system_tick();
+    assert_eq!(handle_1.state(), Ok(State::Blocked));
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+    system_tick();
+    assert_eq!(handle_1.state(), Ok(State::Blocked));
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+    system_tick();
+    assert_eq!(handle_1.state(), Ok(State::Blocked));
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+    system_tick();
+    // 4 Ticks have passed, task 1 should be woken up now
+    assert_ne!(handle_1.state(), Ok(State::Blocked));
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+
+    system_tick();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+  }
+
+  #[test]
+  fn test_sleep_for_timeout() {
+    let _g = test::set_up();
+    let (handle_1, handle_2) = test::create_two_tasks();
+    
+    start_scheduler();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+
+    sleep_for(!FOREVER_CHAN, 4);
+    assert_eq!(handle_1.state(), Ok(State::Blocked));
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+    system_tick();
+    assert_eq!(handle_1.state(), Ok(State::Blocked));
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+    system_tick();
+    assert_eq!(handle_1.state(), Ok(State::Blocked));
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+    system_tick();
+    assert_eq!(handle_1.state(), Ok(State::Blocked));
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+    system_tick();
+    // 4 Ticks have passed, task 1 should be woken up now
+    assert_ne!(handle_1.state(), Ok(State::Blocked));
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+
+    system_tick();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+  }
+
+  #[test]
+  fn test_sleep_for_early_wake() {
+    let _g = test::set_up();
+    let (handle_1, handle_2) = test::create_two_tasks();
+    
+    start_scheduler();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+
+    sleep_for(!FOREVER_CHAN, 4);
+    assert_eq!(handle_1.state(), Ok(State::Blocked));
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+    system_tick();
+    assert_eq!(handle_1.state(), Ok(State::Blocked));
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+    wake(!FOREVER_CHAN);
+    assert_ne!(handle_1.state(), Ok(State::Blocked));
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+    system_tick();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+  }
+
+  #[test]
+  fn test_sleep_for_no_timeout_forever() {
+    let _g = test::set_up();
+    let (handle_1, handle_2) = test::create_two_tasks();
+    
+    start_scheduler();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+
+    // This should yield the task but immediately wake up on the next tick
+    sleep_for(FOREVER_CHAN, 0);
+    assert_eq!(handle_1.state(), Ok(State::Blocked));
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+    
+    system_tick();
+    assert_ne!(handle_1.state(), Ok(State::Blocked));
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+  }
+
+  fn test_task(_args: &mut Args) {}
 }

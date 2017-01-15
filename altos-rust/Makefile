@@ -1,6 +1,6 @@
 binary = altos_rust
 static_lib = lib$(binary).a
-linker_script = rust.ld
+linker_script = cortex_m0.ld
 target = thumbv6m-none-eabi
 core_lib = altos_core
 
@@ -76,6 +76,9 @@ gdb-ocd: debug
 
 test:
 	@$(cargo) test $(test_args)
+
+test_verbose:
+	@$(cargo) test $(test_args) -- --nocapture
 
 size: debug
 

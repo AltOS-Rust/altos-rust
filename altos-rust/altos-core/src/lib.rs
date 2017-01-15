@@ -19,7 +19,12 @@
 #![feature(heap_api)]
 #![feature(oom)]
 #![warn(missing_docs)]
+#![deny(trivial_numeric_casts)]
 #![no_std]
+
+#[cfg(test)]
+#[macro_use]
+extern crate std;
 
 #[cfg(all(not(test), feature="bump_allocator"))]
 extern crate bump_allocator as allocator;
@@ -29,6 +34,10 @@ pub extern crate collections;
 #[cfg(not(target_has_atomic="ptr"))]
 pub extern crate cm0_atomic as atomic;
 pub extern crate volatile;
+
+#[cfg(test)]
+#[macro_use]
+mod test;
 
 #[cfg(all(not(test), target_arch="arm", feature="cm0"))]
 #[path = "arch/cm0.rs"]

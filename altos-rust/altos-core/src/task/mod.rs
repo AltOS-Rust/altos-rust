@@ -11,7 +11,7 @@ pub mod args;
 mod stack;
 mod control;
 
-pub use self::control::{TaskHandle, TaskControl, State, Priority};
+pub use self::control::{TaskHandle, TaskControl, Delay, State, Priority};
 pub use self::control::NUM_PRIORITIES;
 
 use args::Args;

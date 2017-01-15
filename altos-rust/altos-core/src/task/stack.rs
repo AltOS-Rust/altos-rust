@@ -10,6 +10,7 @@ use alloc::boxed::Box;
 use arch;
 
 #[repr(C)]
+#[derive(Debug)]
 pub struct Stack {
   ptr: *const usize,
   base: *const usize,
@@ -44,7 +45,7 @@ impl Stack {
 
   pub fn depth(&self) -> usize { self.depth }
 
-  pub unsafe fn ptr(&self) -> Volatile<usize> {
+  unsafe fn ptr(&self) -> Volatile<usize> {
     Volatile::new(self.ptr)
   }
 }
@@ -93,3 +94,31 @@ impl GuardedStack {
   }
 }
 */
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn stack_allocates_correct_size() {
+    let stack = Stack::new(1024);
+    let size = stack.ptr as usize - stack.base as usize;
+
+    assert_eq!(size, stack.depth);
+  }
+
+  #[test]
+  fn check_stack_overflow_no_overflow() {
+    let stack = Stack::new(1024);
+    
+    assert_not!(stack.check_overflow());
+  }
+
+  #[test]
+  fn check_stack_overflow_yes_overflow() {
+    let mut stack = Stack::new(1024);
+    stack.ptr = unsafe { stack.ptr.offset(-1025) };
+
+    assert!(stack.check_overflow());
+  }
+}

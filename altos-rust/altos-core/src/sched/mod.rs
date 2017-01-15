@@ -7,7 +7,7 @@
 //!
 //! This module contains the code for the scheduler and initialization.
 
-use task::{self, TaskControl, Priority, State};
+use task::{self, TaskControl, Delay, Priority, State};
 use queue::{SyncQueue, Node};
 use alloc::boxed::Box;
 use core::ops::Index;
@@ -26,6 +26,7 @@ pub static PRIORITY_QUEUES: [SyncQueue<TaskControl>; NUM_PRIORITIES] = [SyncQueu
                                                                     SyncQueue::new(), 
                                                                     SyncQueue::new(), 
                                                                     SyncQueue::new()];
+pub static SLEEP_QUEUE: SyncQueue<TaskControl> = SyncQueue::new();
 pub static DELAY_QUEUE: SyncQueue<TaskControl> = SyncQueue::new();
 pub static OVERFLOW_DELAY_QUEUE: SyncQueue<TaskControl> = SyncQueue::new();
 
@@ -41,13 +42,13 @@ impl Index<Priority> for [SyncQueue<TaskControl>] {
 /// publicly so that the compiler doesn't optimize it away when compiling for release.
 #[no_mangle]
 #[doc(hidden)]
-pub unsafe fn switch_context() {
+pub fn switch_context() {
   /*
   if !is_kernel_running() {
     panic!("switch_context - This function should only get called from kernel code!");
   }
   */
-  match CURRENT_TASK.take() {
+  match unsafe { CURRENT_TASK.take() } {
     Some(mut running) => {
       if running.destroy {
         drop(running);
@@ -58,15 +59,16 @@ pub unsafe fn switch_context() {
           panic!("switch_context - The current task's stack overflowed!");
         }
         if running.state == State::Blocked {
-          if running.overflowed {
-            OVERFLOW_DELAY_QUEUE.enqueue(running);
-          }
-          else {
-            DELAY_QUEUE.enqueue(running);
+          match running.delay_type {
+            Delay::Timeout => DELAY_QUEUE.enqueue(running),
+            Delay::Overflowed => OVERFLOW_DELAY_QUEUE.enqueue(running),
+            Delay::Sleep => SLEEP_QUEUE.enqueue(running),
+            Delay::Invalid => panic!("switch_context - Running task delay type was not set when switched to Blocked!"),
           }
         }
         else {
           running.state = State::Ready;
+          running.delay_type = Delay::Invalid;
           PRIORITY_QUEUES[queue_index].enqueue(running);
         }
       }
@@ -79,7 +81,7 @@ pub unsafe fn switch_context() {
             }
             else {
               new_task.state = State::Running;
-              CURRENT_TASK = Some(new_task);
+              unsafe { CURRENT_TASK = Some(new_task) };
               break 'main;
             }
           }
@@ -104,4 +106,114 @@ pub fn start_scheduler() {
       debug_assert!(CURRENT_TASK.is_some());
       arch::start_first_task();
     }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use test;
+
+  #[test]
+  fn test_start_scheduler() {
+    let _g = test::set_up();
+    assert!(test::current_task().is_none());
+    test::create_and_schedule_test_task(512, Priority::Normal, "scheduler test");
+    start_scheduler();
+    assert!(test::current_task().is_some());
+  }
+
+  #[test]
+  fn test_scheduler_round_robin() {
+    let _g = test::set_up();
+    assert!(test::current_task().is_none());
+    let handle_1 = test::create_and_schedule_test_task(512, Priority::Normal, "test task 1");
+    let handle_2 = test::create_and_schedule_test_task(512, Priority::Normal, "test task 2");
+    start_scheduler();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+
+    switch_context();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+    switch_context();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+  }
+
+  #[test]
+  fn test_scheduler_higher_first() {
+    let _g = test::set_up();
+    assert!(test::current_task().is_none());
+    let _handle_1 = test::create_and_schedule_test_task(512, Priority::Normal, "test task 1");
+    let handle_2 = test::create_and_schedule_test_task(512, Priority::Critical, "test task 2");
+    start_scheduler();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+    switch_context();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+    switch_context();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+  }
+
+  #[test]
+  fn test_scheduler_lower_if_higher_blocked() {
+    let _g = test::set_up();
+    assert!(test::current_task().is_none());
+    let handle_1 = test::create_and_schedule_test_task(512, Priority::Normal, "test task 1");
+    let handle_2 = test::create_and_schedule_test_task(512, Priority::Critical, "test task 2");
+    start_scheduler();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+    test::current_task().unwrap().state = State::Blocked;
+    test::current_task().unwrap().delay_type = Delay::Timeout;
+
+    switch_context();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+
+    switch_context();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+  }
+
+  #[test]
+  fn test_scheduler_doesnt_schedule_destroyed_tasks() {
+    let _g = test::set_up();
+    assert!(test::current_task().is_none());
+    let mut handle_1 = test::create_and_schedule_test_task(512, Priority::Normal, "test task 1");
+    let mut handle_2 = test::create_and_schedule_test_task(512, Priority::Normal, "test task 2");
+    let handle_3 = test::create_and_schedule_test_task(512, Priority::Normal, "test task 3");
+    start_scheduler();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+
+    switch_context();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+    handle_1.destroy();
+    
+    switch_context();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_3.tid(), Ok(test::current_task().unwrap().tid()));
+
+    // Since task 1 was destroyed, we shouldn't schedule it
+    switch_context();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+    handle_2.destroy();
+
+    // Now we should only schedule task 3
+    switch_context();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_3.tid(), Ok(test::current_task().unwrap().tid()));
+    
+    switch_context();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_3.tid(), Ok(test::current_task().unwrap().tid()));
+  }
 }

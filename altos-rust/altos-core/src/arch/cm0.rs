@@ -6,6 +6,7 @@
 use volatile::Volatile;
 use task::args::Args;
 use alloc::boxed::Box;
+use syscall;
 
 pub fn yield_cpu() {
   const ICSR_ADDR: usize = 0xE000_ED04;
@@ -103,10 +104,10 @@ pub fn end_critical(primask: usize) {
   }
 }
 
-fn exit_error() {
+fn exit_error() -> ! {
   unsafe {
     #[cfg(target_arch="arm")]
     asm!("bkpt");
-    loop{}
+    syscall::exit();
   }
 }

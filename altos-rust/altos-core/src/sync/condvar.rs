@@ -85,3 +85,135 @@ impl Drop for CondVar {
   }
 }
 */
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use sync::Mutex;
+  use task::State;
+  use sched;
+  use syscall;
+  use test;
+
+  #[test]
+  fn test_condvar_smoke() {
+    let _g = test::set_up();
+    let condvar = CondVar::new();
+    let mutex = Mutex::new(());
+
+    let (handle_1, handle_2) = test::create_two_tasks();
+    sched::start_scheduler();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+
+    // Because these mutex locks don't actually put the running thread to sleep we need to simulate
+    // two tasks running in parallel and watch what the current task is to see which is 'running'
+    let mut guard = mutex.lock();
+
+    // We should be in task 2 after the wait
+    guard = condvar.wait(guard);
+    assert_eq!(handle_1.state(), Ok(State::Blocked));
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+    // Task 1 should be sleeping until the notification, lets context switch a few times...
+    syscall::system_tick();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+    syscall::system_tick();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+    syscall::system_tick();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+    // This notification should wake up task 1, but we haven't context switched yet
+    condvar.notify_all();
+    assert_ne!(handle_1.state(), Ok(State::Blocked));
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+    // Now we should be back in task 1
+    syscall::system_tick();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+
+    drop(guard);
+  }
+
+  #[test]
+  #[should_panic]
+  fn test_condvar_using_two_mutexes_panics() {
+    let _g = test::set_up();
+    let condvar = CondVar::new();
+    let mutex1 = Mutex::new(());
+    let mutex2 = Mutex::new(());
+
+    let guard1 = mutex1.lock();
+    let guard2 = mutex2.lock();
+
+    condvar.wait(guard1);
+    condvar.wait(guard2);
+  }
+
+  #[test]
+  fn test_condvar_notify_wakes_all_tasks() {
+    let _g = test::set_up();
+    let condvar = CondVar::new();
+    let mutex = Mutex::new(());
+
+    let (handle_1, handle_2) = test::create_two_tasks();
+    let (handle_3, handle_4) = test::create_two_tasks();
+    sched::start_scheduler();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+
+    // See smoke test for details
+    let mut guard = mutex.lock();
+    // Task 1 waits on condvar
+    guard = condvar.wait(guard);
+    assert_eq!(handle_1.state(), Ok(State::Blocked));
+    // Task 2 waits on condvar
+    guard = condvar.wait(guard);
+    assert_eq!(handle_2.state(), Ok(State::Blocked));
+    // Task 3 waits on condvar
+    guard = condvar.wait(guard);
+    assert_eq!(handle_3.state(), Ok(State::Blocked));
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_4.tid(), Ok(test::current_task().unwrap().tid()));
+
+    // Only Task 4 should be getting scheduled
+    syscall::system_tick();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_4.tid(), Ok(test::current_task().unwrap().tid()));
+    syscall::system_tick();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_4.tid(), Ok(test::current_task().unwrap().tid()));
+    syscall::system_tick();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_4.tid(), Ok(test::current_task().unwrap().tid()));
+
+    // Wake everyone waiting on this condvar up
+    condvar.notify_all();
+    assert_ne!(handle_1.state(), Ok(State::Blocked));
+    assert_ne!(handle_2.state(), Ok(State::Blocked));
+    assert_ne!(handle_3.state(), Ok(State::Blocked));
+    assert_ne!(handle_4.state(), Ok(State::Blocked));
+
+    // All tasks should be able to be scheduled now
+    syscall::system_tick();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+    syscall::system_tick();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+    syscall::system_tick();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_3.tid(), Ok(test::current_task().unwrap().tid()));
+    syscall::system_tick();
+    assert!(test::current_task().is_some());
+    assert_eq!(handle_4.tid(), Ok(test::current_task().unwrap().tid()));
+
+    drop(guard);
+  }
+}

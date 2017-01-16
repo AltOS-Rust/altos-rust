@@ -22,6 +22,7 @@ cargo_args = --target $(target)
 test_dependencies = altos_core \
 										arm \
 										volatile \
+										cm0_atomic \
 
 # --lib flag only runs the unit test suite, doc tests are currently and issue for cross-compiled 
 #  platforms. See: https://github.com/rust-lang/cargo/issues/1789

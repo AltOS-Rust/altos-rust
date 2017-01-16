@@ -7,55 +7,18 @@
 #![feature(const_fn)]
 #![no_std]
 
+#[cfg(not(test))]
+#[path="arm.rs"]
+#[macro_use]
+mod macros;
+
+#[cfg(test)]
+#[path="test.rs"]
+#[macro_use]
+mod macros;
+
 use core::cell::UnsafeCell;
 use core::ops::{Add, Sub, BitAnd, BitOr, BitXor};
-
-macro_rules! start_critical {
-  ($var:ident) => {{
-    unsafe {
-      #![cfg(target_arch="arm")]
-      asm!(
-        concat!(
-          "mrs $0, PRIMASK\n",
-          "cpsid i\n")
-        : "=r"($var)
-        : /* no inputs */
-        : /* no clobbers */
-        : "volatile");
-    }
-  }}
-}
-
-macro_rules! end_critical {
-  ($var:ident) => {{
-    unsafe {
-      #![cfg(target_arch="arm")]
-      asm!("msr PRIMASK, $0"
-        : /* no outputs */
-        : "r"($var)
-        : /* no clobbers */
-        : "volatile");
-    }
-  }}
-}
-
-macro_rules! atomic {
-  { $( $code:expr );*; } => {{
-    let primask: u32;
-    start_critical!(primask);
-    $(
-      $code;
-    )*
-    end_critical!(primask);
-  }};
-  { $last:expr } => {{
-    let primask: u32;
-    start_critical!(primask);
-    let result = $last;
-    end_critical!(primask);
-    result
-  }}
-}
 
 #[derive(Copy, Clone)]
 pub enum Ordering {
@@ -341,7 +304,7 @@ impl<T: Copy + BitXor<Output=T>> Atomic<T> {
 #[cfg(test)]
 mod tests {
   // As a side note, these operations are not actually atomic when compiled 
-  // for anything other than ARM
+  // for anything other than single CPU ARM
   use super::{Atomic, Ordering};
 
   #[test]

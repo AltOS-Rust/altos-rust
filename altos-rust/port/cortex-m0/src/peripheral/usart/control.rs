@@ -54,6 +54,14 @@ impl USART_CR {
     pub fn clear_stop_bits(&self) {
         self.cr2.clear_stop_bits();
     }
+
+    pub fn enable_over8(&self) {
+        self.cr1.set_over8(true);
+    }
+
+    pub fn disable_over8(&self) {
+        self.cr1.set_over8(false);
+    }
 }
 
 // ------------------------------------
@@ -163,6 +171,17 @@ impl CR1 {
             let mut reg = self.addr();
             *reg &= !(CR1_PCE | CR1_PS);
             *reg |= mask;
+        }
+    }
+
+    // Sets oversampling by 16 (0) or by 8 (1)
+    fn set_over8(&self, enable: bool) {
+        unsafe {
+            let mut reg = self.addr();
+            *reg &= !(CR1_OVER8);
+            if enable {
+                *reg |= CR1_OVER8;
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 // Daniel Seitz and RJ Russell
 
 use super::super::Register;
+use super::defs::*;
 
 #[derive(Copy, Clone)]
 pub struct USART_BRR {
@@ -32,6 +33,6 @@ impl Register for BRR {
     }
 
     fn mem_offset(&self) -> u32 {
-        0x0C
+        BRR_offset
     }
 }

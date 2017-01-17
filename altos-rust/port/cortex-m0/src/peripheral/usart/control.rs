@@ -62,6 +62,10 @@ impl USART_CR {
     pub fn disable_over8(&self) {
         self.cr1.set_over8(false);
     }
+
+    pub fn set_hardware_flow_control(&self, hfc: HFC) {
+        self.cr3.set_hardware_flow_control(hfc);
+    }
 }
 
 // ------------------------------------
@@ -242,9 +246,20 @@ impl CR2 {
     }
 }
 
+// ------------------------------------
+/// CR3
+// ------------------------------------
+
 #[derive(Copy, Clone)]
 struct CR3 {
     base_addr: u32,
+}
+
+pub enum HFC {
+    NONE,
+    RTS,
+    CTS,
+    RTS_CTS,
 }
 
 impl Register for CR3 {
@@ -258,5 +273,22 @@ impl Register for CR3 {
 
     fn mem_offset(&self) -> u32 {
         CR3_offset
+    }
+}
+
+impl CR3 {
+    fn set_hardware_flow_control(&self, hfc: HFC) {
+        let mask = match hfc {
+            HFC::NONE => !(CR3_RTSE | CR3_CTSE),
+            HFC::RTS => CR3_RTSE | !(CR3_CTSE),
+            HFC::CTS => !(CR3_RTSE) | CR3_CTSE,
+            HFC::RTS_CTS => CR3_RTSE | CR3_CTSE,
+        };
+
+        unsafe {
+            let mut reg = self.addr();
+            *reg &= !(CR3_RTSE | CR3_CTSE);
+            *reg |= mask;
+        }
     }
 }

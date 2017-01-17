@@ -35,14 +35,14 @@ pub const CR1_M1:     u32 = 0b1 << 28;
 // ------------------------------------
 // USARTx - CR2 bit definitions
 // ------------------------------------
-pub const CR2_offset: u32 = 0x0000_0004;
+pub const CR2_offset:    u32 = 0x0000_0004;
 // Bits 0 - 3 are reserved and must be kept at reset value.
 pub const CR2_ADDM7:     u32 = 0b1 << 4;
 pub const CR2_LBDL:      u32 = 0b1 << 5;
 pub const CR2_LBDIE:     u32 = 0b1 << 6;
 // Bit 7 is reserved and must be kept at reset value.
 pub const CR2_LBCL:      u32 = 0b1 << 8;
-pub const CR2_LBCL:      u32 = 0b1 << 9;
+pub const CR2_CPHA:      u32 = 0b1 << 9;
 pub const CR2_CPOL:      u32 = 0b1 << 10;
 pub const CR2_CLKEN:     u32 = 0b1 << 11;
 pub const CR2_STOP_BIT0: u32 = 0b1 << 12;
@@ -63,6 +63,8 @@ pub const CR2_ADD1:      u32 = 0b1111 << 28; // This might need to change
 // ------------------------------------
 // USARTx - CR3 bit definitions
 pub const CR3_offset: u32 = 0x0000_0008;
+pub const CR3_RTSE:   u32 = 0b1 << 8;
+pub const CR3_CTSE:   u32 = 0b1 << 9;
 
 // ------------------------------------
 // USARTx - BRR bit definitions

@@ -10,25 +10,23 @@ _stack_start = ORIGIN(RAM) + LENGTH(RAM);
 _stack_end = _stack_start - stack_size;
 _heap_end = _stack_end;
 
-ENTRY(init);
+ENTRY(_reset);
 
 SECTIONS
 {
-  .vector_table ORIGIN(FLASH) :
-  {
-    LONG(_stack_start)
-    KEEP(*(.reset))
-    KEEP(*(.exceptions))
-  } > FLASH
-
   .text :
   {
-    . = ALIGN(4);
-    *(.text)
-    *(.text*)
-    *(.rodata)
-    *(.rodata*)
-    . = ALIGN(4);
+    /* Vector Table */
+    LONG(_stack_start);
+    LONG(_reset + 1);
+    KEEP(*(.rodata._EXCEPTIONS));
+
+    /* Reset Handler */
+    _reset = .;
+    *(.text._reset);
+
+    *(.text*);
+    *(.rodata*);
     _etext = .;
   } > FLASH
 

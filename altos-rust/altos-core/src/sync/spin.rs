@@ -82,6 +82,7 @@ impl<T: ?Sized> SpinMutex<T> {
     self.obtain_lock();
     SpinGuard {
       lock: &self.lock,
+      // UNSAFE: access to data is controlled by lock
       data: unsafe { &mut *self.data.get() },
     }
   }
@@ -111,6 +112,7 @@ impl<T: ?Sized> SpinMutex<T> {
       Some(
         SpinGuard {
           lock: &self.lock,
+          // UNSAFE: executing this branch means we've obtained the lock
           data: unsafe { &mut *self.data.get() },
         }
       )

@@ -48,6 +48,7 @@ pub fn switch_context() {
     panic!("switch_context - This function should only get called from kernel code!");
   }
   */
+  // UNSAFE: Accessing CURRENT_TASK
   match unsafe { CURRENT_TASK.take() } {
     Some(mut running) => {
       if running.destroy {
@@ -81,6 +82,7 @@ pub fn switch_context() {
             }
             else {
               new_task.state = State::Running;
+              // UNSAFE: Accessing CURRENT_TASK
               unsafe { CURRENT_TASK = Some(new_task) };
               break 'main;
             }
@@ -95,17 +97,17 @@ pub fn switch_context() {
 /// Start running the first task in the queue
 pub fn start_scheduler() {
     task::init_idle_task();
-    unsafe {
-      for i in Priority::all() {
-        if let Some(mut task) = PRIORITY_QUEUES[i].dequeue() {
-          task.state = State::Running;
-          CURRENT_TASK = Some(task);
-          break;
-        }
+    for i in Priority::all() {
+      if let Some(mut task) = PRIORITY_QUEUES[i].dequeue() {
+        task.state = State::Running;
+        // UNSAFE: Accessing CURRENT_TASK
+        unsafe { CURRENT_TASK = Some(task) };
+        break;
       }
-      debug_assert!(CURRENT_TASK.is_some());
-      arch::start_first_task();
     }
+    // UNSAFE: Accessing CURRENT_TASK
+    debug_assert!(unsafe { CURRENT_TASK.is_some() });
+    arch::start_first_task();
 }
 
 #[cfg(test)]

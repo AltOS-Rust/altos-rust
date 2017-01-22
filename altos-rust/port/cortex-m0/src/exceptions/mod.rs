@@ -7,11 +7,10 @@ use arm::asm::bkpt;
 use altos_core::syscall;
 use time;
 
-#[link_section = ".exceptions"]
 #[cfg(not(test))]
 #[cfg(target_arch="arm")]
-#[no_mangle]
-pub static EXCEPTIONS: [Option<fn()>; 14] = [Some(default_handler),  // NMI
+#[export_name="_EXCEPTIONS"]
+pub static EXCEPTIONS: [Option<extern "C" fn()>; 14] = [Some(default_handler),  // NMI
                                               Some(default_handler),  // Hard Fault
                                               Some(default_handler),  // Memory Management Fault
                                               Some(default_handler),  // Bus Fault
@@ -28,11 +27,11 @@ pub static EXCEPTIONS: [Option<fn()>; 14] = [Some(default_handler),  // NMI
                                               
 
 
-fn default_handler() {
+extern "C" fn default_handler() {
     unsafe { bkpt(); }
 }
 
-fn systick_handler() {
+extern "C" fn systick_handler() {
   syscall::system_tick();
   time::system_tick();
 }
@@ -40,7 +39,7 @@ fn systick_handler() {
 /// Tell OS to context switch tasks, this should be set to the lowest priority so that all other
 /// interrupts are serviced first
 #[naked]
-fn pend_sv_handler() {
+extern "C" fn pend_sv_handler() {
   unsafe {
     #[cfg(target_arch="arm")]
     asm!(

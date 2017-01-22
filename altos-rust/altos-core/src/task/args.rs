@@ -89,6 +89,7 @@ impl ArgsBuilder {
     if self.len >= self.cap {
       panic!("ArgsBuilder::add_arg - added too many arguments!");
     }
+    // UNSAFE: We are keeping track of the length ourselves, so we know we won't exceed capacity
     unsafe { 
       let cell = self.vec.get_unchecked_mut(self.len);
       *cell = Box::into_raw(arg) as usize;
@@ -118,6 +119,7 @@ impl ArgsBuilder {
     if self.len >= self.cap {
       panic!("ArgsBuilder::add_copy - added too many arguments!");
     }
+    // UNSAFE: We are keeping track of the length ourselves, so we know we won't exceed capacity
     unsafe {
       let cell = self.vec.get_unchecked_mut(self.len);
       *cell = arg;
@@ -142,6 +144,8 @@ impl ArgsBuilder {
   /// let finalized_args = args.finalize();
   /// ```
   pub fn finalize(mut self) -> Args {
+    // UNSAFE: We've kept track of how many args we've added, so this inner length is known to be
+    // correct
     unsafe { self.vec.set_len(self.len) };
     Args::new(self.vec)  
   }
@@ -156,6 +160,7 @@ impl ArgsBuilder {
 /// uniform.
 #[derive(Debug)]
 pub struct Args {
+  // TODO: Turn into boxed slice?
   args: Vec<RawPtr>,
 }
 

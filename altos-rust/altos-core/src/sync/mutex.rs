@@ -88,6 +88,7 @@ impl<T: ?Sized> Mutex<T> {
     MutexGuard {
       wchan: self.wchan(),
       lock: &self.lock,
+      // UNSAFE: lock controls access to data, so only one thread can ever get this &mut
       data: unsafe { &mut *self.data.get() },
     }
   }
@@ -118,6 +119,7 @@ impl<T: ?Sized> Mutex<T> {
         MutexGuard {
           wchan: self.wchan(),
           lock: &self.lock,
+          // UNSAFE: lock controls access to data, we only execute this branch if we've acquired it
           data: unsafe { &mut *self.data.get() },
         }
       )
@@ -130,6 +132,7 @@ impl<T: ?Sized> Mutex<T> {
 
 #[doc(hidden)]
 pub fn mutex_from_guard<'a, T>(guard: &MutexGuard<'a, T>) -> &'a Mutex<T> {
+  // UNSAFE: wchan is the address of the parent mutex, so we know it is a valid reference
   unsafe { &*(guard.wchan as *const Mutex<T>) }
 }
 

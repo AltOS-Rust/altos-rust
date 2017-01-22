@@ -157,25 +157,23 @@ pub fn sleep_for(wchan: usize, delay: usize) {
   // give up its time slice for no reason
   let _g = CriticalSection::begin();
   // UNSAFE: Accessing CURRENT_TASK
-  unsafe {
-    if let Some(current) = CURRENT_TASK.as_mut() {
-      let ticks = tick::get_tick();
-      current.delay_type = if delay == 0 && wchan != FOREVER_CHAN {
-        Delay::Sleep
-      }
-      else {
-        Delay::Timeout
-      };
-      current.wchan = wchan;
-      current.state = State::Blocked;
-      current.delay = ticks.wrapping_add(delay);
-      if current.delay < ticks {
-        current.delay_type = Delay::Overflowed;
-      }
+  if let Some(current) = unsafe { CURRENT_TASK.as_mut() } {
+    let ticks = tick::get_tick();
+    current.delay_type = if delay == 0 && wchan != FOREVER_CHAN {
+      Delay::Sleep
     }
     else {
-      panic!("sleep_for - current task doesn't exist!");
+      Delay::Timeout
+    };
+    current.wchan = wchan;
+    current.state = State::Blocked;
+    current.delay = ticks.wrapping_add(delay);
+    if current.delay < ticks {
+      current.delay_type = Delay::Overflowed;
     }
+  }
+  else {
+    panic!("sleep_for - current task doesn't exist!");
   }
   sched_yield();
 }

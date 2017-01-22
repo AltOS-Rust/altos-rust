@@ -53,6 +53,7 @@ impl<T> Queue<T> {
     let raw_tail: *mut _ = &mut *new_tail;
 
     if !self.tail.is_null() {
+      // UNSAFE: null check before dereferencing
       unsafe {
         (*self.tail).next = Some(new_tail);
       }
@@ -152,6 +153,7 @@ impl<T> Queue<T> {
   /// ```
   pub fn append(&mut self, mut queue: Queue<T>) {
     if !self.tail.is_null() {
+      // UNSAFE: null check before dereferencing
       unsafe {
         (*self.tail).next = queue.head.take();
       }

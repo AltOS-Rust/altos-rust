@@ -451,16 +451,25 @@ impl TaskHandle {
   /// 
   /// ```
   pub fn is_valid(&self) -> bool {
+    // UNSAFE: Yes, potentially we're reading from a dangling pointer (if the task has been freed,
+    // for instance), but there should be specific values at these locations, and if they aren't
+    // there then at least we'll know not to do anymore reads.
     let (tid, valid) = unsafe { ((*self.0).tid, (*self.0).valid) };
     let tid_mask = tid & 0xFF;
     valid == VALID_TASK + tid_mask
   }
 
   fn task_ref(&self) -> &TaskControl {
+    // UNSAFE: This is used internally to the TaskHandle, and is only ever called after checking if
+    // the handle is still valid. All operations are within critical sections and so can be
+    // considered atomic
     unsafe { &*self.0 }
   }
 
   fn task_ref_mut(&mut self) -> &mut TaskControl {
+    // UNSAFE: This is used internally to the TaskHandle, and is only ever called after checking if
+    // the handle is still valid. All operations are within critical sections and so can be
+    // considered atomic
     unsafe { &mut *(self.0 as *mut TaskControl) }
   }
 }

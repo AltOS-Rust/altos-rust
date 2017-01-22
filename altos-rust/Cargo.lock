@@ -21,6 +21,9 @@ version = "0.1.0"
 [[package]]
 name = "bump_allocator"
 version = "0.1.0"
+dependencies = [
+ "cm0_atomic 0.1.0",
+]
 
 [[package]]
 name = "cm0_atomic"

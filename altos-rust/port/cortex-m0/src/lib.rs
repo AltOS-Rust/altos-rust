@@ -29,8 +29,6 @@ use peripheral::rcc;
 use peripheral::systick;
 
 #[cfg(target_arch="arm")]
-pub use vector_table::RESET;
-#[cfg(target_arch="arm")]
 pub use exceptions::EXCEPTIONS;
 
 use altos_core::volatile;
@@ -80,7 +78,7 @@ extern {
   fn application_entry() -> !;
 }
 
-#[no_mangle]
+#[export_name="_reset"]
 pub fn init() -> ! {
   // TODO: set pendsv and systick interrupts to lowest priority
   unsafe { arm::asm::disable_interrupts() };
@@ -92,14 +90,6 @@ pub fn init() -> ! {
   init_ticks();
 
   unsafe { application_entry() };
-}
-
-// TODO: Do we want to keep this linker section or just expose `init` as a special symbol?
-#[cfg(target_arch="arm")]
-mod vector_table {
-  #[link_section = ".reset"]
-  #[no_mangle]
-  pub static RESET: fn() -> ! = ::init;
 }
 
 fn init_data_segment() {

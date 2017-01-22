@@ -2,77 +2,68 @@
 #![feature(allocator)]
 #![feature(const_fn)]
 #![feature(asm)]
+#![feature(cfg_target_has_atomic)]
 
-#![allocator]
+#![cfg_attr(not(test), allocator)]
 #![no_std]
+
+#[cfg(test)]
+extern crate std;
+
+#[cfg(all(target_arch="arm", not(target_has_atomic="ptr")))]
+extern crate cm0_atomic as atomic;
+
+#[cfg(target_has_atomic="ptr")]
+use core::sync::atomic as atomic;
+use atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 
 static mut BUMP_ALLOCATOR: BumpAllocator = BumpAllocator::new();
 
-/// Call this before doing any heap allocation
+/// Call this before doing any heap allocation. This MUST only be called once
 pub fn init_heap(heap_start: usize, heap_size: usize) {
   unsafe { BUMP_ALLOCATOR.init(heap_start, heap_size) };
 }
 
-struct BumpAllocator {
+pub struct BumpAllocator {
   heap_start: usize,
   heap_size: usize,
-  next: usize,
+  next: AtomicUsize,
 }
 
 impl BumpAllocator {
   /// Create a new bump allocator, which uses the memory in the range 
   /// [heap_start..heap_start + heap_size).
-  const fn new() -> Self {
+  pub const fn new() -> Self {
     BumpAllocator {
       heap_start: 0,
       heap_size: 0,
-      next: 0,
+      next: ATOMIC_USIZE_INIT,
     }
   }
 
-  fn init(&mut self, heap_start: usize, heap_size: usize) {
+  pub fn init(&mut self, heap_start: usize, heap_size: usize) {
     self.heap_start = heap_start;
     self.heap_size = heap_size;
-    self.next = heap_start;
+    self.next.store(heap_start, Ordering::Relaxed);
   }
 
   /// Allocates a block of memory with the given size and alignment.
   #[inline(never)]
-  fn allocate(&mut self, size: usize, align: usize) -> Option<*mut u8> {
-    // FIXME: Hacky way to ensure thread safety, only works on arm single threaded processor, come
-    // back and fix this in the future if we want programs to be able to allocate heap memory at
-    // runtime, or just use a different allocator
-    let primask: usize;
-    #[cfg(target_arch="arm")]
-    unsafe {
-      asm!(
-        concat!(
-          "mrs $0, PRIMASK\n",
-          "cpsid i\n")
-        : "=r"(primask)
-        : /* no inputs */
-        : /* no clobbers */
-        : "volatile");
-    }
-    let alloc_start = align_up(self.next, align);
-    let alloc_end = alloc_start.saturating_add(size);
+  pub fn allocate(&self, size: usize, align: usize) -> Option<*mut u8> {
+    loop {
+      let old_next = self.next.load(Ordering::SeqCst);
+      let alloc_start = align_up(old_next, align);
+      let alloc_end = alloc_start.saturating_add(size);
 
-    let result = if alloc_end <= self.heap_start + self.heap_size {
-      self.next = alloc_end;
-      Some(alloc_start as *mut u8)
+      if alloc_end <= self.heap_start + self.heap_size {
+        if self.next.compare_and_swap(old_next, alloc_end, Ordering::SeqCst) == old_next {
+          return Some(alloc_start as *mut u8)
+        }
+      }
+      else {
+        return None
+      }
     }
-    else {
-      None
-    };
-    #[cfg(target_arch="arm")]
-    unsafe {
-      asm!("msr PRIMASK, $0"
-        : /* no outputs */
-        : "r"(primask)
-        : /* no clobbers */
-        : "volatile");
-    }
-    result
   }
 }
 
@@ -97,6 +88,7 @@ pub fn align_up(addr: usize, align: usize) -> usize {
 }
 
 #[no_mangle]
+#[cfg(not(test))]
 pub extern fn __rust_allocate(size: usize, align: usize) -> *mut u8 {
   unsafe {
     BUMP_ALLOCATOR.allocate(size, align).expect("out of memory")
@@ -104,21 +96,25 @@ pub extern fn __rust_allocate(size: usize, align: usize) -> *mut u8 {
 }
 
 #[no_mangle]
+#[cfg(not(test))]
 pub extern fn __rust_deallocate(_ptr: *mut u8, _size: usize, _align: usize) {
   // leak it...
 }
 
 #[no_mangle]
+#[cfg(not(test))]
 pub extern fn __rust_usable_size(size: usize, _align: usize) -> usize {
   size
 }
 
 #[no_mangle]
+#[cfg(not(test))]
 pub extern fn __rust_reallocate_inplace(_ptr: *mut u8, size: usize, _new_size: usize, _align: usize) -> usize {
   size
 }
 
 #[no_mangle]
+#[cfg(not(test))]
 pub extern fn __rust_reallocate(ptr: *mut u8, size: usize, new_size: usize, align: usize) -> *mut u8 {
   use core::{ptr, cmp};
 
@@ -126,4 +122,49 @@ pub extern fn __rust_reallocate(ptr: *mut u8, size: usize, new_size: usize, alig
   unsafe { ptr::copy(ptr, new_ptr, cmp::min(size, new_size)) };
   __rust_deallocate(ptr, size, align);
   new_ptr
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use std::sync::Arc;
+  use std::vec::Vec;
+ 
+  #[test]
+  fn test_alloc_smoke() {
+    let mut allocator = BumpAllocator::new();
+    allocator.init(0, 10 * 1024 * 1024);
+    assert!(allocator.allocate(1024, 1).is_some());
+    assert!(allocator.allocate(1024, 1).is_some());
+    assert!(allocator.allocate(1024 * 1024, 1).is_some());
+    assert_eq!(allocator.next.load(Ordering::Relaxed), 1024 * 1024 + 2048);
+  }
+
+  #[test]
+  fn test_thread_safety() {
+    let mut allocator = BumpAllocator::new();
+    let mut handles = Vec::with_capacity(10);
+    allocator.init(0, 10 * 1024 * 1024);
+    let alloc_arc = Arc::new(allocator);
+    for _ in 0..10 {
+      let alloc = alloc_arc.clone();
+      handles.push(std::thread::spawn(move|| {
+        for _ in 0..1000 {
+          alloc.allocate(1024, 1);
+        }
+      }));
+    }
+    for handle in handles {
+      handle.join().unwrap();
+    }
+    assert_eq!(alloc_arc.next.load(Ordering::Relaxed), 10 * 1000 * 1024);
+  }
+
+  #[test]
+  fn test_oom() {
+    let mut allocator = BumpAllocator::new();
+    allocator.init(0, 1024);
+    assert!(allocator.allocate(1024, 1).is_some());
+    assert!(allocator.allocate(1024, 1).is_none());
+  }
 }

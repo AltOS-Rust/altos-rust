@@ -59,6 +59,10 @@ impl UsartCR {
         self.cr1.set_over8(false);
     }
 
+    pub fn get_over8(&self) -> bool {
+        self.cr1.get_over8()
+    }
+
     pub fn set_hardware_flow_control(&self, hfc: HardwareFlowControl) {
         self.cr3.set_hardware_flow_control(hfc);
     }
@@ -181,6 +185,12 @@ impl CR1 {
             if enable {
                 *reg |= CR1_OVER8;
             }
+        }
+    }
+
+    fn get_over8(&self) -> bool {
+        unsafe {
+            *self.addr() & CR1_OVER8 != 0
         }
     }
 }

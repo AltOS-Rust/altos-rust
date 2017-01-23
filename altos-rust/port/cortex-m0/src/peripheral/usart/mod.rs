@@ -88,14 +88,14 @@ impl USART {
     }
 
     pub fn set_baud_rate(&self, baud_rate: BaudRate, clock_rate: u32) {
-        self.baud.set_baud_rate(baud_rate, clock_rate);
+        self.baud.set_baud_rate(baud_rate, clock_rate, self.control.get_over8());
     }
 }
 
 pub fn init() {
     let rcc = rcc::rcc();
     rcc.enable_peripheral(rcc::Peripheral::USART1);
-
+/* TODO: Turn this back on at some point in the future.
     gpio::GPIO::enable(gpio::Group::A);
     let mut pa9 = gpio::Port::new(9, gpio::Group::A);
     let mut pa10 = gpio::Port::new(10, gpio::Group::A);
@@ -109,18 +109,18 @@ pub fn init() {
     pa10.set_type(gpio::Type::PushPull);
     pa9.set_pull(gpio::Pull::Up);
     pa10.set_pull(gpio::Pull::Up);
-
+*/
     let usart1 = USART::new(USARTx::USART1);
     usart1.disable_usart();
     usart1.set_word_length(WordLength::Eight);
+    usart1.set_mode(Mode::All);
+    usart1.set_parity(Parity::None);
+    usart1.enable_over8();
     usart1.set_hardware_flow_control(HardwareFlowControl::None);
 
-    let cr = rcc.get_system_clock_rate();
-    usart1.set_baud_rate(BaudRate::Rate115200, cr);
 
-    usart1.set_parity(Parity::None);
-    usart1.set_mode(Mode::All);
-    usart1.disable_over8();
+    let cr = rcc.get_system_clock_rate();
+    usart1.set_baud_rate(BaudRate::Rate9600, cr);
 
     usart1.enable_usart();
 }

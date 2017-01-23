@@ -132,7 +132,7 @@ impl CR1 {
     fn set_word_length(&self, length: WordLength) {
         let mask = match length {
             WordLength::Seven => CR1_M1,
-            WordLength::Eight => !(CR1_M1 | CR1_M0),
+            WordLength::Eight => 0,
             WordLength::Nine => CR1_M0,
         };
 
@@ -161,7 +161,7 @@ impl CR1 {
     // Sets parity to even or odd.
     fn set_parity(&self, parity: Parity) {
         let mask = match parity {
-            Parity::None => !(CR1_PS | CR1_PCE),
+            Parity::None => 0,
             Parity::Even => CR1_PCE,
             Parity::Odd => CR1_PS | CR1_PCE,
         };
@@ -219,7 +219,7 @@ impl Register for CR2 {
 impl CR2 {
     fn set_stop_bits(&self, length: Stoplength) {
         let mask = match length {
-            Stoplength::Half => !(CR2_STOP_BIT0 | CR2_STOP_BIT1),
+            Stoplength::Half => 0,
             Stoplength::One => CR2_STOP_BIT1,
             Stoplength::OneAndHalf => CR2_STOP_BIT0,
             Stoplength::Two => CR2_STOP_BIT0 | CR2_STOP_BIT1,
@@ -269,7 +269,7 @@ impl Register for CR3 {
 impl CR3 {
     fn set_hardware_flow_control(&self, hfc: HardwareFlowControl) {
         let mask = match hfc {
-            HardwareFlowControl::None => !(CR3_RTSE | CR3_CTSE),
+            HardwareFlowControl::None => 0,
             HardwareFlowControl::Rts => CR3_RTSE,
             HardwareFlowControl::Cts => CR3_CTSE,
             HardwareFlowControl::RtsCts => CR3_RTSE | CR3_CTSE,

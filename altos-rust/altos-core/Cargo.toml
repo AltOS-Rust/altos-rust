@@ -1,0 +1,20 @@
+[package]
+name = "altos_core"
+version = "0.1.0"
+authors = ["Daniel Seitz <dnseitz@gmail.com>"]
+
+[lib]
+crate-type = ["rlib"]
+
+[features]
+default = ["bump_alloc"]
+
+bump_alloc = ["bump_allocator"]
+cm0 = []
+
+[dependencies]
+bump_allocator = { path = "libs/heap/bump_allocator", optional = true }
+volatile = { path = "../libs/volatile" }
+
+[target.thumbv6m-none-eabi.dependencies]
+cm0_atomic = { path = "libs/cm0_atomic" }

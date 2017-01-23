@@ -1,0 +1,18 @@
+[package]
+name = "cortex_m0"
+version = "0.1.0"
+authors = ["Daniel Seitz <dnseitz@gmail.com>"]
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+#compiler_builtins = { git = "https://github.com/rust-lang-nursery/compiler-builtins" }
+arm = { path = "libs/arm" }
+
+[dependencies.altos_core]
+path = "../../altos-core"
+features = ["cm0"]
+
+#[dependencies.compiler_builtins]
+#git = "https://github.com/rust-lang-nursery/compiler-builtins"

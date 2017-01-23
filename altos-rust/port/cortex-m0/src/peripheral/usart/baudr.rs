@@ -4,25 +4,25 @@ use super::super::Register;
 use super::defs::*;
 
 #[derive(Copy, Clone)]
-pub struct USART_BRR {
+pub struct UsartBRR {
     brr: BRR,
 }
 
-pub enum Baud_Rate {
-    Rate_4800,
-    Rate_9600,
-    Rate_19200,
-    Rate_57600,
-    Rate_115200,
+pub enum BaudRate {
+    Rate4800,
+    Rate9600,
+    Rate19200,
+    Rate57600,
+    Rate115200,
 }
 
-impl USART_BRR {
+impl UsartBRR {
     pub fn new(base_addr: u32) -> Self {
-        USART_BRR { brr: BRR::new(base_addr) }
+        UsartBRR { brr: BRR::new(base_addr) }
     }
 
-    pub fn set_baud_rate(&self, rate: Baud_Rate, clock_rate: u32) {
-        self.brr.set_baud_rate(rate, clock_rate);
+    pub fn set_baud_rate(&self, baud_rate: BaudRate, clock_rate: u32) {
+        self.brr.set_baud_rate(baud_rate, clock_rate);
     }
 }
 
@@ -41,33 +41,22 @@ impl Register for BRR {
     }
 
     fn mem_offset(&self) -> u32 {
-        BRR_offset
+        BRR_OFFSET
     }
 }
 
 impl BRR {
-    fn set_baud_rate(&self, br: Baud_Rate, clock_rate: u32) {
-        let rate = match br {
-            Baud_Rate::Rate_4800 => {
-                clock_rate/4_800
-            },
-            Baud_Rate::Rate_9600 => {
-                clock_rate/9_600
-            },
-            Baud_Rate::Rate_19200 => {
-                clock_rate/19_200
-            },
-            Baud_Rate::Rate_57600 => {
-                clock_rate/57_600
-            },
-            Baud_Rate::Rate_115200 => {
-                clock_rate/115_200
-            },
+    fn set_baud_rate(&self, baud_rate: BaudRate, clock_rate: u32) {
+        let rate = match baud_rate {
+            BaudRate::Rate4800 => clock_rate/4_800,
+            BaudRate::Rate9600 => clock_rate/9_600,
+            BaudRate::Rate19200 => clock_rate/19_200,
+            BaudRate::Rate57600 => clock_rate/57_600,
+            BaudRate::Rate115200 => clock_rate/115_200,
         };
 
         unsafe {
             let mut reg = self.addr();
-            *reg &= ZERO;
             reg.store(rate)
         }
     }

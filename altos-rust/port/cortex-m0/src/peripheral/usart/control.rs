@@ -5,7 +5,7 @@ use super::defs::*;
 
 /// Three USART control registers.
 #[derive(Copy, Clone)]
-pub struct USART_CR {
+pub struct UsartCR {
     cr1: CR1,
     cr2: CR2,
     cr3: CR3,
@@ -14,9 +14,9 @@ pub struct USART_CR {
 // TODO Need to implement a clear mask for each register to ensure that
 // all register bits are set to zero before re-initializing register to
 // necessary values for a specific usart configuration.
-impl USART_CR {
+impl UsartCR {
     pub fn new(base_addr: u32) -> Self {
-        USART_CR {
+        UsartCR {
             cr1: CR1::new(base_addr),
             cr2: CR2::new(base_addr),
             cr3: CR3::new(base_addr),
@@ -27,12 +27,12 @@ impl USART_CR {
         self.cr1.enable_usart(true);
     }
 
-    pub fn is_usart_enabled(&self) -> bool {
-        self.cr1.is_usart_enabled()
-    }
-
     pub fn disable_usart(&self) {
         self.cr1.enable_usart(false);
+    }
+
+    pub fn is_usart_enabled(&self) -> bool {
+        self.cr1.is_usart_enabled()
     }
 
     pub fn set_word_length(&self, length: WordLength) {
@@ -51,10 +51,6 @@ impl USART_CR {
         self.cr2.set_stop_bits(length);
     }
 
-    pub fn clear_stop_bits(&self) {
-        self.cr2.clear_stop_bits();
-    }
-
     pub fn enable_over8(&self) {
         self.cr1.set_over8(true);
     }
@@ -63,7 +59,7 @@ impl USART_CR {
         self.cr1.set_over8(false);
     }
 
-    pub fn set_hardware_flow_control(&self, hfc: HFC) {
+    pub fn set_hardware_flow_control(&self, hfc: HardwareFlowControl) {
         self.cr3.set_hardware_flow_control(hfc);
     }
 }
@@ -81,9 +77,9 @@ pub enum WordLength {
 }
 
 pub enum Mode {
-    Rx,
-    Tx,
-    RxTx,
+    Receive,
+    Transmit,
+    All,
 }
 
 pub enum Parity {
@@ -107,13 +103,13 @@ impl Register for CR1 {
     }
 
     fn mem_offset(&self) -> u32 {
-        ZERO
+        CR1_OFFSET
     }
 }
 
 impl CR1 {
     // Enables and disables USARTx based on bool variable passed in.
-    fn enable_usart(&self, enable: bool) { // TODO: Do I need a return type here??
+    fn enable_usart(&self, enable: bool) {
         unsafe {
             let mut reg = self.addr();
             if enable {
@@ -122,7 +118,6 @@ impl CR1 {
             else {
                 *reg &= !(CR1_UE);
             }
-            // TODO: Do I need to check if it was disabled properly??
         }
     }
 
@@ -151,9 +146,9 @@ impl CR1 {
     // Sets mode for receive(Rx), transmit(Tx) or both(RxTx)
     fn set_mode(&self, mode: Mode) {
         let mask = match mode {
-            Mode::Rx => CR1_RE,
-            Mode::Tx => CR1_TE,
-            Mode::RxTx => (CR1_RE | CR1_TE),
+            Mode::Receive => CR1_RE,
+            Mode::Transmit => CR1_TE,
+            Mode::All => (CR1_RE | CR1_TE),
         };
 
         unsafe {
@@ -198,7 +193,7 @@ impl CR1 {
 pub enum Stoplength {
     Half,
     One,
-    One_and_Half,
+    OneAndHalf,
     Two,
 }
 
@@ -217,17 +212,16 @@ impl Register for CR2 {
     }
 
     fn mem_offset(&self) -> u32 {
-        CR2_offset
+        CR2_OFFSET
     }
 }
 
 impl CR2 {
-    // TODO: Talk about this method vs previous method
     fn set_stop_bits(&self, length: Stoplength) {
         let mask = match length {
             Stoplength::Half => !(CR2_STOP_BIT0 | CR2_STOP_BIT1),
-            Stoplength::One => !(CR2_STOP_BIT0) | CR2_STOP_BIT1,
-            Stoplength::One_and_Half => CR2_STOP_BIT0 | !(CR2_STOP_BIT0),
+            Stoplength::One => CR2_STOP_BIT1,
+            Stoplength::OneAndHalf => CR2_STOP_BIT0,
             Stoplength::Two => CR2_STOP_BIT0 | CR2_STOP_BIT1,
         };
 
@@ -235,13 +229,6 @@ impl CR2 {
             let mut reg = self.addr();
             *reg &= !(CR2_STOP_BIT0 | CR2_STOP_BIT1);
             *reg |= mask;
-        }
-    }
-
-    fn clear_stop_bits(&self) {
-        unsafe {
-            let mut reg = self.addr();
-            *reg &= !(CR2_STOP_BIT0 | CR2_STOP_BIT1);
         }
     }
 }
@@ -255,11 +242,14 @@ struct CR3 {
     base_addr: u32,
 }
 
-pub enum HFC {
-    NONE,
-    RTS,
-    CTS,
-    RTS_CTS,
+pub enum HardwareFlowControl {
+    None,
+    // Request to Send
+    Rts,
+    // Clear to Send
+    Cts,
+    // Both
+    RtsCts,
 }
 
 impl Register for CR3 {
@@ -272,17 +262,17 @@ impl Register for CR3 {
     }
 
     fn mem_offset(&self) -> u32 {
-        CR3_offset
+        CR3_OFFSET
     }
 }
 
 impl CR3 {
-    fn set_hardware_flow_control(&self, hfc: HFC) {
+    fn set_hardware_flow_control(&self, hfc: HardwareFlowControl) {
         let mask = match hfc {
-            HFC::NONE => !(CR3_RTSE | CR3_CTSE),
-            HFC::RTS => CR3_RTSE | !(CR3_CTSE),
-            HFC::CTS => !(CR3_RTSE) | CR3_CTSE,
-            HFC::RTS_CTS => CR3_RTSE | CR3_CTSE,
+            HardwareFlowControl::None => !(CR3_RTSE | CR3_CTSE),
+            HardwareFlowControl::Rts => CR3_RTSE,
+            HardwareFlowControl::Cts => CR3_CTSE,
+            HardwareFlowControl::RtsCts => CR3_RTSE | CR3_CTSE,
         };
 
         unsafe {

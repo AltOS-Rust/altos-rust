@@ -95,7 +95,7 @@ pub fn init() -> ! {
   init_led();
   init_clock();
   init_ticks();
-// TODO  init_usart();
+  init_usart();
 
   unsafe { application_entry() };
 }
@@ -212,3 +212,6 @@ fn init_ticks() {
 
 }
 
+fn init_usart() {
+    peripheral::usart::init();
+}

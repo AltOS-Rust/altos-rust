@@ -30,7 +30,8 @@ pub fn application_entry() -> ! {
   }
 
   kernel::syscall::new_task(blink_1, Args::empty(), 512, Priority::Normal, "blink_1");
-  kernel::syscall::new_task(blink_2, Args::empty(), 512, Priority::Normal, "blink_1");
+  kernel::syscall::new_task(blink_2, Args::empty(), 512, Priority::Normal, "blink_2");
+  kernel::syscall::new_task(blink_sleep, Args::empty(), 512, Priority::Normal, "blink_3");
   kernel::task::start_scheduler();
 
   loop { unsafe { arm::asm::bkpt() }; }
@@ -68,6 +69,19 @@ fn blink_2(_args: &mut Args) {
         led.reset();
         time::delay_ms(500);
       }
+    }
+    drop(guard);
+    kernel::syscall::sched_yield();
+  }
+}
+
+fn blink_sleep(_args: &mut Args) {
+  loop {
+    let guard = LED.lock();
+    {
+      let led = guard.as_ref().unwrap();
+      led.reset();
+      time::delay_ms(2000);
     }
     drop(guard);
     kernel::syscall::sched_yield();

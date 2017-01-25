@@ -10,21 +10,54 @@ use time;
 #[cfg(not(test))]
 #[cfg(target_arch="arm")]
 #[export_name="_EXCEPTIONS"]
-pub static EXCEPTIONS: [Option<extern "C" fn()>; 14] = [Some(default_handler),  // NMI
-                                              Some(default_handler),  // Hard Fault
-                                              Some(default_handler),  // Memory Management Fault
-                                              Some(default_handler),  // Bus Fault
-                                              Some(default_handler),  // Usage Fault
-                                              None,                   // Reserved
-                                              None,                   // Reserved
-                                              None,                   // Reserved
-                                              None,                   // Reserved
-                                              Some(default_handler),  // SVCall
-                                              None,                   // Reserved for Debug
-                                              None,                   // Reserved
-                                              Some(pend_sv_handler),  // PendSV
-                                              Some(systick_handler)]; // SysTick
-                                              
+pub static EXCEPTIONS: [Option<extern "C" fn()>; 46] = [
+                                    Some(default_handler),  // NMI
+                                    Some(default_handler),  // Hard Fault
+                                    Some(default_handler),  // Memory Management Fault
+                                    Some(default_handler),  // Bus Fault
+                                    Some(default_handler),  // Usage Fault
+                                    None,                   // Reserved
+                                    None,                   // Reserved
+                                    None,                   // Reserved
+                                    None,                   // Reserved
+                                    Some(default_handler),  // SVCall
+                                    None,                   // Reserved for Debug
+                                    None,                   // Reserved
+                                    Some(pend_sv_handler),  // PendSV
+                                    Some(systick_handler),  // SysTick
+                                    Some(default_handler),  // Window Watchdog
+                                    Some(default_handler),  // PVD_VDDIO2
+                                    Some(default_handler),  // Real Time Clock
+                                    Some(default_handler),  // Flash global
+                                    Some(default_handler),  // RCC and CRS global
+                                    Some(default_handler),  // EXTI Line[1:0]
+                                    Some(default_handler),  // EXTI Line[3:2]
+                                    Some(default_handler),  // EXTI Line[15:4]
+                                    Some(default_handler),  // Touch Sensing
+                                    Some(default_handler),  // DMA channel 1
+                                    Some(default_handler),  // DMA channel 2 and 3 and DMA2 channel 1 and 2
+                                    Some(default_handler),  // DMA channel 4,5,6,7 and DMA2 channel 3,4,5
+                                    Some(default_handler),  // ADC and COMP (ADC combined with EXTI lines 21 and 22)
+                                    Some(default_handler),  // TIM1 break, update, trigger, communication
+                                    Some(default_handler),  // TIM1 capture compare
+                                    Some(default_handler),  // TIM2 global
+                                    Some(default_handler),  // TIM3 global
+                                    Some(default_handler),  // TIM6 global and DAC underrun
+                                    Some(default_handler),  // TIM7 global
+                                    Some(default_handler),  // TIM14 global
+                                    Some(default_handler),  // TIM15 global
+                                    Some(default_handler),  // TIM16 global
+                                    Some(default_handler),  // TIM17 global
+                                    Some(default_handler),  // I2C1 global (combined with EXTI Line 23)
+                                    Some(default_handler),  // I2C2 global
+                                    Some(default_handler),  // SPI1 global
+                                    Some(default_handler),  // SPI2 global
+                                    Some(default_handler),  // USART1 global (combined with EXTI Line 25)
+                                    Some(default_handler),  // USART2 global (combined with EXTI Line 26)
+                                    Some(default_handler),  // USART3,4,5,6,7,8 (combined with EXTI Line 28)
+                                    Some(default_handler),  // CEC and CAN global (combined with EXTI Line 27)
+                                    Some(default_handler),  // USB (combined with EXTI Line 18)
+                                ];
 
 
 extern "C" fn default_handler() {
@@ -62,7 +95,7 @@ extern "C" fn pend_sv_handler() {
         "str r0, [r1]\n", /* clear the PendSV bit */
 
         "mrs r0, psp\n", /* move program stack pointer into r0 */
-       
+
         "ldr r3, current_task_const\n", /* get the location of the current task struct */
         "ldr r2, [r3]\n",
 
@@ -75,7 +108,7 @@ extern "C" fn pend_sv_handler() {
          "mov r6, r10\n",
          "mov r7, r11\n",
          "stmia r0!, {r4-r7}\n",
-        
+
         "push {r3, r14}\n", /* store pointer to current task and lr on main stack */
         "bl switch_context\n",
         "pop {r2, r3}\n", /* pointer to current task now in r2, lr goes in r3 */

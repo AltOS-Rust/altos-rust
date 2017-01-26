@@ -13,6 +13,10 @@
 //#![feature(compiler_builtins_lib)] // Keep this around in case we want to try and get it working
 #![no_std]
 
+#[cfg(test)]
+#[macro_use]
+extern crate std;
+
 extern crate altos_core;
 
 pub extern crate arm;

@@ -33,12 +33,12 @@ pub enum Group {
   F,
 }
 
-/// A GPIO contains the base address for a 
+/// A GPIO contains the base address for a
 /// memory mapped GPIO group associated with
 /// it.
 #[derive(Copy, Clone)]
 pub struct GPIO {
-  mem_addr: u32,
+  mem_addr: *const u32,
   moder: moder::MODER,
   otyper: otyper::OTYPER,
   bsrr: bsrr::BSRR,
@@ -56,15 +56,15 @@ impl Control for GPIO {
 impl GPIO {
   fn group(group: Group) -> GPIO {
     match group {
-      Group::A => GPIO::new(0x4800_0000),
-      Group::B => GPIO::new(0x4800_0400),
-      Group::C => GPIO::new(0x4800_0800),
-      Group::F => GPIO::new(0x4800_1400),
+      Group::A => GPIO::new(0x4800_0000 as *const _),
+      Group::B => GPIO::new(0x4800_0400 as *const _),
+      Group::C => GPIO::new(0x4800_0800 as *const _),
+      Group::F => GPIO::new(0x4800_1400 as *const _),
     }
   }
 
-  fn new(mem_addr: u32) -> GPIO {
-    GPIO { 
+  fn new(mem_addr: *const u32) -> GPIO {
+    GPIO {
       mem_addr: mem_addr,
       moder: moder::MODER::new(mem_addr),
       otyper: otyper::OTYPER::new(mem_addr),
@@ -74,17 +74,17 @@ impl GPIO {
       afr: afr::AlternateFunctionControl::new(mem_addr),
     }
   }
-  
+
   /// Enable a GPIO group, you must do this before you can set any
   /// pins within a group.
-  /// 
+  ///
   /// Example Usage:
   /// ```
   ///   GPIO::enable(Group::B); // Enable IO group B (LED is pb3)
   /// ```
   pub fn enable(group: Group) {
     let rcc = rcc::rcc();
-    
+
     // Get the register bit that should be set to enable this group
     let io_group = match group {
       Group::A => rcc::Peripheral::GPIOA,
@@ -143,4 +143,3 @@ impl GPIO {
     self. afr.get_function(port)
   }
 }
-

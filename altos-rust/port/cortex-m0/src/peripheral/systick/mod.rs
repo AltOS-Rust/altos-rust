@@ -16,7 +16,7 @@ pub fn systick() -> SysTick {
 
 #[derive(Copy, Clone)]
 pub struct SysTick {
-  mem_addr: u32,
+  mem_addr: *const u32,
   csr: control_status::CSR,
   rvr: reload_value::RVR,
   cvr: current_value::CVR,
@@ -24,13 +24,13 @@ pub struct SysTick {
 
 impl Control for SysTick {
   unsafe fn mem_addr(&self) -> Volatile<u32> {
-    Volatile::new(self.mem_addr as *const u32)
+    Volatile::new(self.mem_addr)
   }
 }
 
 impl SysTick {
   fn systick() -> Self {
-    const SYSTICK_ADDR: u32 = 0xE000E010;
+    const SYSTICK_ADDR: *const u32 = 0xE000E010 as *const _;
     SysTick {
       mem_addr: SYSTICK_ADDR,
       csr: control_status::CSR::new(SYSTICK_ADDR),

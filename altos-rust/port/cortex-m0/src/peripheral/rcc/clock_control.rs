@@ -67,7 +67,7 @@ pub struct ClockControl {
 }
 
 impl ClockControl {
-  pub fn new(base_addr: u32) -> Self {
+  pub fn new(base_addr: *const u32) -> Self {
     ClockControl {
       cr: CR::new(base_addr),
       cr2: CR2::new(base_addr),
@@ -111,15 +111,15 @@ impl ClockControl {
 /// argument to any of the methods that take a clock argument the kernel will panic.
 #[derive(Copy, Clone)]
 pub struct CR {
-  base_addr: u32,
+  base_addr: *const u32,
 }
 
 impl Register for CR {
-  fn new(base_addr: u32) -> Self {
+  fn new(base_addr: *const u32) -> Self {
     CR { base_addr: base_addr }
   }
 
-  fn base_addr(&self) -> u32 {
+  fn base_addr(&self) -> *const u32 {
     self.base_addr
   }
 
@@ -188,15 +188,15 @@ impl CR {
 /// argument to any of the methods that take a clock argument the kernel will panic.
 #[derive(Copy, Clone)]
 pub struct CR2 {
-  base_addr: u32,
+  base_addr: *const u32,
 }
 
 impl Register for CR2 {
-  fn new(base_addr: u32) -> Self {
+  fn new(base_addr: *const u32) -> Self {
     CR2 { base_addr: base_addr }
   }
 
-  fn base_addr(&self) -> u32 {
+  fn base_addr(&self) -> *const u32 {
     self.base_addr
   }
 

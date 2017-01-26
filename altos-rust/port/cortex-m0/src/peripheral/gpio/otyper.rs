@@ -32,15 +32,15 @@ impl Type {
 
 #[derive(Copy, Clone)]
 pub struct OTYPER {
-  base_addr: u32,
+  base_addr: *const u32,
 }
 
 impl Register for OTYPER {
-  fn new(base_addr: u32) -> Self {
+  fn new(base_addr: *const u32) -> Self {
     OTYPER { base_addr: base_addr }
   }
 
-  fn base_addr(&self) -> u32 {
+  fn base_addr(&self) -> *const u32 {
     self.base_addr
   }
 

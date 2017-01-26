@@ -42,7 +42,7 @@ pub struct PriorityControl {
 }
 
 impl PriorityControl {
-  pub fn new(base_addr: u32) -> Self {
+  pub fn new(base_addr: *const u32) -> Self {
     PriorityControl {
       ipr_registers: [
         IPR::new(base_addr, 0x00),
@@ -77,16 +77,16 @@ impl PriorityControl {
 
 #[derive(Copy, Clone)]
 struct IPR {
-  base_addr: u32,
+  base_addr: *const u32,
   mem_offset: u32,
 }
 
 impl Register for IPR {
-  fn new(_base_addr: u32) -> Self {
+  fn new(_base_addr: *const u32) -> Self {
     unimplemented!();
   }
 
-  fn base_addr(&self) -> u32 {
+  fn base_addr(&self) -> *const u32 {
     self.base_addr
   }
 
@@ -96,7 +96,7 @@ impl Register for IPR {
 }
 
 impl IPR {
-  fn new(base_addr: u32, offset: u32) -> Self {
+  fn new(base_addr: *const u32, offset: u32) -> Self {
     IPR {
       base_addr: base_addr,
       mem_offset: offset,
@@ -107,7 +107,7 @@ impl IPR {
     if interrupt > 3 {
       panic!("IPR::set_priority - IPR register only contains up to 4 interrupt priorities!");
     }
-    
+
     let mask = priority.mask();
     unsafe {
       let mut reg = self.addr();

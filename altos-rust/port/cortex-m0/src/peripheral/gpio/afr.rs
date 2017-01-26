@@ -55,7 +55,7 @@ pub struct AlternateFunctionControl {
 }
 
 impl AlternateFunctionControl {
-  pub fn new(base_addr: u32) -> Self {
+  pub fn new(base_addr: *const u32) -> Self {
     AlternateFunctionControl {
       afrl: AFRL::new(base_addr),
       afrh: AFRH::new(base_addr),
@@ -83,15 +83,15 @@ impl AlternateFunctionControl {
 
 #[derive(Copy, Clone)]
 struct AFRL {
-  base_addr: u32,
+  base_addr: *const u32,
 }
 
 impl Register for AFRL {
-  fn new(base_addr: u32) -> Self {
+  fn new(base_addr: *const u32) -> Self {
     AFRL { base_addr: base_addr }
   }
 
-  fn base_addr(&self) -> u32 {
+  fn base_addr(&self) -> *const u32 {
     self.base_addr
   }
 
@@ -106,7 +106,7 @@ impl AFRL {
       panic!("AFRL::set_function - specified port must be between [0..7]!");
     }
     let mask = function.mask();
-    
+
     unsafe {
       let mut reg = self.addr();
 
@@ -119,7 +119,7 @@ impl AFRL {
     if port > 8 {
       panic!("AFRL::get_function - specified port must be between [0..7]!");
     }
-    
+
     let mask = unsafe {
       let reg = self.addr();
 
@@ -131,15 +131,15 @@ impl AFRL {
 
 #[derive(Copy, Clone)]
 struct AFRH {
-  base_addr: u32,
+  base_addr: *const u32,
 }
 
 impl Register for AFRH {
-  fn new(base_addr: u32) -> Self {
+  fn new(base_addr: *const u32) -> Self {
     AFRH { base_addr: base_addr }
   }
 
-  fn base_addr(&self) -> u32 {
+  fn base_addr(&self) -> *const u32 {
     self.base_addr
   }
 
@@ -154,7 +154,7 @@ impl AFRH {
       panic!("AFRL::set_function - specified port must be between [8..15]!");
     }
     let mask = function.mask();
-    
+
     unsafe {
       let mut reg = self.addr();
 
@@ -167,12 +167,29 @@ impl AFRH {
     if port > 15 || port < 8 {
       panic!("AFRL::get_function - specified port must be between [8..15]!");
     }
-    
+
     let mask = unsafe {
       let reg = self.addr();
 
       *reg & (0b1111 << (port * 4) + 8)
     };
     AlternateFunction::from_mask(mask)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_afrh_set_function() {
+    let test_reg: u32 = 0;
+    let base_addr: *const u32 = &test_reg;
+
+    println!("VALUE OF TEST_REG BEFORE: {}", test_reg);
+    let afrh = unsafe { AFRH::new(base_addr.offset(-0x24)) };
+    afrh.set_function(AlternateFunction::One, 9);
+    println!("VALUE OF TEST_REG AFTER: {}", test_reg);
+    assert!(false);
   }
 }

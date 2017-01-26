@@ -14,7 +14,7 @@ release_static_lib = target/$(target)/release/$(static_lib)
 release_build_path = $(build_path)release/
 release_build = $(release_build_path)$(binary)
 
-path_to_cm0 = port/cortex-m0/Cargo.toml
+path_to_cm0 = port/cortex-m0/
 
 ### CARGO ###
 cargo = xargo
@@ -84,7 +84,8 @@ test:
 	@#	feature flag enabled for our core build, so we need to compile and run the
 	@#	tests for the port layer seperately... I think? I'm not sure, this requires
 	@#	more research but doing this works for now.
-	@$(cargo) test --manifest-path $(path_to_cm0)
+	@$(cargo) test --manifest-path $(path_to_cm0)Cargo.toml
+	@rm -rf $(path_to_cm0)target $(path_to_cm0)Cargo.lock
 
 test_verbose:
 	@$(cargo) test $(test_args) -- --nocapture

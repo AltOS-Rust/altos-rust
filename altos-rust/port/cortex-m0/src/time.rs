@@ -40,21 +40,6 @@ pub fn delay_s(s: usize) {
 /// This should only be called once upon initialization of the system. Setting this after the
 /// system has been running for a while could cause some tasks that are delayed to wake up too
 /// early.
-///
-/// # Example
-///
-/// ```rust,no_run
-/// use altos_core::time::{self, Time};
-///
-/// // Assuming we tick 2 times every ms...
-/// time::set_resolution(2);
-/// // now every other tick we will increment the system timer by 1 ms
-///
-/// time::tick();
-/// time::tick();
-///
-/// assert_eq!(Time::now().msec, 1);
-/// ```
 pub fn set_resolution(new: usize) {
   MS_RESOLUTION.store(new, Ordering::Relaxed);
 }

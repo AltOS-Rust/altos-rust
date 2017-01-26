@@ -69,11 +69,16 @@ pub fn in_kernel_mode() -> bool {
   const _PROGRAM_STACK: usize = 0b10;
   unsafe {
     let stack_mask: usize;
+    #[cfg(target_arch="arm")]
     asm!("mrs $0, CONTROL\n" /* get the stack control mask */
       : "=r"(stack_mask)
       : /* no inputs */
       : /* no clobbers */
       : "volatile");
+    #[cfg(not(target_arch="arm"))]
+    {
+      stack_mask = 0;
+    }
     stack_mask == MAIN_STACK
   }
 }
@@ -81,6 +86,7 @@ pub fn in_kernel_mode() -> bool {
 pub fn begin_critical() -> usize {
   let primask: usize;
   unsafe {
+    #[cfg(target_arch="arm")]
     asm!(
       concat!(
         "mrs $0, PRIMASK\n",
@@ -89,6 +95,10 @@ pub fn begin_critical() -> usize {
       : /* no inputs */
       : /* no clobbers */
       : "volatile");
+  }
+  #[cfg(not(target_arch="arm"))]
+  {
+    primask = 0;
   }
   primask
 }

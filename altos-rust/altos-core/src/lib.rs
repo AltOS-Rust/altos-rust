@@ -26,7 +26,7 @@
 #[macro_use]
 extern crate std;
 
-#[cfg(all(not(test), feature="bump_allocator"))]
+#[cfg(all(not(test), not(feature="test"), feature="bump_allocator"))]
 extern crate bump_allocator as allocator;
 
 pub extern crate alloc;
@@ -43,8 +43,12 @@ mod test;
 #[path = "arch/cm0.rs"]
 mod arch;
 
-#[cfg(test)]
+#[cfg(any(test, feature="test"))]
 #[path = "arch/test.rs"]
+mod arch;
+
+#[cfg(all(not(feature="test"), not(feature="cm0")))]
+#[path = "arch/unknown.rs"]
 mod arch;
 
 pub mod tick;

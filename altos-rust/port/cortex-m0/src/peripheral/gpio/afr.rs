@@ -151,7 +151,7 @@ impl Register for AFRH {
 impl AFRH {
   fn set_function(&self, function: AlternateFunction, port: u8) {
     if port > 15 || port < 8 {
-      panic!("AFRL::set_function - specified port must be between [8..15]!");
+      panic!("AFRH::set_function - specified port must be between [8..15]!");
     }
     let mask = function.mask();
 
@@ -192,10 +192,40 @@ mod tests {
     let test_reg: u32 = 0;
     let base_addr: *const u32 = &test_reg;
 
-    println!("VALUE OF TEST_REG BEFORE: {}", test_reg);
     let afrh = unsafe { AFRH::new(base_addr.offset(-0x24)) };
-    afrh.set_function(AlternateFunction::One, 9);
-    println!("VALUE OF TEST_REG AFTER: {}", test_reg);
-    assert!(false);
+    afrh.set_function(AlternateFunction::Five, 8);
+
+    assert_eq!(test_reg, 0x5);
+  }
+
+  #[test]
+  #[should_panic]
+  fn test_afrh_set_port_out_of_bounds_panics() {
+    let test_reg: u32 = 0;
+    let base_addr: *const u32 = &test_reg;
+
+    let afrh = unsafe { AFRH::new(base_addr.offset(-0x24)) };
+    afrh.set_function(AlternateFunction::Seven, 2);
+  }
+
+  #[test]
+  fn test_afrl_set_function() {
+    let test_reg: u32 = 0;
+    let base_addr: *const u32 = &test_reg;
+
+    let afrl = unsafe { AFRL::new(base_addr.offset(-0x20)) };
+    afrl.set_function(AlternateFunction::Two, 3);
+
+    assert_eq!(test_reg, 0x2000);
+  }
+
+  #[test]
+  #[should_panic]
+  fn test_afrl_set_port_out_of_bounds_panics() {
+    let test_reg: u32 = 0;
+    let base_addr: *const u32 = &test_reg;
+
+    let afrl = unsafe { AFRL::new(base_addr.offset(-0x20)) };
+    afrl.set_function(AlternateFunction::Two, 10);
   }
 }

@@ -155,11 +155,15 @@ impl AFRH {
     }
     let mask = function.mask();
 
+    // #9: Port needs to be subtracted by 8 since afr registers are split into high and low for 0-7
+    // and 8-15. i.e. port 9 is actually offset 1 * 4 in the afrh register (rather than offset
+    // 9 * 4)
+    let port = port - 8;
     unsafe {
       let mut reg = self.addr();
 
-      *reg &= !(0b1111 << (port * 4) + 8);
-      *reg |= mask << (port * 4) + 8;
+      *reg &= !(0b1111 << (port * 4));
+      *reg |= mask << (port * 4);
     }
   }
 
@@ -168,10 +172,12 @@ impl AFRH {
       panic!("AFRL::get_function - specified port must be between [8..15]!");
     }
 
+    // #9: See comment in `set_function`
+    let port = port - 8;
     let mask = unsafe {
       let reg = self.addr();
 
-      *reg & (0b1111 << (port * 4) + 8)
+      *reg & (0b1111 << (port * 4))
     };
     AlternateFunction::from_mask(mask)
   }

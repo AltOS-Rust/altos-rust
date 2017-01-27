@@ -7,10 +7,12 @@ authors = ["Daniel Seitz <dnseitz@gmail.com>"]
 crate-type = ["rlib"]
 
 [features]
-default = ["bump_alloc"]
+default = []
 
 bump_alloc = ["bump_allocator"]
+default_alloc = []
 cm0 = []
+test = []
 
 [dependencies]
 bump_allocator = { path = "libs/heap/bump_allocator", optional = true }

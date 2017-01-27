@@ -12,7 +12,7 @@ mod priority;
 
 #[derive(Copy, Clone)]
 pub struct NVIC {
-  mem_addr: u32,
+  mem_addr: *const u32,
   enable: enable::EnableControl,
   pending: pending::PendingControl,
   priority: priority::PriorityControl,
@@ -26,7 +26,7 @@ impl Control for NVIC {
 
 impl NVIC {
   pub fn nvic() -> Self {
-    const NVIC_ADDR: u32 = 0xE000E100;
+    const NVIC_ADDR: *const u32 = 0xE000E100 as *const _;
     NVIC {
       mem_addr: NVIC_ADDR,
       enable: enable::EnableControl::new(NVIC_ADDR),
@@ -34,7 +34,7 @@ impl NVIC {
       priority: priority::PriorityControl::new(NVIC_ADDR),
     }
   }
-  
+
   pub fn enable_interrupt(&self, interrupt: u8) {
     self.enable.enable_interrupt(interrupt);
   }

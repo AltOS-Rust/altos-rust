@@ -15,7 +15,7 @@ pub struct ConfigControl {
 }
 
 impl ConfigControl {
-  pub fn new(base_addr: u32) -> Self {
+  pub fn new(base_addr: *const u32) -> Self {
     ConfigControl {
       cfgr: CFGR::new(base_addr),
       cfgr2: CFGR2::new(base_addr),
@@ -70,15 +70,15 @@ impl ConfigControl {
 /// Clock Configuration Register
 #[derive(Copy, Clone)]
 struct CFGR {
-  base_addr: u32,
+  base_addr: *const u32,
 }
 
 impl Register for CFGR {
-  fn new(base_addr: u32) -> Self {
+  fn new(base_addr: *const u32) -> Self {
     CFGR { base_addr: base_addr }
   }
 
-  fn base_addr(&self) -> u32 {
+  fn base_addr(&self) -> *const u32 {
     self.base_addr
   }
 
@@ -185,15 +185,15 @@ impl CFGR {
 
 #[derive(Copy, Clone)]
 struct CFGR2 {
-  base_addr: u32,
+  base_addr: *const u32,
 }
 
 impl Register for CFGR2 {
-  fn new(base_addr: u32) -> Self {
+  fn new(base_addr: *const u32) -> Self {
     CFGR2 { base_addr: base_addr }
   }
 
-  fn base_addr(&self) -> u32 {
+  fn base_addr(&self) -> *const u32 {
     self.base_addr
   }
 

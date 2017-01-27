@@ -23,7 +23,7 @@ pub fn rcc() -> RCC {
 /// Reset and Clock Controller
 #[derive(Copy, Clone)]
 pub struct RCC {
-  mem_addr: u32,
+  mem_addr: *const u32,
   cr: clock_control::ClockControl,
   cfgr: config::ConfigControl,
   enr: enable::PeripheralControl,
@@ -31,13 +31,13 @@ pub struct RCC {
 
 impl Control for RCC {
   unsafe fn mem_addr(&self) -> Volatile<u32> {
-    Volatile::new(self.mem_addr as *const u32)
+    Volatile::new(self.mem_addr)
   }
 }
 
 impl RCC {
   fn rcc() -> Self {
-    const RCC_ADDR: u32 = 0x4002_1000;
+    const RCC_ADDR: *const u32 = 0x4002_1000 as *const _;
     RCC {
       mem_addr: RCC_ADDR,
       cr: clock_control::ClockControl::new(RCC_ADDR),

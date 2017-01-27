@@ -14,6 +14,8 @@ release_static_lib = target/$(target)/release/$(static_lib)
 release_build_path = $(build_path)release/
 release_build = $(release_build_path)$(binary)
 
+path_to_cm0 = port/cortex-m0/
+
 ### CARGO ###
 cargo = xargo
 cargo_args = --target $(target)
@@ -23,14 +25,15 @@ test_dependencies = altos_core \
 										arm \
 										volatile \
 										cm0_atomic \
+										#cortex_m0 \
 
-# --lib flag only runs the unit test suite, doc tests are currently and issue for cross-compiled 
+# --lib flag only runs the unit test suite, doc tests are currently and issue for cross-compiled
 #  platforms. See: https://github.com/rust-lang/cargo/issues/1789
 test_args = $(foreach dep, $(test_dependencies),-p $(dep)) --lib
 
 ### LINKER ###
 linker = arm-none-eabi-ld
-linker_args = -n --gc-sections -T $(linker_script) 
+linker_args = -n --gc-sections -T $(linker_script)
 
 ### SIZE ###
 size = arm-none-eabi-size
@@ -38,7 +41,7 @@ size_flags = -t
 
 ### GDB ###
 gdb = arm-none-eabi-gdb
-gdb_flags = 
+gdb_flags =
 st_port = 4242
 ocd_port = 3333
 st_gdb_flags = $(gdb_flags) -eval-command="target remote :$(st_port)"
@@ -68,7 +71,7 @@ release: $(linker_script)
 
 gdb: debug
 	@$(gdb) $(gdb_flags) $(debug_build)
-	
+
 gdb-st: debug
 	@$(gdb) $(st_gdb_flags) $(debug_build)
 
@@ -77,6 +80,12 @@ gdb-ocd: debug
 
 test:
 	@$(cargo) test $(test_args)
+	@#FIXME: when running with the spec flag we don't seem to build with the 'test'
+	@#	feature flag enabled for our core build, so we need to compile and run the
+	@#	tests for the port layer seperately... I think? I'm not sure, this requires
+	@#	more research but doing this works for now.
+	@$(cargo) test --manifest-path $(path_to_cm0)Cargo.toml
+	@rm -rf $(path_to_cm0)target $(path_to_cm0)Cargo.lock
 
 test_verbose:
 	@$(cargo) test $(test_args) -- --nocapture

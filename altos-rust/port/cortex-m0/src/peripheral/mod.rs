@@ -17,12 +17,13 @@ pub trait Control {
 }
 
 pub trait Register {
-  fn new(base_addr: u32) -> Self;
+  fn new(base_addr: *const u32) -> Self;
 
-  fn base_addr(&self) -> u32;
+  fn base_addr(&self) -> *const u32;
+  // FIXME: Return isize...????
   fn mem_offset(&self) -> u32;
   unsafe fn addr(&self) -> Volatile<u32> {
-    Volatile::new((self.base_addr() + self.mem_offset()) as *const u32)
+    Volatile::new(self.base_addr().offset(self.mem_offset() as isize))
   }
 }
 

@@ -119,7 +119,7 @@ pub struct PeripheralControl {
 }
 
 impl PeripheralControl {
-  pub fn new(base_addr: u32) -> Self {
+  pub fn new(base_addr: *const u32) -> Self {
     PeripheralControl {
       ahbenr: AHBENR::new(base_addr),
       apbenr1: APBENR1::new(base_addr),
@@ -170,15 +170,15 @@ impl PeripheralControl {
 
 #[derive(Copy, Clone)]
 struct AHBENR {
-  base_addr: u32,
+  base_addr: *const u32,
 }
 
 impl Register for AHBENR {
-  fn new(base_addr: u32) -> Self {
+  fn new(base_addr: *const u32) -> Self {
     AHBENR { base_addr: base_addr }
   }
 
-  fn base_addr(&self) -> u32 {
+  fn base_addr(&self) -> *const u32 {
     self.base_addr
   }
 
@@ -231,15 +231,15 @@ impl AHBENR {
 
 #[derive(Copy, Clone)]
 struct APBENR1 {
-  base_addr: u32,
+  base_addr: *const u32,
 }
 
 impl Register for APBENR1 {
-  fn new(base_addr: u32) -> Self {
+  fn new(base_addr: *const u32) -> Self {
     APBENR1 { base_addr: base_addr }
   }
 
-  fn base_addr(&self) -> u32 {
+  fn base_addr(&self) -> *const u32 {
     self.base_addr
   }
 
@@ -294,15 +294,15 @@ impl APBENR1 {
 
 #[derive(Copy, Clone)]
 struct APBENR2 {
-  base_addr: u32,
+  base_addr: *const u32,
 }
 
 impl Register for APBENR2 {
-  fn new(base_addr: u32) -> Self {
+  fn new(base_addr: *const u32) -> Self {
     APBENR2 { base_addr: base_addr }
   }
 
-  fn base_addr(&self) -> u32 {
+  fn base_addr(&self) -> *const u32 {
     self.base_addr
   }
 

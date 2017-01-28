@@ -15,7 +15,7 @@ pub struct UsartCR {
 // all register bits are set to zero before re-initializing register to
 // necessary values for a specific usart configuration.
 impl UsartCR {
-    pub fn new(base_addr: u32) -> Self {
+    pub fn new(base_addr: *const u32) -> Self {
         UsartCR {
             cr1: CR1::new(base_addr),
             cr2: CR2::new(base_addr),
@@ -94,15 +94,15 @@ pub enum Parity {
 
 #[derive(Copy, Clone)]
 struct CR1 {
-    base_addr: u32,
+    base_addr: *const u32,
 }
 
 impl Register for CR1 {
-    fn new(base_addr: u32) -> Self {
+    fn new(base_addr: *const u32) -> Self {
         CR1 { base_addr: base_addr }
     }
 
-    fn base_addr(&self) -> u32 {
+    fn base_addr(&self) -> *const u32 {
         self.base_addr
     }
 
@@ -209,15 +209,15 @@ pub enum Stoplength {
 
 #[derive(Copy, Clone)]
 struct CR2 {
-    base_addr: u32,
+    base_addr: *const u32,
 }
 
 impl Register for CR2 {
-    fn new(base_addr: u32) -> Self {
+    fn new(base_addr: *const u32) -> Self {
         CR2 { base_addr: base_addr }
     }
 
-    fn base_addr(&self) -> u32 {
+    fn base_addr(&self) -> *const u32 {
         self.base_addr
     }
 
@@ -249,7 +249,7 @@ impl CR2 {
 
 #[derive(Copy, Clone)]
 struct CR3 {
-    base_addr: u32,
+    base_addr: *const u32,
 }
 
 pub enum HardwareFlowControl {
@@ -263,11 +263,11 @@ pub enum HardwareFlowControl {
 }
 
 impl Register for CR3 {
-    fn new(base_addr: u32) -> Self {
+    fn new(base_addr: *const u32) -> Self {
         CR3 { base_addr: base_addr }
     }
 
-    fn base_addr(&self) -> u32 {
+    fn base_addr(&self) -> *const u32 {
         self.base_addr
     }
 

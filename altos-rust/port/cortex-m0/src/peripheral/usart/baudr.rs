@@ -17,7 +17,7 @@ pub enum BaudRate {
 }
 
 impl UsartBRR {
-    pub fn new(base_addr: u32) -> Self {
+    pub fn new(base_addr: *const u32) -> Self {
         UsartBRR { brr: BRR::new(base_addr) }
     }
 
@@ -28,15 +28,15 @@ impl UsartBRR {
 
 #[derive(Copy, Clone)]
 struct BRR {
-    base_addr: u32,
+    base_addr: *const u32,
 }
 
 impl Register for BRR {
-    fn new(base_addr: u32) -> Self {
+    fn new(base_addr: *const u32) -> Self {
         BRR { base_addr: base_addr }
     }
 
-    fn base_addr(&self) -> u32 {
+    fn base_addr(&self) -> *const u32 {
         self.base_addr
     }
 

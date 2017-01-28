@@ -11,7 +11,7 @@ use volatile::Volatile;
 use self::control::UsartCR;
 use self::baudr::UsartBRR;
 use self::defs::*;
-use peripheral::{gpio, rcc};
+use peripheral::rcc;
 
 pub use self::control::{WordLength, Mode, Parity, Stoplength, HardwareFlowControl};
 pub use self::baudr::BaudRate;
@@ -23,7 +23,7 @@ pub enum USARTx {
 }
 
 pub struct USART {
-    mem_addr: u32,
+    mem_addr: *const u32,
     control: UsartCR,
     baud: UsartBRR,
 }

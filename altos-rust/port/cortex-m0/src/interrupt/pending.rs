@@ -45,7 +45,7 @@ impl Register for ISPR {
   fn base_addr(&self) -> *const u32 {
     self.base_addr
   }
-  
+
   fn mem_offset(&self) -> u32 {
     0x100
   }

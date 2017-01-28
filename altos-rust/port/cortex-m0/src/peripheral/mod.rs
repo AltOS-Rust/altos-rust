@@ -23,7 +23,9 @@ pub trait Register {
   // FIXME: Return isize...????
   fn mem_offset(&self) -> u32;
   unsafe fn addr(&self) -> Volatile<u32> {
-    Volatile::new(self.base_addr().offset(self.mem_offset() as isize))
+    // We cast to a u8 so the pointer offset is not multiplied
+    let addr = self.base_addr() as *const u8;
+    Volatile::new(addr.offset(self.mem_offset() as isize) as *const u32)
   }
 }
 

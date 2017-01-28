@@ -13,12 +13,13 @@ pub struct MockRegister<T: Register> {
 }
 
 impl<T: Register> MockRegister<T> {
-  fn new(offset: u32) -> Self {
+  fn new() -> Self {
     let temp_reg = Box::new(0);
     let ptr = Box::into_raw(temp_reg);
+    let offset = T::new(0x0 as *const _).mem_offset() as isize;
     MockRegister {
       addr: ptr,
-      register: unsafe { T::new(ptr.offset(-((offset as isize)/4))) },
+      register: unsafe { T::new(ptr.offset(-offset/4)) },
     }
   }
 
@@ -46,7 +47,7 @@ impl<T: Register> Drop for MockRegister<T> {
   }
 }
 
-pub fn create_register<T: Register>(offset: u32) -> MockRegister<T> {
-  MockRegister::new(offset)
+pub fn create_register<T: Register>() -> MockRegister<T> {
+  MockRegister::new()
 }
 

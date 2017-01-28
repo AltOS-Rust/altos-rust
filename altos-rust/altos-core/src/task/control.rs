@@ -19,7 +19,7 @@ mod tid {
   use atomic::{ATOMIC_USIZE_INIT, AtomicUsize, Ordering};
 
   static CURRENT_TID: AtomicUsize = ATOMIC_USIZE_INIT;
-  
+
   /// Atomically increment the task id and return the old value
   pub fn fetch_next_tid() -> usize {
     CURRENT_TID.fetch_add(1, Ordering::Relaxed)
@@ -90,7 +90,7 @@ pub enum State {
 
   /// The task is ready to be run if the scheduler decides to pick it.
   Ready,
-  
+
   /// The task is currently running.
   Running,
 
@@ -103,7 +103,7 @@ pub enum State {
 }
 
 /// A `TaskControl` tracks the running state of a task.
-/// 
+///
 /// This struct keeps track of information about a specific task. When a `TaskControl` goes out of
 /// scope the memory associated with it is freed.
 #[repr(C)]
@@ -184,10 +184,10 @@ impl TaskControl {
 }
 
 /// A `TaskHandle` references a `TaskControl` and provides access to some state about it.
-/// 
+///
 /// A `TaskHandle` is created whenever a new task is requested from the operating system. It
 /// provides a way to examine the state of the task at run time as well as perform some operations
-/// on it like marking it for destruction. 
+/// on it like marking it for destruction.
 ///
 /// This struct is thread safe, as all accesses to the internal `TaskControl` are checked for
 /// validity. If a task has been destroyed by one thread, then any other thread trying to access it
@@ -239,8 +239,8 @@ impl TaskHandle {
     //    A possible solution... allocate a heap space for each task. Pass a heap allocation
     //    interface to the task implicitly and do all dynamic memory allocation through this
     //    interface. When the task is destroyed we can just free the whole task-specific heap so we
-    //    wont have to worry about leaking memory. This means we would likely have to disallow core 
-    //    library `Box` allocations within the task. Or... we just don't allow dynamic allocation 
+    //    wont have to worry about leaking memory. This means we would likely have to disallow core
+    //    library `Box` allocations within the task. Or... we just don't allow dynamic allocation
     //    within tasks. - Daniel Seitz
     let _g = CriticalSection::begin();
     if self.is_valid() {
@@ -373,7 +373,7 @@ impl TaskHandle {
   /// # use altos_core::args::Args;
   ///
   /// let handle = new_task(test_task, Args::empty(), 512, Priority::Normal, "new_task_name");
-  /// 
+  ///
   /// match handle.name() {
   ///   Ok(name) => { /* Task was valid */ },
   ///   Err(()) => { /* Task was destroyed */ },
@@ -434,21 +434,21 @@ impl TaskHandle {
   }
 
   /// Check if the task pointed to by this handle is valid
-  /// 
+  ///
   /// # Examples
-  /// 
+  ///
   /// ```rust,no_run
   /// use altos_core::syscall::new_task;
-  /// 
+  ///
   /// let handle = new_task(test_task, Args::empty(), 512, Priority::Normal, "new_task_name");
-  /// 
+  ///
   /// if handle.is_valid() {
   ///   // The task is still valid
   /// }
   /// else {
   ///   // The task has been destroyed
   /// }
-  /// 
+  ///
   /// ```
   pub fn is_valid(&self) -> bool {
     // UNSAFE: Yes, potentially we're reading from a dangling pointer (if the task has been freed,
@@ -478,7 +478,7 @@ impl TaskHandle {
 mod tests {
   use super::*;
   use test;
-  
+
   fn get_task() -> TaskControl {
     // NOTE: We can't return the TaskControl and the TaskHandle as a tuple here because the
     // TaskControl object get's moved on return so we would end up with a dangling pointer in our

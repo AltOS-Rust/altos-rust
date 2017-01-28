@@ -24,8 +24,7 @@ pub struct Port {
 impl Port {
   /// Create a new port for the associated group. Ports are NOT thread safe, if you
   /// must ensure an atomic set of operations on a port use some kind of synchronization
-  /// tool 
-  // TODO: Create synchronization tool...
+  /// tool
   pub fn new(port: u8, group: Group) -> Port {
     if port > 15 {
       //TODO: Handle this more gracefully hopefully

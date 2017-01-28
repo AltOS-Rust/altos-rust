@@ -1,9 +1,6 @@
 [root]
-name = "altos_rust"
+name = "volatile"
 version = "0.1.0"
-dependencies = [
- "cortex_m0 0.1.0",
-]
 
 [[package]]
 name = "altos_core"
@@ -12,6 +9,13 @@ dependencies = [
  "bump_allocator 0.1.0",
  "cm0_atomic 0.1.0",
  "volatile 0.1.0",
+]
+
+[[package]]
+name = "altos_rust"
+version = "0.1.0"
+dependencies = [
+ "cortex_m0 0.1.0",
 ]
 
 [[package]]
@@ -36,8 +40,4 @@ dependencies = [
  "altos_core 0.1.0",
  "arm 0.1.0",
 ]
-
-[[package]]
-name = "volatile"
-version = "0.1.0"
 

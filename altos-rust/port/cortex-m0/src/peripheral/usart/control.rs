@@ -292,3 +292,109 @@ impl CR3 {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use test;
+
+    #[test]
+    fn test_cr1_enable_disable_usart() {
+        let cr1 = test::create_register::<CR1>();
+
+        cr1.enable_usart(true);
+        assert_eq!(cr1.register_value(), 0b1);
+
+        cr1.enable_usart(false);
+        assert_eq!(cr1.register_value(), 0b0);
+    }
+
+    #[test]
+    fn test_cr1_is_usart_enabled() {
+        let cr1 = test::create_register::<CR1>();
+
+        assert_eq!(cr1.is_usart_enabled(), false);
+
+        cr1.enable_usart(true);
+        assert_eq!(cr1.is_usart_enabled(), true);
+
+        cr1.enable_usart(false);
+        assert_eq!(cr1.is_usart_enabled(), false);
+    }
+
+    #[test]
+    fn test_cr1_set_word_length() {
+        let cr1 = test::create_register::<CR1>();
+
+        cr1.set_word_length(WordLength::Seven);
+        assert_eq!(cr1.register_value(), 0b1 << 28);
+
+        cr1.set_word_length(WordLength::Eight);
+        assert_eq!(cr1.register_value(), 0b0);
+
+        cr1.set_word_length(WordLength::Nine);
+        assert_eq!(cr1.register_value(), 0b1 << 12);
+    }
+
+    #[test]
+    fn test_cr1_set_mode() {
+        let cr1 = test::create_register::<CR1>();
+
+        cr1.set_mode(Mode::Receive);
+        assert_eq!(cr1.register_value(), 0b1 << 2);
+
+        cr1.set_mode(Mode::Transmit);
+        assert_eq!(cr1.register_value(), 0b1 << 3);
+
+        cr1.set_mode(Mode::All);
+        assert_eq!(cr1.register_value(), 0b11 << 2);
+    }
+
+    #[test]
+    fn test_cr1_set_parity() {
+        let cr1 = test::create_register::<CR1>();
+
+        cr1.set_parity(Parity::None);
+        assert_eq!(cr1.register_value(), 0b0);
+
+        cr1.set_parity(Parity::Even);
+        assert_eq!(cr1.register_value(), 0b1 << 10);
+
+        cr1.set_parity(Parity::Odd);
+        assert_eq!(cr1.register_value(), 0b11 << 9);
+    }
+
+    #[test]
+    fn test_cr1_set_over8() {
+        let cr1 = test::create_register::<CR1>();
+        assert_eq!(cr1.register_value(), 0b0);
+        assert_eq!(cr1.get_over8(), false);
+
+        cr1.set_over8(true);
+        assert_eq!(cr1.register_value(), 0b1 << 15);
+        assert_eq!(cr1.get_over8(), true);
+
+        cr1.set_over8(false);
+        assert_eq!(cr1.register_value(), 0b0);
+        assert_eq!(cr1.get_over8(), false);
+    }
+
+    #[test]
+    fn test_cr1_get_over8() {
+        let cr1 = test::create_register::<CR1>();
+        assert_eq!(cr1.register_value(), 0b0);
+        assert_eq!(cr1.get_over8(), false);
+
+        cr1.set_over8(true);
+        assert_eq!(cr1.register_value(), 0b1 << 15);
+        assert_eq!(cr1.get_over8(), true);
+
+        cr1.set_over8(false);
+        assert_eq!(cr1.register_value(), 0b0);
+        assert_eq!(cr1.get_over8(), false);
+
+        let cr1a = test::create_initialized_register::<CR1>(0b1111 << 12);
+        assert_eq!(cr1a.register_value(), 0b1111 << 12);
+    }
+}
+

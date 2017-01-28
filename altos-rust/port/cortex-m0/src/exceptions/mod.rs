@@ -73,8 +73,8 @@ extern "C" fn systick_handler() {
 /// interrupts are serviced first
 #[naked]
 extern "C" fn pend_sv_handler() {
+  #[cfg(target_arch="arm")]
   unsafe {
-    #[cfg(target_arch="arm")]
     asm!(
       concat!(
         "cpsid i\n", /* disable interrupts for context switch */

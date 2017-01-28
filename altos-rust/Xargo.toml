@@ -1,3 +1,5 @@
 
 [target.thumbv6m-none-eabi.dependencies]
 collections = {}
+
+[workspace]

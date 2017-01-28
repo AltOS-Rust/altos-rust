@@ -25,9 +25,9 @@ test_dependencies = altos_core \
 										arm \
 										volatile \
 										cm0_atomic \
-										#cortex_m0 \
+										cortex_m0 \
 
-# --lib flag only runs the unit test suite, doc tests are currently and issue for cross-compiled
+# --lib flag only runs the unit test suite, doc tests are currently an issue for cross-compiled
 #  platforms. See: https://github.com/rust-lang/cargo/issues/1789
 test_args = $(foreach dep, $(test_dependencies),-p $(dep)) --lib
 
@@ -80,12 +80,6 @@ gdb-ocd: debug
 
 test:
 	@cargo test $(test_args)
-	@#FIXME: when running with the spec flag we don't seem to build with the 'test'
-	@#	feature flag enabled for our core build, so we need to compile and run the
-	@#	tests for the port layer seperately... I think? I'm not sure, this requires
-	@#	more research but doing this works for now.
-	@cargo test --manifest-path $(path_to_cm0)Cargo.toml
-	@rm -rf $(path_to_cm0)target $(path_to_cm0)Cargo.lock
 
 test_verbose:
 	@$(cargo) test $(test_args) -- --nocapture

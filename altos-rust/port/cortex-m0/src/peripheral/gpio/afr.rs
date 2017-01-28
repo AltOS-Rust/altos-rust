@@ -190,7 +190,7 @@ mod tests {
 
   #[test]
   fn test_afrh_set_function() {
-    let afrh = test::create_register::<AFRH>(0x24);
+    let afrh = test::create_register::<AFRH>();
     afrh.set_function(AlternateFunction::Five, 8);
 
     assert_eq!(afrh.register_value(), 0x5);
@@ -199,13 +199,13 @@ mod tests {
   #[test]
   #[should_panic]
   fn test_afrh_set_port_out_of_bounds_panics() {
-    let afrh = test::create_register::<AFRH>(0x24);
+    let afrh = test::create_register::<AFRH>();
     afrh.set_function(AlternateFunction::Seven, 2);
   }
 
   #[test]
   fn test_afrl_set_function() {
-    let afrl = test::create_register::<AFRL>(0x20);
+    let afrl = test::create_register::<AFRL>();
     afrl.set_function(AlternateFunction::Two, 3);
 
     assert_eq!(afrl.register_value(), 0x2000);
@@ -214,7 +214,7 @@ mod tests {
   #[test]
   #[should_panic]
   fn test_afrl_set_port_out_of_bounds_panics() {
-    let afrl = test::create_register::<AFRL>(0x20);
+    let afrl = test::create_register::<AFRL>();
     afrl.set_function(AlternateFunction::Two, 10);
   }
 }

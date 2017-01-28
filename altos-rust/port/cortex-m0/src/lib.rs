@@ -22,6 +22,9 @@ extern crate altos_core;
 pub extern crate arm;
 //pub extern crate compiler_builtins; // See above comment
 
+#[cfg(test)]
+mod test;
+
 mod exceptions;
 pub mod peripheral;
 pub mod time;
@@ -46,7 +49,7 @@ pub mod kernel {
     pub use altos_core::{start_scheduler};
     pub use altos_core::{Priority};
   }
-  
+
   // TODO: Do we want to expose an allocation interface?
   pub mod alloc {
     pub use altos_core::alloc::boxed::Box;
@@ -68,7 +71,7 @@ pub mod kernel {
 #[cfg(not(test))]
 #[lang = "eh_personality"] extern "C" fn eh_personality() {}
 #[cfg(not(test))]
-#[lang = "panic_fmt"] 
+#[lang = "panic_fmt"]
 extern "C" fn panic_fmt(_fmt: core::fmt::Arguments, _file: &'static str, _line: usize) -> ! {
   loop {
     unsafe {
@@ -113,10 +116,10 @@ fn init_data_segment() {
         "adds r2, #4\n",
         "b copy\n", /* repeat until done */
       "d_done:\n")
-    : /* no outputs */ 
-    : /* no inputs */ 
+    : /* no outputs */
+    : /* no inputs */
     : "r0", "r1", "r2", "r3" /* clobbers */
-    : "volatile");  
+    : "volatile");
   }
 }
 
@@ -193,7 +196,7 @@ fn init_clock() {
   while !rcc.clock_is_ready(rcc::Clock::PLL) {}
   // Switch over to the PLL for running the system
   rcc.set_system_clock_source(rcc::Clock::PLL);
-  
+
   // Our system clock sets itself to interrupt every 1 ms
   time::set_resolution(1);
 }

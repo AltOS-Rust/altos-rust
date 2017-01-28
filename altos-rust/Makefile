@@ -79,12 +79,12 @@ gdb-ocd: debug
 	@$(gdb) $(ocd_gdb_flags) $(debug_build)
 
 test:
-	@$(cargo) test $(test_args)
+	@cargo test $(test_args)
 	@#FIXME: when running with the spec flag we don't seem to build with the 'test'
 	@#	feature flag enabled for our core build, so we need to compile and run the
 	@#	tests for the port layer seperately... I think? I'm not sure, this requires
 	@#	more research but doing this works for now.
-	@$(cargo) test --manifest-path $(path_to_cm0)Cargo.toml
+	@cargo test --manifest-path $(path_to_cm0)Cargo.toml
 	@rm -rf $(path_to_cm0)target $(path_to_cm0)Cargo.lock
 
 test_verbose:

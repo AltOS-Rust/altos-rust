@@ -229,10 +229,10 @@ impl Register for CR2 {
 impl CR2 {
     fn set_stop_bits(&self, length: Stoplength) {
         let mask = match length {
-            Stoplength::Half => 0,
-            Stoplength::One => CR2_STOP_BIT1,
-            Stoplength::OneAndHalf => CR2_STOP_BIT0,
-            Stoplength::Two => CR2_STOP_BIT0 | CR2_STOP_BIT1,
+            Stoplength::Half => CR2_STOP_BIT0,
+            Stoplength::One => 0,
+            Stoplength::OneAndHalf => CR2_STOP_BIT0 | CR2_STOP_BIT1,
+            Stoplength::Two => CR2_STOP_BIT1,
         };
 
         unsafe {
@@ -368,33 +368,59 @@ mod test {
     fn test_cr1_set_over8() {
         let cr1 = test::create_register::<CR1>();
         assert_eq!(cr1.register_value(), 0b0);
-        assert_eq!(cr1.get_over8(), false);
 
         cr1.set_over8(true);
         assert_eq!(cr1.register_value(), 0b1 << 15);
-        assert_eq!(cr1.get_over8(), true);
 
         cr1.set_over8(false);
         assert_eq!(cr1.register_value(), 0b0);
+    }
+
+    #[test]
+    fn test_cr1_get_over8_returns_false_when_value_is_zero() {
+        let cr1 = test::create_register::<CR1>();
         assert_eq!(cr1.get_over8(), false);
     }
 
     #[test]
-    fn test_cr1_get_over8() {
-        let cr1 = test::create_register::<CR1>();
-        assert_eq!(cr1.register_value(), 0b0);
-        assert_eq!(cr1.get_over8(), false);
-
-        cr1.set_over8(true);
-        assert_eq!(cr1.register_value(), 0b1 << 15);
+    fn test_cr1_get_over8_returns_true_when_value_is_set() {
+        let cr1 = test::create_initialized_register::<CR1>(0b1 << 15);
         assert_eq!(cr1.get_over8(), true);
+    }
 
-        cr1.set_over8(false);
-        assert_eq!(cr1.register_value(), 0b0);
-        assert_eq!(cr1.get_over8(), false);
+    #[test]
+    fn test_cr2_set_stop_bits() {
+        let cr2 = test::create_register::<CR2>();
+        assert_eq!(cr2.register_value(), 0b0);
 
-        let cr1a = test::create_initialized_register::<CR1>(0b1111 << 12);
-        assert_eq!(cr1a.register_value(), 0b1111 << 12);
+        cr2.set_stop_bits(Stoplength::Half);
+        assert_eq!(cr2.register_value(), 0b1 << 12);
+
+        cr2.set_stop_bits(Stoplength::OneAndHalf);
+        assert_eq!(cr2.register_value(), 0b11 << 12);
+
+        cr2.set_stop_bits(Stoplength::Two);
+        assert_eq!(cr2.register_value(), 0b1 << 13);
+
+        cr2.set_stop_bits(Stoplength::One);
+        assert_eq!(cr2.register_value(), 0b0);
+    }
+
+    #[test]
+    fn test_cr3_set_hardware_flow_control() {
+        let cr3 = test::create_register::<CR3>();
+        assert_eq!(cr3.register_value(), 0b0);
+
+        cr3.set_hardware_flow_control(HardwareFlowControl::Rts);
+        assert_eq!(cr3.register_value(), 0b1 << 8);
+
+        cr3.set_hardware_flow_control(HardwareFlowControl::Cts);
+        assert_eq!(cr3.register_value(), 0b1 << 9);
+
+        cr3.set_hardware_flow_control(HardwareFlowControl::RtsCts);
+        assert_eq!(cr3.register_value(), 0b11 << 8);
+
+        cr3.set_hardware_flow_control(HardwareFlowControl::None);
+        assert_eq!(cr3.register_value(), 0b0);
     }
 }
-

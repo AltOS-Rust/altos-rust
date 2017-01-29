@@ -13,8 +13,8 @@ pub struct MockRegister<T: Register> {
 }
 
 impl<T: Register> MockRegister<T> {
-  fn new() -> Self {
-    let temp_reg = Box::new(0);
+  fn new(val: u32) -> Self {
+    let temp_reg = Box::new(val);
     let ptr = Box::into_raw(temp_reg);
     let offset = T::new(0x0 as *const _).mem_offset() as isize;
     MockRegister {
@@ -48,6 +48,10 @@ impl<T: Register> Drop for MockRegister<T> {
 }
 
 pub fn create_register<T: Register>() -> MockRegister<T> {
-  MockRegister::new()
+  MockRegister::new(0)
+}
+
+pub fn create_initialized_register<T: Register>(val: u32) -> MockRegister<T> {
+    MockRegister::new(val)
 }
 

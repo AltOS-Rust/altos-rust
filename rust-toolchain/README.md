@@ -242,6 +242,8 @@ From another terminal shell:
 ```  
 ```bash
   load
+  continue
+  continue
 ```  
 
 *If the first load fails*, just run it again with: ```load```  

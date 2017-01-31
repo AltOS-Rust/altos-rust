@@ -47,7 +47,7 @@ impl UsartCR {
         self.cr1.set_parity(parity);
     }
 
-    pub fn set_stop_bits(&self, length: Stoplength) {
+    pub fn set_stop_bits(&self, length: StopLength) {
         self.cr2.set_stop_bits(length);
     }
 
@@ -80,12 +80,14 @@ pub enum WordLength {
     Nine,
 }
 
+#[derive(Copy, Clone)]
 pub enum Mode {
     Receive,
     Transmit,
     All,
 }
 
+#[derive(Copy, Clone)]
 pub enum Parity {
     None,
     Even,
@@ -116,11 +118,9 @@ impl CR1 {
     fn enable_usart(&self, enable: bool) {
         unsafe {
             let mut reg = self.addr();
+            *reg &= !(CR1_UE);
             if enable {
                 *reg |= CR1_UE;
-            }
-            else {
-                *reg &= !(CR1_UE);
             }
         }
     }
@@ -172,7 +172,7 @@ impl CR1 {
 
         unsafe {
             let mut reg = self.addr();
-            *reg &= !(CR1_PCE | CR1_PS);
+            *reg &= !(CR1_PS | CR1_PCE);
             *reg |= mask;
         }
     }
@@ -200,7 +200,8 @@ impl CR1 {
 // ------------------------------------
 
 /// There are four stop bit settings: .5, 1, 1.5, 2
-pub enum Stoplength {
+#[derive(Copy, Clone)]
+pub enum StopLength {
     Half,
     One,
     OneAndHalf,
@@ -227,12 +228,12 @@ impl Register for CR2 {
 }
 
 impl CR2 {
-    fn set_stop_bits(&self, length: Stoplength) {
+    fn set_stop_bits(&self, length: StopLength) {
         let mask = match length {
-            Stoplength::Half => CR2_STOP_BIT0,
-            Stoplength::One => 0,
-            Stoplength::OneAndHalf => CR2_STOP_BIT0 | CR2_STOP_BIT1,
-            Stoplength::Two => CR2_STOP_BIT1,
+            StopLength::Half => CR2_STOP_BIT0,
+            StopLength::One => 0,
+            StopLength::OneAndHalf => CR2_STOP_BIT0 | CR2_STOP_BIT1,
+            StopLength::Two => CR2_STOP_BIT1,
         };
 
         unsafe {
@@ -248,18 +249,19 @@ impl CR2 {
 // ------------------------------------
 
 #[derive(Copy, Clone)]
-struct CR3 {
-    base_addr: *const u32,
-}
-
 pub enum HardwareFlowControl {
     None,
-    // Request to Send
+    /// Request to Send
     Rts,
-    // Clear to Send
+    /// Clear to Send
     Cts,
-    // Both
+    /// Both
     RtsCts,
+}
+
+#[derive(Copy, Clone)]
+struct CR3 {
+    base_addr: *const u32,
 }
 
 impl Register for CR3 {
@@ -294,7 +296,7 @@ impl CR3 {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
     use test;
 
@@ -311,11 +313,7 @@ mod test {
 
     #[test]
     fn test_cr1_is_usart_enabled() {
-        let cr1 = test::create_register::<CR1>();
-
-        assert_eq!(cr1.is_usart_enabled(), false);
-
-        cr1.enable_usart(true);
+        let cr1 = test::create_initialized_register::<CR1>(1);
         assert_eq!(cr1.is_usart_enabled(), true);
 
         cr1.enable_usart(false);
@@ -393,16 +391,16 @@ mod test {
         let cr2 = test::create_register::<CR2>();
         assert_eq!(cr2.register_value(), 0b0);
 
-        cr2.set_stop_bits(Stoplength::Half);
+        cr2.set_stop_bits(StopLength::Half);
         assert_eq!(cr2.register_value(), 0b1 << 12);
 
-        cr2.set_stop_bits(Stoplength::OneAndHalf);
+        cr2.set_stop_bits(StopLength::OneAndHalf);
         assert_eq!(cr2.register_value(), 0b11 << 12);
 
-        cr2.set_stop_bits(Stoplength::Two);
+        cr2.set_stop_bits(StopLength::Two);
         assert_eq!(cr2.register_value(), 0b1 << 13);
 
-        cr2.set_stop_bits(Stoplength::One);
+        cr2.set_stop_bits(StopLength::One);
         assert_eq!(cr2.register_value(), 0b0);
     }
 

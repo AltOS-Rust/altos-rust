@@ -13,36 +13,37 @@ use self::baudr::UsartBRR;
 use self::defs::*;
 use peripheral::rcc;
 
-pub use self::control::{WordLength, Mode, Parity, Stoplength, HardwareFlowControl};
+pub use self::control::{WordLength, Mode, Parity, StopLength, HardwareFlowControl};
 pub use self::baudr::BaudRate;
 
 #[derive(Copy, Clone)]
-pub enum USARTx {
-    USART1,
-    USART2,
+pub enum UsartX {
+    Usart1,
+    Usart2,
 }
 
-pub struct USART {
+#[derive(Copy, Clone)]
+pub struct Usart {
     mem_addr: *const u32,
     control: UsartCR,
     baud: UsartBRR,
 }
 
-impl Control for USART {
+impl Control for Usart {
     unsafe fn mem_addr(&self) -> Volatile<u32> {
         Volatile::new(self.mem_addr as *const u32)
     }
 }
 
-impl USART {
-    pub fn new(x: USARTx) -> Self {
+impl Usart {
+    pub fn new(x: UsartX) -> Self {
         match x {
-            USARTx::USART1 => USART {
+            UsartX::Usart1 => Usart {
                 mem_addr: USART1_ADDR,
                 control: UsartCR::new(USART1_ADDR),
                 baud: UsartBRR::new(USART1_ADDR),
             },
-            USARTx::USART2 => USART {
+            UsartX::Usart2 => Usart {
                 mem_addr: USART2_ADDR,
                 control: UsartCR::new(USART2_ADDR),
                 baud: UsartBRR::new(USART2_ADDR),
@@ -71,7 +72,7 @@ impl USART {
         self.control.set_parity(parity);
     }
 
-    pub fn set_stop_bits(&self, length: Stoplength) {
+    pub fn set_stop_bits(&self, length: StopLength) {
         self.control.set_stop_bits(length);
     }
 
@@ -110,7 +111,7 @@ pub fn init() {
     pa9.set_pull(gpio::Pull::Up);
     pa10.set_pull(gpio::Pull::Up);
 */
-    let usart1 = USART::new(USARTx::USART1);
+    let usart1 = Usart::new(UsartX::Usart1);
     usart1.disable_usart();
     usart1.set_word_length(WordLength::Eight);
     usart1.set_mode(Mode::All);

@@ -145,9 +145,13 @@ pub fn init() {
 
     usart2.enable_usart();
 
-    loop {
-        let byte: u8 = b'a';
-        while !usart2.get_txe() {}
-        usart2.transmit_byte(byte);
-    }
+    write("Hello, World!");
+}
+
+pub fn write(string: &str) {
+  let usart2 = Usart::new(UsartX::Usart2);
+  for byte in string.as_bytes() {
+    while !usart2.get_txe() {}
+    usart2.transmit_byte(*byte);
+  }
 }

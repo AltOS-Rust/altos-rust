@@ -55,8 +55,8 @@ impl Usart {
                 mem_addr: USART2_ADDR,
                 control: UsartCR::new(USART2_ADDR),
                 baud: UsartBRR::new(USART2_ADDR),
-                tdr: TDR::new(USART1_ADDR),
-                isr: ISR::new(USART1_ADDR),
+                tdr: TDR::new(USART2_ADDR),
+                isr: ISR::new(USART2_ADDR),
             },
         }
     }
@@ -113,38 +113,41 @@ impl Usart {
 
 pub fn init() {
     let rcc = rcc::rcc();
-    rcc.enable_peripheral(rcc::Peripheral::USART1);
+    //rcc.enable_peripheral(rcc::Peripheral::USART1);
+    rcc.enable_peripheral(rcc::Peripheral::USART2);
 
+
+    //gpio::GPIO::enable(gpio::Group::A);
     gpio::GPIO::enable(gpio::Group::A);
-    let mut pa9 = gpio::Port::new(9, gpio::Group::A);
-    let mut pa10 = gpio::Port::new(10, gpio::Group::A);
-    pa9.set_function(gpio::AlternateFunction::One);
-    pa10.set_function(gpio::AlternateFunction::One);
-    pa9.set_speed(gpio::Speed::High);
-    pa10.set_speed(gpio::Speed::High);
-    pa9.set_mode(gpio::Mode::Alternate);
-    pa10.set_mode(gpio::Mode::Alternate);
-    pa9.set_type(gpio::Type::PushPull);
-    pa10.set_type(gpio::Type::PushPull);
-    pa9.set_pull(gpio::Pull::Up);
-    pa10.set_pull(gpio::Pull::Up);
+    let mut pa2 = gpio::Port::new(2, gpio::Group::A);
+    let mut pa3 = gpio::Port::new(3, gpio::Group::A);
+    pa2.set_function(gpio::AlternateFunction::One);
+    pa3.set_function(gpio::AlternateFunction::One);
+    pa2.set_speed(gpio::Speed::High);
+    pa3.set_speed(gpio::Speed::High);
+    pa2.set_mode(gpio::Mode::Alternate);
+    pa3.set_mode(gpio::Mode::Alternate);
+    pa2.set_type(gpio::Type::PushPull);
+    pa3.set_type(gpio::Type::PushPull);
+    pa2.set_pull(gpio::Pull::Up);
+    pa3.set_pull(gpio::Pull::Up);
 
-    let usart1 = Usart::new(UsartX::Usart1);
-    usart1.disable_usart();
-    usart1.set_word_length(WordLength::Eight);
-    usart1.set_mode(Mode::Transmit);
-    usart1.set_parity(Parity::None);
-    usart1.set_hardware_flow_control(HardwareFlowControl::None);
+    let usart2 = Usart::new(UsartX::Usart2);
+    usart2.disable_usart();
+    usart2.set_word_length(WordLength::Eight);
+    usart2.set_mode(Mode::Transmit);
+    usart2.set_parity(Parity::None);
+    usart2.set_hardware_flow_control(HardwareFlowControl::None);
 
 
     let cr = rcc.get_system_clock_rate();
-    usart1.set_baud_rate(BaudRate::Rate9600, cr);
+    usart2.set_baud_rate(BaudRate::Rate9600, cr);
 
-    usart1.enable_usart();
+    usart2.enable_usart();
 
     loop {
         let byte: u8 = b'a';
-        while !usart1.get_txe() {}
-        usart1.transmit_byte(byte);
+        while !usart2.get_txe() {}
+        usart2.transmit_byte(byte);
     }
 }

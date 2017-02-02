@@ -73,3 +73,21 @@ pub const DIV_MASK: u32   = 0b1111;
 // USARTx - GTPR bit definitions
 // ------------------------------------
 pub const GTPR_OFFSET: u32 = 0x10;
+
+// ------------------------------------
+// USARTx - ISR bit definitions
+// ------------------------------------
+pub const ISR_OFFSET: u32 = 0x1C;
+pub const ISR_TC: u32     = 1 << 6;
+pub const ISR_TXE: u32    = 1 << 7;
+
+// ------------------------------------
+// USARTx - RDR bit definitions
+// ------------------------------------
+pub const RDR_OFFSET: u32 = 0x24;
+
+// ------------------------------------
+// USARTx - TDR bit definitions
+// ------------------------------------
+pub const TDR_OFFSET: u32 = 0x28;
+

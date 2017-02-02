@@ -5,13 +5,17 @@
 mod control;
 mod defs;
 mod baudr;
+mod tdr;
+mod isr;
 
-use super::Control;
+use super::{Control, Register};
 use volatile::Volatile;
 use self::control::UsartCR;
 use self::baudr::UsartBRR;
+use self::tdr::TDR;
+use self::isr::ISR;
 use self::defs::*;
-use peripheral::rcc;
+use peripheral::{rcc, gpio};
 
 pub use self::control::{WordLength, Mode, Parity, StopLength, HardwareFlowControl};
 pub use self::baudr::BaudRate;
@@ -27,6 +31,8 @@ pub struct Usart {
     mem_addr: *const u32,
     control: UsartCR,
     baud: UsartBRR,
+    tdr: TDR,
+    isr: ISR,
 }
 
 impl Control for Usart {
@@ -42,11 +48,15 @@ impl Usart {
                 mem_addr: USART1_ADDR,
                 control: UsartCR::new(USART1_ADDR),
                 baud: UsartBRR::new(USART1_ADDR),
+                tdr: TDR::new(USART1_ADDR),
+                isr: ISR::new(USART1_ADDR),
             },
             UsartX::Usart2 => Usart {
                 mem_addr: USART2_ADDR,
                 control: UsartCR::new(USART2_ADDR),
                 baud: UsartBRR::new(USART2_ADDR),
+                tdr: TDR::new(USART1_ADDR),
+                isr: ISR::new(USART1_ADDR),
             },
         }
     }
@@ -91,12 +101,20 @@ impl Usart {
     pub fn set_baud_rate(&self, baud_rate: BaudRate, clock_rate: u32) {
         self.baud.set_baud_rate(baud_rate, clock_rate, self.control.get_over8());
     }
+
+    pub fn transmit_byte(&self, byte: u8) {
+        self.tdr.store(byte);
+    }
+
+    pub fn get_txe(&self) -> bool {
+        self.isr.get_txe()
+    }
 }
 
 pub fn init() {
     let rcc = rcc::rcc();
     rcc.enable_peripheral(rcc::Peripheral::USART1);
-/* TODO: Turn this back on at some point in the future.
+
     gpio::GPIO::enable(gpio::Group::A);
     let mut pa9 = gpio::Port::new(9, gpio::Group::A);
     let mut pa10 = gpio::Port::new(10, gpio::Group::A);
@@ -110,13 +128,12 @@ pub fn init() {
     pa10.set_type(gpio::Type::PushPull);
     pa9.set_pull(gpio::Pull::Up);
     pa10.set_pull(gpio::Pull::Up);
-*/
+
     let usart1 = Usart::new(UsartX::Usart1);
     usart1.disable_usart();
     usart1.set_word_length(WordLength::Eight);
-    usart1.set_mode(Mode::All);
+    usart1.set_mode(Mode::Transmit);
     usart1.set_parity(Parity::None);
-    usart1.enable_over8();
     usart1.set_hardware_flow_control(HardwareFlowControl::None);
 
 
@@ -124,4 +141,10 @@ pub fn init() {
     usart1.set_baud_rate(BaudRate::Rate9600, cr);
 
     usart1.enable_usart();
+
+    loop {
+        let byte: u8 = b'a';
+        while !usart1.get_txe() {}
+        usart1.transmit_byte(byte);
+    }
 }

@@ -78,13 +78,20 @@ pub const GTPR_OFFSET: u32 = 0x10;
 // USARTx - ISR bit definitions
 // ------------------------------------
 pub const ISR_OFFSET: u32 = 0x1C;
-pub const ISR_TC: u32     = 1 << 6;
-pub const ISR_TXE: u32    = 1 << 7;
+pub const ISR_PE: u32     = 0b1;
+pub const ISR_FE: u32     = 0b1 << 1;
+pub const ISR_NF: u32     = 0b1 << 2;
+pub const ISR_ORE: u32    = 0b1 << 3;
+pub const ISR_IDLE: u32   = 0b1 << 4;
+pub const ISR_RXNE: u32   = 0b1 << 5;
+pub const ISR_TC: u32     = 0b1 << 6;
+pub const ISR_TXE: u32    = 0b1 << 7;
 
 // ------------------------------------
 // USARTx - RDR bit definitions
 // ------------------------------------
 pub const RDR_OFFSET: u32 = 0x24;
+pub const RDR_MASK: u8 = 1 << 8;
 
 // ------------------------------------
 // USARTx - TDR bit definitions

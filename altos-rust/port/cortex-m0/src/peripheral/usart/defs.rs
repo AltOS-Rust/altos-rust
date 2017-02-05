@@ -32,7 +32,7 @@ pub const CR1_M1:     u32 = 0b1 << 28;
 // ------------------------------------
 // USARTx - CR2 bit definitions
 // ------------------------------------
-pub const CR2_OFFSET:    u32 = 0x04;
+pub const CR2_OFFSET: u32 = 0x04;
 // Bits 0 - 3 are reserved and must be kept at reset value.
 pub const CR2_ADDM7:     u32 = 0b1 << 4;
 pub const CR2_LBDL:      u32 = 0b1 << 5;
@@ -86,6 +86,29 @@ pub const ISR_IDLE: u32   = 0b1 << 4;
 pub const ISR_RXNE: u32   = 0b1 << 5;
 pub const ISR_TC: u32     = 0b1 << 6;
 pub const ISR_TXE: u32    = 0b1 << 7;
+
+// ------------------------------------
+// USARTx - ICR bit definitions
+// ------------------------------------
+pub ICR_OFFSET: 0x20
+pub const ICR_PECF: u32   = 0b1;
+pub const ICR_FECF: u32   = 0b1 << 1;
+pub const ICR_NCF: u32    = 0b1 << 2;
+pub const ICR_ORECF: u32  = 0b1 << 3;
+pub const ICR_IDLECF: u32 = 0b1 << 4;
+// Bit 5 reserved. Must be kept at reset value.
+pub const ICR_TCCF: u32 = 0b1 << 6;
+// Bit 7 reserved. Must be kept at reset value.
+pub const ICR_LBDCF: u32 = 0b1 << 8;
+pub const ICR_CTSCF: u32 = 0b1 << 9;
+// Bit 10 reserved. Must be kept at reset value.
+pub const ICR_RTOCF: u32 = 0b1 << 11;
+pub const ICR_EOBCF: u32 = 0b1 << 12;
+// Bit 13 - 16 reserved. Must be kept at reset value.
+pub const ICR_CMCF: u32 = 0b1 << 17;
+// Bit 18 and 19 reserved. Must be kept at reset value.
+pub const ICR_WUCF: u32 = 0b1 << 20;
+// Bit 21 - 31 reserved. Must be kept at reset value.
 
 // ------------------------------------
 // USARTx - RDR bit definitions

@@ -5,7 +5,7 @@
 
 use arm::asm::bkpt;
 use altos_core::syscall;
-use time;
+use interrupt;
 
 #[cfg(not(test))]
 #[cfg(target_arch="arm")]
@@ -65,6 +65,8 @@ extern "C" fn default_handler() {
 }
 
 extern "C" fn systick_handler() {
+  use time;
+
   syscall::system_tick();
   time::system_tick();
 }
@@ -143,10 +145,25 @@ extern "C" fn pend_sv_handler() {
 /// Interrupt handler for Usart2
 extern "C" fn usart2_handler() {
     use peripheral::usart::{UsartX, Usart, USART2_CHAN};
+    use io::TX_BUFFER;
     // Whatever bits are stored in the usart2 in use, are reflected in
     // the address for this usart2 variable as well.
     let mut usart2 = Usart::new(UsartX::Usart2);
-    if usart2.get_txe() {
-        syscall::wake(USART2_CHAN);
+    unsafe {
+        if usart2.get_txe() {
+            if let Some(byte) = TX_BUFFER.remove() {
+                usart2.transmit_byte(byte);
+            }
+            else {
+                usart2.disable_transmit_interrupt();
+                syscall::wake(USART2_CHAN);
+            }
+        }
     }
+
+/*
+    let nvic = interrupt::nvic();
+    // TODO: This will get replaced by an enum in the `interrupt` mod
+    nvic.clear_pending(28);
+*/
 }

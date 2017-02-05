@@ -16,6 +16,7 @@ use self::tdr::TDR;
 use self::isr::ISR;
 use self::defs::*;
 use peripheral::{rcc, gpio};
+use interrupt;
 
 pub use self::control::{WordLength, Mode, Parity, StopLength, HardwareFlowControl};
 pub use self::baudr::BaudRate;
@@ -189,6 +190,10 @@ pub fn init() {
     let cr = rcc.get_system_clock_rate();
     usart2.set_baud_rate(BaudRate::Hz9600, cr);
 
-//    usart2.enable_transmit_interrupt();
+    usart2.enable_transmit_interrupt();
     usart2.enable_usart();
+
+    let nvic = interrupt::nvic();
+    // TODO: This argument should be replaced by an enum in the `interrupt` module
+    nvic.enable_interrupt(28);
 }

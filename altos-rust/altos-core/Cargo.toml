@@ -16,6 +16,7 @@ test = []
 
 [dependencies]
 bump_allocator = { path = "libs/heap/bump_allocator", optional = true }
+free_list_allocator = { path = "libs/heap/free_list_allocator", optional = true }
 volatile = { path = "../libs/volatile" }
 
 [target.thumbv6m-none-eabi.dependencies]

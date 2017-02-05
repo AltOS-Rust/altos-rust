@@ -26,6 +26,8 @@ test_dependencies = altos_core \
 										volatile \
 										cm0_atomic \
 										cortex_m0 \
+										bump_allocator \
+										free_list_allocator \
 
 # --lib flag only runs the unit test suite, doc tests are currently an issue for cross-compiled
 #  platforms. See: https://github.com/rust-lang/cargo/issues/1789
@@ -85,4 +87,3 @@ test_verbose:
 	@$(cargo) test $(test_args) -- --nocapture
 
 size: debug
-

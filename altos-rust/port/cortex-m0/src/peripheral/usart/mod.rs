@@ -16,6 +16,7 @@ use self::tdr::TDR;
 use self::isr::ISR;
 use self::defs::*;
 use peripheral::{rcc, gpio};
+use io::write_str;
 
 pub use self::control::{WordLength, Mode, Parity, StopLength, HardwareFlowControl};
 pub use self::baudr::BaudRate;
@@ -25,16 +26,16 @@ pub const USART2_CHAN: usize = 43;
 #[derive(Copy, Clone)]
 pub enum UsartX {
     Usart1,
-        Usart2,
+    Usart2,
 }
 
 #[derive(Copy, Clone)]
 pub struct Usart {
-mem_addr: *const u32,
-              control: UsartControl,
-              baud: BRR,
-              tdr: TDR,
-              isr: ISR,
+    mem_addr: *const u32,
+    control: UsartControl,
+    baud: BRR,
+    tdr: TDR,
+    isr: ISR,
 }
 
 impl Control for Usart {
@@ -47,19 +48,19 @@ impl Usart {
     pub fn new(x: UsartX) -> Self {
         match x {
             UsartX::Usart1 => Usart {
-mem_addr: USART1_ADDR,
-              control: UsartControl::new(USART1_ADDR),
-              baud: BRR::new(USART1_ADDR),
-              tdr: TDR::new(USART1_ADDR),
-              isr: ISR::new(USART1_ADDR),
+                mem_addr: USART1_ADDR,
+                control: UsartControl::new(USART1_ADDR),
+                baud: BRR::new(USART1_ADDR),
+                tdr: TDR::new(USART1_ADDR),
+                isr: ISR::new(USART1_ADDR),
             },
-                UsartX::Usart2 => Usart {
-mem_addr: USART2_ADDR,
-          control: UsartControl::new(USART2_ADDR),
-          baud: BRR::new(USART2_ADDR),
-          tdr: TDR::new(USART2_ADDR),
-          isr: ISR::new(USART2_ADDR),
-                },
+            UsartX::Usart2 => Usart {
+                mem_addr: USART2_ADDR,
+                control: UsartControl::new(USART2_ADDR),
+                baud: BRR::new(USART2_ADDR),
+                tdr: TDR::new(USART2_ADDR),
+                isr: ISR::new(USART2_ADDR),
+            },
         }
     }
 
@@ -147,5 +148,5 @@ pub fn init() {
 
     usart2.enable_usart();
 
-    write("Hello, World!\r\n");
+    write_str("Hello, World!\r\n");
 }

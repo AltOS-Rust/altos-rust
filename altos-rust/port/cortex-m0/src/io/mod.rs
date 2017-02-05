@@ -1,5 +1,6 @@
 
-use core::fmt::{self, Write};
+use core::fmt::{self, Write, Arguments};
+use peripheral::usart::{UsartX, Usart};
 
 struct Serial;
 

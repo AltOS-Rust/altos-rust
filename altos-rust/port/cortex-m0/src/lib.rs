@@ -26,10 +26,11 @@ pub extern crate arm;
 mod test;
 
 mod exceptions;
-pub mod peripheral;
-pub mod time;
 mod interrupt;
 mod system_control;
+pub mod peripheral;
+pub mod time;
+pub mod io;
 
 use peripheral::gpio;
 use peripheral::rcc;
@@ -72,9 +73,10 @@ pub mod kernel {
 #[lang = "eh_personality"] extern "C" fn eh_personality() {}
 #[cfg(not(test))]
 #[lang = "panic_fmt"]
-extern "C" fn panic_fmt(_fmt: core::fmt::Arguments, _file: &'static str, _line: usize) -> ! {
-    use peripheral::usart::write;
-    write("Panicked\r\n");
+extern "C" fn panic_fmt(fmt: core::fmt::Arguments, _file: &'static str, _line: usize) -> ! {
+    use io::{write_str, write_fmt};
+    write_str("Panicked\r\n");
+    write_fmt(fmt);
     loop {
         unsafe {
             arm::asm::bkpt();

@@ -33,7 +33,7 @@ pub fn application_entry() -> ! {
     kernel::syscall::new_task(blink_1, Args::empty(), 512, Priority::Normal, "blink_1");
     kernel::syscall::new_task(blink_2, Args::empty(), 512, Priority::Normal, "blink_2");
     kernel::syscall::new_task(blink_sleep, Args::empty(), 512, Priority::Normal, "blink_3");
-    kernel::syscall::new_task(print_task, Args::empty(), 512, Priority::Normal, "print_task");
+    kernel::syscall::new_task(print_task, Args::empty(), 1024, Priority::Normal, "print_task");
     kernel::task::start_scheduler();
 
     loop { unsafe { arm::asm::bkpt() }; }
@@ -91,6 +91,9 @@ fn blink_sleep(_args: &mut Args) {
 }
 
 fn print_task(_args: &mut Args) {
-    println!("Hello World");
+    loop {
+        println!("Hello World");
+        panic!("WHAT THE HELL DID YOU DO?!?!?!?");
+    }
     loop {}
 }

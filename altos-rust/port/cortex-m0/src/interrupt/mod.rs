@@ -10,6 +10,10 @@ mod enable;
 mod pending;
 mod priority;
 
+pub fn nvic() -> NVIC {
+  NVIC::nvic()
+}
+
 #[derive(Copy, Clone)]
 pub struct NVIC {
   mem_addr: *const u32,
@@ -25,7 +29,7 @@ impl Control for NVIC {
 }
 
 impl NVIC {
-  pub fn nvic() -> Self {
+  fn nvic() -> Self {
     const NVIC_ADDR: *const u32 = 0xE000E100 as *const _;
     NVIC {
       mem_addr: NVIC_ADDR,

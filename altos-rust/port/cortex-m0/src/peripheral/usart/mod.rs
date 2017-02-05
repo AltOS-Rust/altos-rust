@@ -80,6 +80,18 @@ impl Usart {
         self.control.set_mode(mode);
     }
 
+    pub fn enable_receiver_not_empty_interrupt(&mut self) {
+        self.control.enable_receiver_not_empty_interrupt();
+    }
+
+    pub fn disable_receiver_not_empty_interrupt(&mut self) {
+        self.control.disable_receiver_not_empty_interrupt();
+    }
+
+    pub fn get_rxneie(&self) -> bool {
+        self.control.get_rxneie()
+    }
+
     pub fn enable_transmit_complete_interrupt(&mut self) {
         self.control.enable_transmit_complete_interrupt();
     }

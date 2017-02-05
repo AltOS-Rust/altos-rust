@@ -39,6 +39,18 @@ impl UsartControl {
         self.cr1.set_mode(mode);
     }
 
+    pub fn enable_receiver_not_empty_interrupt(&mut self) {
+        self.cr1.set_receiver_not_empty_interrupt(true);
+    }
+
+    pub fn disable_receiver_not_empty_interrupt(&mut self) {
+        self.cr1.set_receiver_not_empty_interrupt(false);
+    }
+
+    pub fn get_rxneie(&self) -> bool {
+        self.cr1.get_rxneie()
+    }
+
     pub fn enable_transmit_complete_interrupt(&mut self) {
         self.cr1.set_transmit_complete_interrupt(true);
     }
@@ -170,6 +182,22 @@ impl CR1 {
             let mut reg = self.addr();
             *reg &= !(CR1_RE | CR1_TE);
             *reg |= mask;
+        }
+    }
+
+    fn set_receiver_not_empty_interrupt(&mut self, enable: bool) {
+        unsafe {
+            let mut reg = self.addr();
+            *reg &= !(CR1_RXNEIE);
+            if enable {
+                *reg |= CR1_RXNEIE;
+            }
+        }
+    }
+
+    fn get_rxneie(&self) -> bool {
+        unsafe {
+            *self.addr() & CR1_RXNEIE != 0
         }
     }
 
@@ -360,7 +388,7 @@ mod tests {
 
     #[test]
     fn test_cr1_enable_disable_usart() {
-        let cr1 = test::create_register::<CR1>();
+        let mut cr1 = test::create_register::<CR1>();
         assert_eq!(cr1.register_value(), 0b0);
 
         cr1.enable_usart(true);
@@ -384,7 +412,7 @@ mod tests {
 
     #[test]
     fn test_cr1_set_word_length() {
-        let cr1 = test::create_register::<CR1>();
+        let mut cr1 = test::create_register::<CR1>();
 
         cr1.set_word_length(WordLength::Seven);
         assert_eq!(cr1.register_value(), 0b1 << 28);
@@ -398,7 +426,7 @@ mod tests {
 
     #[test]
     fn test_cr1_set_mode() {
-        let cr1 = test::create_register::<CR1>();
+        let mut cr1 = test::create_register::<CR1>();
 
         cr1.set_mode(Mode::Receive);
         assert_eq!(cr1.register_value(), 0b1 << 2);
@@ -412,7 +440,7 @@ mod tests {
 
     #[test]
     fn test_cr1_set_parity() {
-        let cr1 = test::create_register::<CR1>();
+        let mut cr1 = test::create_register::<CR1>();
 
         cr1.set_parity(Parity::None);
         assert_eq!(cr1.register_value(), 0b0);
@@ -426,7 +454,7 @@ mod tests {
 
     #[test]
     fn test_cr1_set_over8() {
-        let cr1 = test::create_register::<CR1>();
+        let mut cr1 = test::create_register::<CR1>();
         assert_eq!(cr1.register_value(), 0b0);
 
         cr1.set_over8(true);
@@ -450,14 +478,14 @@ mod tests {
 
     #[test]
     fn test_cr1_enable_transmit_interrupt() {
-        let cr1 = test::create_register::<CR1>();
+        let mut cr1 = test::create_register::<CR1>();
         cr1.set_transmit_interrupt(true);
         assert_eq!(cr1.register_value(), 0b1 << 7);
     }
 
     #[test]
     fn test_cr1_disable_transmit_interrupt() {
-        let cr1 = test::create_initialized_register::<CR1>(0b1 << 7);
+        let mut cr1 = test::create_initialized_register::<CR1>(0b1 << 7);
         cr1.set_transmit_interrupt(false);
         assert_eq!(cr1.register_value(), 0);
     }
@@ -476,14 +504,14 @@ mod tests {
 
     #[test]
     fn test_cr1_enable_transmit_complete_interrupt() {
-        let cr1 = test::create_register::<CR1>();
+        let mut cr1 = test::create_register::<CR1>();
         cr1.set_transmit_complete_interrupt(true);
         assert_eq!(cr1.register_value(), 0b1 << 6);
     }
 
     #[test]
     fn test_cr1_disable_transmit_complete_interrupt() {
-        let cr1 = test::create_initialized_register::<CR1>(0b1 << 6);
+        let mut cr1 = test::create_initialized_register::<CR1>(0b1 << 6);
         cr1.set_transmit_complete_interrupt(false);
         assert_eq!(cr1.register_value(), 0);
     }
@@ -501,8 +529,34 @@ mod tests {
     }
 
     #[test]
+    fn test_cr1_enable_receiver_not_empty_interrupt() {
+        let mut cr1 = test::create_register::<CR1>();
+        cr1.set_receiver_not_empty_interrupt(true);
+        assert_eq!(cr1.register_value(), 0b1 << 5);
+    }
+
+    #[test]
+    fn test_cr1_disable_receiver_not_empty_interrupt() {
+        let mut cr1 = test::create_initialized_register::<CR1>(0b1 << 5);
+        cr1.set_receiver_not_empty_interrupt(false);
+        assert_eq!(cr1.register_value(), 0);
+    }
+
+    #[test]
+    fn test_cr1_get_receiver_not_empty_interrupt_returns_false_when_disabled() {
+        let cr1 = test::create_register::<CR1>();
+        assert_eq!(cr1.get_rxneie(), false);
+    }
+
+    #[test]
+    fn test_cr1_get_receiver_not_empty_interrupt_returns_true_when_enabled() {
+        let cr1 = test::create_initialized_register::<CR1>(0b1 << 5);
+        assert_eq!(cr1.get_rxneie(), true);
+    }
+
+    #[test]
     fn test_cr2_set_stop_bits() {
-        let cr2 = test::create_register::<CR2>();
+        let mut cr2 = test::create_register::<CR2>();
         assert_eq!(cr2.register_value(), 0b0);
 
         cr2.set_stop_bits(StopLength::Half);
@@ -520,7 +574,7 @@ mod tests {
 
     #[test]
     fn test_cr3_set_hardware_flow_control() {
-        let cr3 = test::create_register::<CR3>();
+        let mut cr3 = test::create_register::<CR3>();
         assert_eq!(cr3.register_value(), 0b0);
 
         cr3.set_hardware_flow_control(HardwareFlowControl::Rts);

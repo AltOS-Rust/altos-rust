@@ -1,7 +1,9 @@
 
+use altos_core::syscall::sleep;
 use core::fmt::{self, Write, Arguments};
-use peripheral::usart::{UsartX, Usart};
+use peripheral::usart::{UsartX, Usart, USART2_CHAN};
 
+// TODO: Make kernel print macros
 #[cfg(not(test))]
 macro_rules! print {
     ($($arg:tt)*) => ({
@@ -25,10 +27,12 @@ impl Serial {
     }
 
     fn write_byte(&mut self, byte: u8) {
-        while !self.usart.get_txe() {}
+        while !self.usart.get_txe() { sleep(USART2_CHAN); }
         self.usart.transmit_byte(byte);
     }
 }
+
+// TODO: Need to lock this to avoid data race
 impl Write for Serial {
     fn write_str(&mut self, string: &str) -> fmt::Result {
         for byte in string.as_bytes() {

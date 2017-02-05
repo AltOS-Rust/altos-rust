@@ -59,6 +59,14 @@ impl UsartControl {
         self.cr1.set_over8(false);
     }
 
+    pub fn enable_transmit_interrupt(&self) {
+        self.cr1.set_transmit_interrupt(true);
+    }
+
+    pub fn disable_transmit_interrupt(&self) {
+        self.cr1.set_transmit_interrupt(false);
+    }
+
     pub fn get_over8(&self) -> bool {
         self.cr1.get_over8()
     }
@@ -193,6 +201,16 @@ impl CR1 {
     fn get_over8(&self) -> bool {
         unsafe {
             *self.addr() & CR1_OVER8 != 0
+        }
+    }
+
+    fn set_transmit_interrupt(&self, enable: bool) {
+        unsafe {
+            let mut reg = self.addr();
+            *reg &= !(CR1_TXEIE);
+            if enable {
+                *reg |= CR1_TXEIE;
+            }
         }
     }
 }
@@ -390,6 +408,20 @@ mod tests {
     fn test_cr1_get_over8_returns_true_when_value_is_set() {
         let cr1 = test::create_initialized_register::<CR1>(0b1 << 15);
         assert_eq!(cr1.get_over8(), true);
+    }
+
+    #[test]
+    fn test_cr1_enable_transmit_interrupt() {
+        let cr1 = test::create_register::<CR1>();
+        cr1.set_transmit_interrupt(true);
+        assert_eq!(cr1.register_value(), 1 << 7);
+    }
+
+    #[test]
+    fn test_cr1_disable_transmit_interrupt() {
+        let cr1 = test::create_initialized_register::<CR1>(1 << 7);
+        cr1.set_transmit_interrupt(false);
+        assert_eq!(cr1.register_value(), 0);
     }
 
     #[test]

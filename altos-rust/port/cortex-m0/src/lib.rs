@@ -74,7 +74,7 @@ pub mod kernel {
 #[lang = "panic_fmt"]
 extern "C" fn panic_fmt(_fmt: core::fmt::Arguments, _file: &'static str, _line: usize) -> ! {
     use peripheral::usart::write;
-    write("Panicked\n");
+    write("Panicked\r\n");
     loop {
         unsafe {
             arm::asm::bkpt();

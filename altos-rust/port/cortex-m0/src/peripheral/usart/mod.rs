@@ -147,7 +147,7 @@ pub fn init() {
 
     usart2.enable_usart();
 
-    write("Hello, World!\n");
+    write("Hello, World!\r\n");
 }
 
 pub fn write(string: &str) {

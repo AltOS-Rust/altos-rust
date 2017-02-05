@@ -463,6 +463,18 @@ mod tests {
     }
 
     #[test]
+    fn test_cr1_get_txeie_returns_false_when_disabled() {
+        let cr1 = test::create_register::<CR1>();
+        assert_eq!(cr1.get_txeie(), false);
+    }
+
+    #[test]
+    fn test_cr1_get_txeie_returns_true_when_enabled() {
+        let cr1 = test::create_initialized_register::<CR1>(0b1 << 7);
+        assert_eq!(cr1.get_txeie(), true);
+    }
+
+    #[test]
     fn test_cr1_enable_transmit_complete_interrupt() {
         let cr1 = test::create_register::<CR1>();
         cr1.set_transmit_complete_interrupt(true);
@@ -474,6 +486,18 @@ mod tests {
         let cr1 = test::create_initialized_register::<CR1>(0b1 << 6);
         cr1.set_transmit_complete_interrupt(false);
         assert_eq!(cr1.register_value(), 0);
+    }
+
+    #[test]
+    fn test_cr1_get_tcie_returns_false_when_disabled() {
+        let cr1 = test::create_register::<CR1>();
+        assert_eq!(cr1.get_tcie(), false);
+    }
+
+    #[test]
+    fn test_cr1_get_tcie_returns_true_when_enabled() {
+        let cr1 = test::create_initialized_register::<CR1>(0b1 << 6);
+        assert_eq!(cr1.get_tcie(), true);
     }
 
     #[test]

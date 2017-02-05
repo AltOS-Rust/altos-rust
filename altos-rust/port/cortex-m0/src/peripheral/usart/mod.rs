@@ -100,6 +100,14 @@ impl Usart {
         self.control.disable_transmit_interrupt();
     }
 
+    pub fn enable_transmit_complete_interrupt(&self) {
+        self.control.enable_transmit_complete_interrupt();
+    }
+
+    pub fn disable_transmit_complete_interrupt(&self) {
+        self.control.disable_transmit_complete_interrupt();
+    }
+
     pub fn disable_over8(&self) {
         self.control.disable_over8();
     }
@@ -153,6 +161,6 @@ pub fn init() {
     let cr = rcc.get_system_clock_rate();
     usart2.set_baud_rate(BaudRate::Hz9600, cr);
 
-    usart2.enable_transmit_interrupt();
+//    usart2.enable_transmit_interrupt();
     usart2.enable_usart();
 }

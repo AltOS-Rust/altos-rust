@@ -67,6 +67,14 @@ impl UsartControl {
         self.cr1.set_transmit_interrupt(false);
     }
 
+    pub fn enable_transmit_complete_interrupt(&self) {
+        self.cr1.set_transmit_complete_interrupt(true);
+    }
+
+    pub fn disable_transmit_complete_interrupt(&self) {
+        self.cr1.set_transmit_complete_interrupt(false);
+    }
+
     pub fn get_over8(&self) -> bool {
         self.cr1.get_over8()
     }
@@ -210,6 +218,16 @@ impl CR1 {
             *reg &= !(CR1_TXEIE);
             if enable {
                 *reg |= CR1_TXEIE;
+            }
+        }
+    }
+
+    fn set_transmit_complete_interrupt(&self, enable: bool) {
+        unsafe {
+            let mut reg = self.addr();
+            *reg &= !(CR1_TCIE);
+            if enable {
+                *reg |= CR1_TCIE;
             }
         }
     }
@@ -414,13 +432,27 @@ mod tests {
     fn test_cr1_enable_transmit_interrupt() {
         let cr1 = test::create_register::<CR1>();
         cr1.set_transmit_interrupt(true);
-        assert_eq!(cr1.register_value(), 1 << 7);
+        assert_eq!(cr1.register_value(), 0b1 << 7);
     }
 
     #[test]
     fn test_cr1_disable_transmit_interrupt() {
-        let cr1 = test::create_initialized_register::<CR1>(1 << 7);
+        let cr1 = test::create_initialized_register::<CR1>(0b1 << 7);
         cr1.set_transmit_interrupt(false);
+        assert_eq!(cr1.register_value(), 0);
+    }
+
+    #[test]
+    fn test_cr1_enable_transmit_complete_interrupt() {
+        let cr1 = test::create_register::<CR1>();
+        cr1.set_transmit_complete_interrupt(true);
+        assert_eq!(cr1.register_value(), 0b1 << 6);
+    }
+
+    #[test]
+    fn test_cr1_disable_transmit_complete_interrupt() {
+        let cr1 = test::create_initialized_register::<CR1>(0b1 << 6);
+        cr1.set_transmit_complete_interrupt(false);
         assert_eq!(cr1.register_value(), 0);
     }
 

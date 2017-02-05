@@ -35,36 +35,8 @@ impl UsartControl {
         self.cr1.is_usart_enabled()
     }
 
-    pub fn set_word_length(&self, length: WordLength) {
-        self.cr1.set_word_length(length);
-    }
-
     pub fn set_mode(&self, mode: Mode) {
         self.cr1.set_mode(mode);
-    }
-
-    pub fn set_parity(&self, parity: Parity) {
-        self.cr1.set_parity(parity);
-    }
-
-    pub fn set_stop_bits(&self, length: StopLength) {
-        self.cr2.set_stop_bits(length);
-    }
-
-    pub fn enable_over8(&self) {
-        self.cr1.set_over8(true);
-    }
-
-    pub fn disable_over8(&self) {
-        self.cr1.set_over8(false);
-    }
-
-    pub fn enable_transmit_interrupt(&self) {
-        self.cr1.set_transmit_interrupt(true);
-    }
-
-    pub fn disable_transmit_interrupt(&self) {
-        self.cr1.set_transmit_interrupt(false);
     }
 
     pub fn enable_transmit_complete_interrupt(&self) {
@@ -75,8 +47,44 @@ impl UsartControl {
         self.cr1.set_transmit_complete_interrupt(false);
     }
 
+    pub fn get_tcie(&self) -> bool {
+        self.cr1.get_tcie()
+    }
+
+    pub fn enable_transmit_interrupt(&self) {
+        self.cr1.set_transmit_interrupt(true);
+    }
+
+    pub fn disable_transmit_interrupt(&self) {
+        self.cr1.set_transmit_interrupt(false);
+    }
+
+    pub fn get_txeie(&self) -> bool {
+        self.cr1.get_txeie()
+    }
+
+    pub fn set_parity(&self, parity: Parity) {
+        self.cr1.set_parity(parity);
+    }
+
+    pub fn set_word_length(&self, length: WordLength) {
+        self.cr1.set_word_length(length);
+    }
+
+    pub fn enable_over8(&self) {
+        self.cr1.set_over8(true);
+    }
+
+    pub fn disable_over8(&self) {
+        self.cr1.set_over8(false);
+    }
+
     pub fn get_over8(&self) -> bool {
         self.cr1.get_over8()
+    }
+
+    pub fn set_stop_bits(&self, length: StopLength) {
+        self.cr2.set_stop_bits(length);
     }
 
     pub fn set_hardware_flow_control(&self, hfc: HardwareFlowControl) {
@@ -149,21 +157,6 @@ impl CR1 {
         }
     }
 
-    // Sets wordlength to 7, 8, or 9 bits.
-    fn set_word_length(&self, length: WordLength) {
-        let mask = match length {
-            WordLength::Seven => CR1_M1,
-            WordLength::Eight => 0,
-            WordLength::Nine => CR1_M0,
-        };
-
-        unsafe {
-            let mut reg = self.addr();
-            *reg &= !(CR1_M0 | CR1_M1);
-            *reg |= mask;
-        }
-    }
-
     // Sets mode for receive(Rx), transmit(Tx) or both(RxTx)
     fn set_mode(&self, mode: Mode) {
         let mask = match mode {
@@ -177,6 +170,38 @@ impl CR1 {
             let mut reg = self.addr();
             *reg &= !(CR1_RE | CR1_TE);
             *reg |= mask;
+        }
+    }
+
+    fn set_transmit_complete_interrupt(&self, enable: bool) {
+        unsafe {
+            let mut reg = self.addr();
+            *reg &= !(CR1_TCIE);
+            if enable {
+                *reg |= CR1_TCIE;
+            }
+        }
+    }
+
+    fn get_tcie(&self) -> bool {
+        unsafe {
+            *self.addr() & CR1_TCIE != 0
+        }
+    }
+
+    fn set_transmit_interrupt(&self, enable: bool) {
+        unsafe {
+            let mut reg = self.addr();
+            *reg &= !(CR1_TXEIE);
+            if enable {
+                *reg |= CR1_TXEIE;
+            }
+        }
+    }
+
+    fn get_txeie(&self) -> bool {
+        unsafe {
+            *self.addr() & CR1_TXEIE != 0
         }
     }
 
@@ -195,6 +220,21 @@ impl CR1 {
         }
     }
 
+    // Sets wordlength to 7, 8, or 9 bits.
+    fn set_word_length(&self, length: WordLength) {
+        let mask = match length {
+            WordLength::Seven => CR1_M1,
+            WordLength::Eight => 0,
+            WordLength::Nine => CR1_M0,
+        };
+
+        unsafe {
+            let mut reg = self.addr();
+            *reg &= !(CR1_M0 | CR1_M1);
+            *reg |= mask;
+        }
+    }
+
     // Sets oversampling by 16 (0) or by 8 (1)
     fn set_over8(&self, enable: bool) {
         unsafe {
@@ -209,26 +249,6 @@ impl CR1 {
     fn get_over8(&self) -> bool {
         unsafe {
             *self.addr() & CR1_OVER8 != 0
-        }
-    }
-
-    fn set_transmit_interrupt(&self, enable: bool) {
-        unsafe {
-            let mut reg = self.addr();
-            *reg &= !(CR1_TXEIE);
-            if enable {
-                *reg |= CR1_TXEIE;
-            }
-        }
-    }
-
-    fn set_transmit_complete_interrupt(&self, enable: bool) {
-        unsafe {
-            let mut reg = self.addr();
-            *reg &= !(CR1_TCIE);
-            if enable {
-                *reg |= CR1_TCIE;
-            }
         }
     }
 }

@@ -72,32 +72,12 @@ impl Usart {
         self.control.disable_usart();
     }
 
-    pub fn set_word_length(&self, length: WordLength) {
-        self.control.set_word_length(length);
+    pub fn is_usart_enabled(&self) -> bool {
+        self.control.is_usart_enabled()
     }
 
     pub fn set_mode(&self, mode: Mode) {
         self.control.set_mode(mode);
-    }
-
-    pub fn set_parity(&self, parity: Parity) {
-        self.control.set_parity(parity);
-    }
-
-    pub fn set_stop_bits(&self, length: StopLength) {
-        self.control.set_stop_bits(length);
-    }
-
-    pub fn enable_over8(&self) {
-        self.control.enable_over8();
-    }
-
-    pub fn enable_transmit_interrupt(&self) {
-        self.control.enable_transmit_interrupt();
-    }
-
-    pub fn disable_transmit_interrupt(&self) {
-        self.control.disable_transmit_interrupt();
     }
 
     pub fn enable_transmit_complete_interrupt(&self) {
@@ -108,8 +88,40 @@ impl Usart {
         self.control.disable_transmit_complete_interrupt();
     }
 
+    pub fn get_tcie(&self) -> bool {
+        self.control.get_tcie()
+    }
+
+    pub fn enable_transmit_interrupt(&self) {
+        self.control.enable_transmit_interrupt();
+    }
+
+    pub fn disable_transmit_interrupt(&self) {
+        self.control.disable_transmit_interrupt();
+    }
+
+    pub fn get_txeie(&self) -> bool {
+        self.control.get_txeie()
+    }
+
+    pub fn set_parity(&self, parity: Parity) {
+        self.control.set_parity(parity);
+    }
+
+    pub fn set_word_length(&self, length: WordLength) {
+        self.control.set_word_length(length);
+    }
+
+    pub fn enable_over8(&self) {
+        self.control.enable_over8();
+    }
+
     pub fn disable_over8(&self) {
         self.control.disable_over8();
+    }
+
+    pub fn set_stop_bits(&self, length: StopLength) {
+        self.control.set_stop_bits(length);
     }
 
     pub fn set_hardware_flow_control(&self, hfc: HardwareFlowControl) {

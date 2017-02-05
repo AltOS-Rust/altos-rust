@@ -10,8 +10,8 @@ mod isr;
 
 use super::{Control, Register};
 use volatile::Volatile;
-use self::control::UsartCR;
-use self::baudr::UsartBRR;
+use self::control::UsartControl;
+use self::baudr::BRR;
 use self::tdr::TDR;
 use self::isr::ISR;
 use self::defs::*;
@@ -29,8 +29,8 @@ pub enum UsartX {
 #[derive(Copy, Clone)]
 pub struct Usart {
     mem_addr: *const u32,
-    control: UsartCR,
-    baud: UsartBRR,
+    control: UsartControl,
+    baud: BRR,
     tdr: TDR,
     isr: ISR,
 }
@@ -46,15 +46,15 @@ impl Usart {
         match x {
             UsartX::Usart1 => Usart {
                 mem_addr: USART1_ADDR,
-                control: UsartCR::new(USART1_ADDR),
-                baud: UsartBRR::new(USART1_ADDR),
+                control: UsartControl::new(USART1_ADDR),
+                baud: BRR::new(USART1_ADDR),
                 tdr: TDR::new(USART1_ADDR),
                 isr: ISR::new(USART1_ADDR),
             },
             UsartX::Usart2 => Usart {
                 mem_addr: USART2_ADDR,
-                control: UsartCR::new(USART2_ADDR),
-                baud: UsartBRR::new(USART2_ADDR),
+                control: UsartControl::new(USART2_ADDR),
+                baud: BRR::new(USART2_ADDR),
                 tdr: TDR::new(USART2_ADDR),
                 isr: ISR::new(USART2_ADDR),
             },
@@ -141,7 +141,7 @@ pub fn init() {
 
 
     let cr = rcc.get_system_clock_rate();
-    usart2.set_baud_rate(BaudRate::Rate9600, cr);
+    usart2.set_baud_rate(BaudRate::Hz9600, cr);
 
     usart2.enable_usart();
 

@@ -5,7 +5,7 @@ use super::defs::*;
 
 /// Three USART control registers.
 #[derive(Copy, Clone)]
-pub struct UsartCR {
+pub struct UsartControl {
     cr1: CR1,
     cr2: CR2,
     cr3: CR3,
@@ -14,9 +14,9 @@ pub struct UsartCR {
 // TODO Need to implement a clear mask for each register to ensure that
 // all register bits are set to zero before re-initializing register to
 // necessary values for a specific usart configuration.
-impl UsartCR {
+impl UsartControl {
     pub fn new(base_addr: *const u32) -> Self {
-        UsartCR {
+        UsartControl {
             cr1: CR1::new(base_addr),
             cr2: CR2::new(base_addr),
             cr3: CR3::new(base_addr),
@@ -82,6 +82,7 @@ pub enum WordLength {
 
 #[derive(Copy, Clone)]
 pub enum Mode {
+    None,
     Receive,
     Transmit,
     All,
@@ -150,6 +151,7 @@ impl CR1 {
     // Sets mode for receive(Rx), transmit(Tx) or both(RxTx)
     fn set_mode(&self, mode: Mode) {
         let mask = match mode {
+            Mode::None => 0,
             Mode::Receive => CR1_RE,
             Mode::Transmit => CR1_TE,
             Mode::All => (CR1_RE | CR1_TE),
@@ -303,6 +305,7 @@ mod tests {
     #[test]
     fn test_cr1_enable_disable_usart() {
         let cr1 = test::create_register::<CR1>();
+        assert_eq!(cr1.register_value(), 0b0);
 
         cr1.enable_usart(true);
         assert_eq!(cr1.register_value(), 0b1);
@@ -312,12 +315,15 @@ mod tests {
     }
 
     #[test]
-    fn test_cr1_is_usart_enabled() {
+    fn test_cr1_is_usart_enabled_returns_false_when_disabled() {
+        let cr1 = test::create_register::<CR1>();
+        assert_eq!(cr1.is_usart_enabled(), false);
+    }
+
+    #[test]
+    fn test_cr1_is_usart_enabled_returns_true_when_enabled() {
         let cr1 = test::create_initialized_register::<CR1>(1);
         assert_eq!(cr1.is_usart_enabled(), true);
-
-        cr1.enable_usart(false);
-        assert_eq!(cr1.is_usart_enabled(), false);
     }
 
     #[test]

@@ -91,7 +91,6 @@ pub const ISR_TXE: u32    = 0b1 << 7;
 // USARTx - RDR bit definitions
 // ------------------------------------
 pub const RDR_OFFSET: u32 = 0x24;
-pub const RDR_MASK: u32 = 1 << 8;
 
 // ------------------------------------
 // USARTx - TDR bit definitions

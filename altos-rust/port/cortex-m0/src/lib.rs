@@ -76,9 +76,9 @@ pub mod kernel {
 #[lang = "panic_fmt"]
 extern "C" fn panic_fmt(fmt: core::fmt::Arguments,
                         (file, line): (&'static str, u32)) -> ! {
-    println!("Panicked");
-    println!("File: {}, Line: {}", file, line);
-    println!("{}", fmt);
+    unsafe { arm::asm::disable_interrupts() };
+    kprintln!("Panicked at File: {}, Line: {}", file, line);
+    kprintln!("{}", fmt);
     loop {
         unsafe {
             arm::asm::bkpt();

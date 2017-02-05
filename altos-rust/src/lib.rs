@@ -93,6 +93,7 @@ fn blink_sleep(_args: &mut Args) {
 fn print_task(_args: &mut Args) {
     loop {
         println!("Hello World");
+        panic!("WHAT THE HELL DID YOU DO?!?!?!?");
     }
     loop {}
 }

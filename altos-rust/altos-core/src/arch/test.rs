@@ -9,6 +9,7 @@ use volatile::Volatile;
 use task::args::Args;
 use alloc::boxed::Box;
 use sched;
+use core::fmt;
 
 pub fn yield_cpu() {
   // no-op
@@ -35,4 +36,9 @@ pub fn begin_critical() -> usize {
 
 pub fn end_critical(_mask: usize) {
   // no-op
+}
+
+pub fn debug_fmt(args: fmt::Arguments) {
+  #[cfg(test)]
+  print!("{}", args);
 }

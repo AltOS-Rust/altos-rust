@@ -26,6 +26,19 @@
 #[macro_use]
 extern crate std;
 
+#[macro_export]
+macro_rules! kprint {
+    ($($arg:tt)*) => ({
+        unsafe { $crate::debug_fmt(format_args!($($arg)*)) };
+    });
+}
+
+#[macro_export]
+macro_rules! kprintln {
+    ($fmt:expr) => (kprint!(concat!($fmt, "\n")));
+    ($fmt:expr, $($arg:tt)*) => (kprint!(concat!($fmt, "\n"), $($arg)*));
+}
+
 #[cfg(all(not(test), not(feature="test"), feature="bump_allocator"))]
 extern crate bump_allocator as allocator;
 
@@ -64,3 +77,4 @@ pub use core::sync::atomic as atomic;
 pub use task::{TaskHandle, Priority};
 pub use sched::{CURRENT_TASK, switch_context, start_scheduler};
 pub use task::args;
+pub use arch::debug_fmt;

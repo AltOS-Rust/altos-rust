@@ -8,19 +8,6 @@ use peripheral::usart::{UsartX, Usart, USART2_CHAN};
 pub static mut TX_BUFFER: RingBuffer = RingBuffer::new();
 
 #[macro_export]
-macro_rules! kprint {
-    ($($arg:tt)*) => ({
-        $crate::io::debug_fmt(format_args!($($arg)*));
-    });
-}
-
-#[macro_export]
-macro_rules! kprintln {
-    ($fmt:expr) => (kprint!(concat!($fmt, "\n")));
-    ($fmt:expr, $($arg:tt)*) => (kprint!(concat!($fmt, "\n"), $($arg)*));
-}
-
-#[macro_export]
 #[cfg(not(test))]
 macro_rules! print {
     ($($arg:tt)*) => ({
@@ -112,6 +99,7 @@ pub fn write_str(s: &str) {
     serial.write_str(s).ok();
 }
 
+#[no_mangle]
 pub fn debug_fmt(args: Arguments) {
     let usart2 = Usart::new(UsartX::Usart2);
     let mut serial = DebugSerial::new(usart2);
@@ -119,6 +107,7 @@ pub fn debug_fmt(args: Arguments) {
     serial.write_fmt(args).ok();
 }
 
+#[no_mangle]
 pub fn debug_str(s: &str) {
     let usart2 = Usart::new(UsartX::Usart2);
     let mut serial = DebugSerial::new(usart2);

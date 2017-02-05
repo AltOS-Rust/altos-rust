@@ -7,6 +7,12 @@ use volatile::Volatile;
 use task::args::Args;
 use alloc::boxed::Box;
 use syscall;
+use core::fmt;
+
+#[allow(improper_ctypes)]
+extern "Rust" {
+  pub fn debug_fmt(args: fmt::Arguments);
+}
 
 pub fn yield_cpu() {
   const ICSR_ADDR: usize = 0xE000_ED04;

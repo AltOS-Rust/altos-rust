@@ -17,6 +17,7 @@
 #[macro_use]
 extern crate std;
 
+#[macro_use]
 extern crate altos_core;
 
 pub extern crate arm;

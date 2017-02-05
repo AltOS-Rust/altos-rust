@@ -21,7 +21,7 @@ impl Register for RDR {
 }
 
 impl RDR {
-    pub fn store(&self, byte: u8) {
+    pub fn store(&mut self, byte: u8) {
         unsafe {
             let mut reg = self.addr();
             reg.store(byte as u32);

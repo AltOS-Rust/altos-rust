@@ -90,7 +90,7 @@ pub const ISR_TXE: u32    = 0b1 << 7;
 // ------------------------------------
 // USARTx - ICR bit definitions
 // ------------------------------------
-pub ICR_OFFSET: 0x20
+pub const ICR_OFFSET: u32 = 0x20;
 pub const ICR_PECF: u32   = 0b1;
 pub const ICR_FECF: u32   = 0b1 << 1;
 pub const ICR_NCF: u32    = 0b1 << 2;

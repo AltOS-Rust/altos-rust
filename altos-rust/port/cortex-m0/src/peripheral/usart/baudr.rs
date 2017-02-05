@@ -32,7 +32,7 @@ impl Register for BRR {
 }
 
 impl BRR {
-    pub fn set_baud_rate(&self, baud_rate: BaudRate, clock_rate: u32, over8: bool) {
+    pub fn set_baud_rate(&mut self, baud_rate: BaudRate, clock_rate: u32, over8: bool) {
         let mut rate = match baud_rate {
             BaudRate::Hz4800 => clock_rate/4_800,
             BaudRate::Hz9600 => clock_rate/9_600,

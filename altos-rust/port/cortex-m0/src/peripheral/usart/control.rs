@@ -23,11 +23,11 @@ impl UsartControl {
         }
     }
 
-    pub fn enable_usart(&self) {
+    pub fn enable_usart(&mut self) {
         self.cr1.enable_usart(true);
     }
 
-    pub fn disable_usart(&self) {
+    pub fn disable_usart(&mut self) {
         self.cr1.enable_usart(false);
     }
 
@@ -35,15 +35,15 @@ impl UsartControl {
         self.cr1.is_usart_enabled()
     }
 
-    pub fn set_mode(&self, mode: Mode) {
+    pub fn set_mode(&mut self, mode: Mode) {
         self.cr1.set_mode(mode);
     }
 
-    pub fn enable_transmit_complete_interrupt(&self) {
+    pub fn enable_transmit_complete_interrupt(&mut self) {
         self.cr1.set_transmit_complete_interrupt(true);
     }
 
-    pub fn disable_transmit_complete_interrupt(&self) {
+    pub fn disable_transmit_complete_interrupt(&mut self) {
         self.cr1.set_transmit_complete_interrupt(false);
     }
 
@@ -51,11 +51,11 @@ impl UsartControl {
         self.cr1.get_tcie()
     }
 
-    pub fn enable_transmit_interrupt(&self) {
+    pub fn enable_transmit_interrupt(&mut self) {
         self.cr1.set_transmit_interrupt(true);
     }
 
-    pub fn disable_transmit_interrupt(&self) {
+    pub fn disable_transmit_interrupt(&mut self) {
         self.cr1.set_transmit_interrupt(false);
     }
 
@@ -63,19 +63,19 @@ impl UsartControl {
         self.cr1.get_txeie()
     }
 
-    pub fn set_parity(&self, parity: Parity) {
+    pub fn set_parity(&mut self, parity: Parity) {
         self.cr1.set_parity(parity);
     }
 
-    pub fn set_word_length(&self, length: WordLength) {
+    pub fn set_word_length(&mut self, length: WordLength) {
         self.cr1.set_word_length(length);
     }
 
-    pub fn enable_over8(&self) {
+    pub fn enable_over8(&mut self) {
         self.cr1.set_over8(true);
     }
 
-    pub fn disable_over8(&self) {
+    pub fn disable_over8(&mut self) {
         self.cr1.set_over8(false);
     }
 
@@ -83,11 +83,11 @@ impl UsartControl {
         self.cr1.get_over8()
     }
 
-    pub fn set_stop_bits(&self, length: StopLength) {
+    pub fn set_stop_bits(&mut self, length: StopLength) {
         self.cr2.set_stop_bits(length);
     }
 
-    pub fn set_hardware_flow_control(&self, hfc: HardwareFlowControl) {
+    pub fn set_hardware_flow_control(&mut self, hfc: HardwareFlowControl) {
         self.cr3.set_hardware_flow_control(hfc);
     }
 }
@@ -140,7 +140,7 @@ impl Register for CR1 {
 
 impl CR1 {
     // Enables and disables USARTx based on bool variable passed in.
-    fn enable_usart(&self, enable: bool) {
+    fn enable_usart(&mut self, enable: bool) {
         unsafe {
             let mut reg = self.addr();
             *reg &= !(CR1_UE);
@@ -158,7 +158,7 @@ impl CR1 {
     }
 
     // Sets mode for receive(Rx), transmit(Tx) or both(RxTx)
-    fn set_mode(&self, mode: Mode) {
+    fn set_mode(&mut self, mode: Mode) {
         let mask = match mode {
             Mode::None => 0,
             Mode::Receive => CR1_RE,
@@ -173,7 +173,7 @@ impl CR1 {
         }
     }
 
-    fn set_transmit_complete_interrupt(&self, enable: bool) {
+    fn set_transmit_complete_interrupt(&mut self, enable: bool) {
         unsafe {
             let mut reg = self.addr();
             *reg &= !(CR1_TCIE);
@@ -189,7 +189,7 @@ impl CR1 {
         }
     }
 
-    fn set_transmit_interrupt(&self, enable: bool) {
+    fn set_transmit_interrupt(&mut self, enable: bool) {
         unsafe {
             let mut reg = self.addr();
             *reg &= !(CR1_TXEIE);
@@ -206,7 +206,7 @@ impl CR1 {
     }
 
     // Sets parity to even or odd.
-    fn set_parity(&self, parity: Parity) {
+    fn set_parity(&mut self, parity: Parity) {
         let mask = match parity {
             Parity::None => 0,
             Parity::Even => CR1_PCE,
@@ -221,7 +221,7 @@ impl CR1 {
     }
 
     // Sets wordlength to 7, 8, or 9 bits.
-    fn set_word_length(&self, length: WordLength) {
+    fn set_word_length(&mut self, length: WordLength) {
         let mask = match length {
             WordLength::Seven => CR1_M1,
             WordLength::Eight => 0,
@@ -236,7 +236,7 @@ impl CR1 {
     }
 
     // Sets oversampling by 16 (0) or by 8 (1)
-    fn set_over8(&self, enable: bool) {
+    fn set_over8(&mut self, enable: bool) {
         unsafe {
             let mut reg = self.addr();
             *reg &= !(CR1_OVER8);
@@ -286,7 +286,7 @@ impl Register for CR2 {
 }
 
 impl CR2 {
-    fn set_stop_bits(&self, length: StopLength) {
+    fn set_stop_bits(&mut self, length: StopLength) {
         let mask = match length {
             StopLength::Half => CR2_STOP_BIT0,
             StopLength::One => 0,
@@ -337,7 +337,7 @@ impl Register for CR3 {
 }
 
 impl CR3 {
-    fn set_hardware_flow_control(&self, hfc: HardwareFlowControl) {
+    fn set_hardware_flow_control(&mut self, hfc: HardwareFlowControl) {
         let mask = match hfc {
             HardwareFlowControl::None => 0,
             HardwareFlowControl::Rts => CR3_RTSE,

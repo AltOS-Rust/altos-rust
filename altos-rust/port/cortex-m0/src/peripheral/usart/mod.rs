@@ -64,83 +64,83 @@ impl Usart {
     }
 
     // TODO: Change &self -> &mut self for all these?? Maybe??
-    pub fn enable_usart(&self) {
+    pub fn enable_usart(&mut self) {
         self.control.enable_usart();
     }
 
-    pub fn disable_usart(&self) {
+    pub fn disable_usart(&mut self) {
         self.control.disable_usart();
     }
 
-    pub fn is_usart_enabled(&self) -> bool {
+    pub fn is_usart_enabled(&mut self) -> bool {
         self.control.is_usart_enabled()
     }
 
-    pub fn set_mode(&self, mode: Mode) {
+    pub fn set_mode(&mut self, mode: Mode) {
         self.control.set_mode(mode);
     }
 
-    pub fn enable_transmit_complete_interrupt(&self) {
+    pub fn enable_transmit_complete_interrupt(&mut self) {
         self.control.enable_transmit_complete_interrupt();
     }
 
-    pub fn disable_transmit_complete_interrupt(&self) {
+    pub fn disable_transmit_complete_interrupt(&mut self) {
         self.control.disable_transmit_complete_interrupt();
     }
 
-    pub fn get_tcie(&self) -> bool {
+    pub fn get_tcie(&mut self) -> bool {
         self.control.get_tcie()
     }
 
-    pub fn enable_transmit_interrupt(&self) {
+    pub fn enable_transmit_interrupt(&mut self) {
         self.control.enable_transmit_interrupt();
     }
 
-    pub fn disable_transmit_interrupt(&self) {
+    pub fn disable_transmit_interrupt(&mut self) {
         self.control.disable_transmit_interrupt();
     }
 
-    pub fn get_txeie(&self) -> bool {
+    pub fn get_txeie(&mut self) -> bool {
         self.control.get_txeie()
     }
 
-    pub fn set_parity(&self, parity: Parity) {
+    pub fn set_parity(&mut self, parity: Parity) {
         self.control.set_parity(parity);
     }
 
-    pub fn set_word_length(&self, length: WordLength) {
+    pub fn set_word_length(&mut self, length: WordLength) {
         self.control.set_word_length(length);
     }
 
-    pub fn enable_over8(&self) {
+    pub fn enable_over8(&mut self) {
         self.control.enable_over8();
     }
 
-    pub fn disable_over8(&self) {
+    pub fn disable_over8(&mut self) {
         self.control.disable_over8();
     }
 
-    pub fn set_stop_bits(&self, length: StopLength) {
+    pub fn set_stop_bits(&mut self, length: StopLength) {
         self.control.set_stop_bits(length);
     }
 
-    pub fn set_hardware_flow_control(&self, hfc: HardwareFlowControl) {
+    pub fn set_hardware_flow_control(&mut self, hfc: HardwareFlowControl) {
         self.control.set_hardware_flow_control(hfc);
     }
 
-    pub fn set_baud_rate(&self, baud_rate: BaudRate, clock_rate: u32) {
+    pub fn set_baud_rate(&mut self, baud_rate: BaudRate, clock_rate: u32) {
         self.baud.set_baud_rate(baud_rate, clock_rate, self.control.get_over8());
     }
 
-    pub fn transmit_byte(&self, byte: u8) {
+    pub fn transmit_byte(&mut self, byte: u8) {
         self.tdr.store(byte);
     }
 
-    pub fn get_tc(&self) -> bool {
+    pub fn get_tc(&mut self) -> bool {
         self.isr.get_tc()
     }
 
-    pub fn get_txe(&self) -> bool {
+    pub fn get_txe(&mut self) -> bool {
         self.isr.get_txe()
     }
 }
@@ -166,7 +166,7 @@ pub fn init() {
     pa2.set_pull(gpio::Pull::Up);
     pa3.set_pull(gpio::Pull::Up);
 
-    let usart2 = Usart::new(UsartX::Usart2);
+    let mut usart2 = Usart::new(UsartX::Usart2);
     usart2.disable_usart();
     usart2.set_word_length(WordLength::Eight);
     usart2.set_mode(Mode::Transmit);

@@ -145,7 +145,7 @@ extern "C" fn usart2_handler() {
     use peripheral::usart::{UsartX, Usart, USART2_CHAN};
     // Whatever bits are stored in the usart2 in use, are reflected in
     // the address for this usart2 variable as well.
-    let usart2 = Usart::new(UsartX::Usart2);
+    let mut usart2 = Usart::new(UsartX::Usart2);
     if usart2.get_txe() {
         syscall::wake(USART2_CHAN);
     }

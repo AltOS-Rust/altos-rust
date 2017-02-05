@@ -21,7 +21,7 @@ impl Register for TDR {
 }
 
 impl TDR {
-    pub fn store(&self, byte: u8) {
+    pub fn store(&mut self, byte: u8) {
         unsafe {
             let mut reg = self.addr();
             reg.store(byte as u32);
@@ -47,6 +47,6 @@ mod tests {
         tdr.store(b'i');
         tdr.store(b'z');
         tdr.store(b'b');
-        assert_eq!(tdr.register_value(), 98);
+        assert_eq!(tdr.register_value(), 97);
     }
 }

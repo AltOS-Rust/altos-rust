@@ -21,9 +21,45 @@ impl Register for ISR {
 }
 
 impl ISR {
+    pub fn get_tc(&self) -> bool {
+        unsafe {
+            *self.addr() & ISR_TC != 0
+        }
+    }
+
     pub fn get_txe(&self) -> bool {
         unsafe {
             *self.addr() & ISR_TXE != 0
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test;
+
+    #[test]
+    fn test_isr_get_tc_returns_false_when_disabled() {
+        let isr = test::create_register::<ISR>();
+        assert_eq!(isr.get_tc(), false);
+    }
+
+    #[test]
+    fn test_isr_get_tc_returns_true_when_enabled() {
+        let isr = test::create_initialized_register::<ISR>(0b1 << 6);
+        assert_eq!(isr.get_tc(), true);
+    }
+
+    #[test]
+    fn test_isr_get_txe_returns_false_when_disabled() {
+        let isr = test::create_register::<ISR>();
+        assert_eq!(isr.get_txe(), false);
+    }
+
+    #[test]
+    fn test_isr_get_txe_returns_true_when_enabled() {
+        let isr = test::create_initialized_register::<ISR>(1 << 7);
+        assert_eq!(isr.get_txe(), true);
     }
 }

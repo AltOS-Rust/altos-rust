@@ -136,6 +136,10 @@ impl Usart {
         self.tdr.store(byte);
     }
 
+    pub fn get_tc(&self) -> bool {
+        self.isr.get_tc()
+    }
+
     pub fn get_txe(&self) -> bool {
         self.isr.get_txe()
     }

@@ -20,6 +20,8 @@ use peripheral::{rcc, gpio};
 pub use self::control::{WordLength, Mode, Parity, StopLength, HardwareFlowControl};
 pub use self::baudr::BaudRate;
 
+pub const USART2_CHAN: usize = 43;
+
 #[derive(Copy, Clone)]
 pub enum UsartX {
     Usart1,

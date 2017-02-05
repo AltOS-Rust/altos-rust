@@ -1,7 +1,7 @@
 use super::super::Register;
 use super::defs::*;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct TDR {
     base_addr: *const u32,
 }

@@ -12,7 +12,7 @@ pub enum BaudRate {
     Hz115200,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct BRR {
     base_addr: *const u32,
 }

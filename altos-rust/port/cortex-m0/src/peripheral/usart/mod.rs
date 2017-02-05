@@ -23,13 +23,13 @@ pub use self::baudr::BaudRate;
 
 pub const USART2_CHAN: usize = 43;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum UsartX {
     Usart1,
     Usart2,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Usart {
     mem_addr: *const u32,
     control: UsartControl,
@@ -148,5 +148,5 @@ pub fn init() {
 
     usart2.enable_usart();
 
-    write_str("Hello, World!\r\n");
+    write_str("Hello, World!\n");
 }

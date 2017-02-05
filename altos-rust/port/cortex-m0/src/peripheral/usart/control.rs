@@ -4,7 +4,7 @@ use super::super::Register;
 use super::defs::*;
 
 /// Three USART control registers.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct UsartControl {
     cr1: CR1,
     cr2: CR2,
@@ -73,14 +73,14 @@ impl UsartControl {
 // ------------------------------------
 
 /// Word length can be 7, 8, or 9 bits.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum WordLength {
     Seven,
     Eight,
     Nine,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum Mode {
     None,
     Receive,
@@ -88,14 +88,14 @@ pub enum Mode {
     All,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum Parity {
     None,
     Even,
     Odd,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 struct CR1 {
     base_addr: *const u32,
 }
@@ -202,7 +202,7 @@ impl CR1 {
 // ------------------------------------
 
 /// There are four stop bit settings: .5, 1, 1.5, 2
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum StopLength {
     Half,
     One,
@@ -210,7 +210,7 @@ pub enum StopLength {
     Two,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 struct CR2 {
     base_addr: *const u32,
 }
@@ -250,7 +250,7 @@ impl CR2 {
 /// CR3
 // ------------------------------------
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum HardwareFlowControl {
     None,
     /// Request to Send
@@ -261,7 +261,7 @@ pub enum HardwareFlowControl {
     RtsCts,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 struct CR3 {
     base_addr: *const u32,
 }

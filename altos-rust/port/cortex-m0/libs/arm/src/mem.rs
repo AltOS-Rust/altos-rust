@@ -4,7 +4,11 @@
 // Created by Daniel Seitz on 12/6/16
 
 #[no_mangle]
-pub unsafe extern "C" fn __aeabi_memclr4(s: *mut u8, c: usize, n: usize) -> *mut u8 {
+pub unsafe extern "C" fn __aeabi_memclr4(dest: *mut u8, n: usize) {
+    memset(dest, 0, n);
+}
+
+unsafe fn memset(s: *mut u8, c: i32, n: usize) -> *mut u8 {
     let mut i = 0;
     while i < n {
         *s.offset(i as isize) = c as u8;

@@ -28,3 +28,25 @@ impl TDR {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test;
+
+    #[test]
+    fn test_tdr_has_ascii_value_of_97_on_store_of_char_a() {
+        let tdr = test::create_register::<TDR>();
+        tdr.store(b'a');
+        assert_eq!(tdr.register_value(), 97);
+    }
+
+    #[test]
+    fn test_tdr_has_ascii_value_of_98_on_last_store_of_char_b() {
+        let tdr = test::create_register::<TDR>();
+        tdr.store(b'i');
+        tdr.store(b'z');
+        tdr.store(b'b');
+        assert_eq!(tdr.register_value(), 98);
+    }
+}

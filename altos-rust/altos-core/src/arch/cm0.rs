@@ -11,7 +11,7 @@ use core::fmt;
 
 #[allow(improper_ctypes)]
 extern "Rust" {
-  pub fn debug_fmt(args: fmt::Arguments);
+  fn debug_fmt(args: fmt::Arguments);
 }
 
 pub fn yield_cpu() {
@@ -118,6 +118,11 @@ pub fn end_critical(primask: usize) {
       : /* no clobbers */
       : "volatile");
   }
+}
+
+#[doc(hidden)]
+pub fn debug_print(args: fmt::Arguments) {
+  unsafe { debug_fmt(args) };
 }
 
 fn exit_error() -> ! {

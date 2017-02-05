@@ -104,6 +104,8 @@ pub fn init() -> ! {
     init_ticks();
     init_usart();
 
+    kprintln!("Initialization Complete");
+
     unsafe { application_entry() };
 }
 

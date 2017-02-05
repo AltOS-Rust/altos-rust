@@ -38,7 +38,7 @@ pub fn end_critical(_mask: usize) {
   // no-op
 }
 
-pub fn debug_fmt(args: fmt::Arguments) {
-  #[cfg(test)]
+#[doc(hidden)]
+pub fn debug_print(args: fmt::Arguments) {
   print!("{}", args);
 }

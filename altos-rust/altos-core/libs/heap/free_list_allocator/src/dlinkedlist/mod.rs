@@ -1,12 +1,14 @@
-// Experimenting with doubly linked list for free list allocator
-use alloc::boxed::Box;
+// Experimenting with doubly linked list code
+// This is intended for use by the free_list_allocator functionality
+
+// TODO: File should probably be relocated but I'm not sure where yet
 
 // Why is repr(C) here?
 #[repr(C)]
 pub struct Node<T> {
   data: T,
-  next: Option<Box<Node<T>>>,
-  prev: Option<Box<Node<T>>>,
+  next: Option<*mut Node<T>>,
+  prev: Option<*mut Node<T>>,
 }
 
 impl<T> Node<T> {
@@ -21,7 +23,7 @@ impl<T> Node<T> {
 
 // Not sure about naming
 pub struct DoublyLinkedList<T> {
-  head: Option<Node<T>>,
+  head: Option<*mut Node<T>>,
 }
 
 impl<T> DoublyLinkedList<T> {
@@ -35,68 +37,76 @@ impl<T> DoublyLinkedList<T> {
   fn add(&mut self, node_data: T) {
     match self.head {
       Some(head) => {
-        let mut new_node = Some(Node::new(node_data));
-        let mut current_head = self.head;
-        current_head.prev = new_node;
-        new_node.next = Some(current_head);
-        self.head = new_node;
-      }
+        let new_node: *mut Node<T> = &mut Node::new(node_data);
+        let mut current_head = head;
+        unsafe {
+          (*current_head).prev = Some(new_node);
+          (*new_node).next = Some(current_head);
+        }
+        self.head = Some(new_node);
+      },
       None => {
-        self.head = Node::new(node_data);
+        self.head = Some(&mut Node::new(node_data));
       }
     }
   }
 
-  // Start with remove first
+  // Start with remove first element
   fn remove(&mut self) {
-    let mut current_head = self.head;
-    self.head = self.head.next;
-    self.head.prev = None;
-    drop(current_head);
+    match self.head {
+      Some(head) => {
+        let current_head = head;
+        unsafe { self.head = (*current_head).next };
+        match self.head {
+          Some(head) => {
+            unsafe { (*head).prev = None };
+          },
+          // Don't care if empty
+          None => ()
+        }
+        drop(current_head);
+      },
+      None => {
+        // Not sure what to do here
+        panic!("Trying to remove from empty list");
+      }
+    }
   }
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
-  use alloc::boxed::Box;
 
   #[test]
   fn test_empty_dll() {
-    //let a : Node<usize> = Node { data: 1, next: None, prev: None };
-    //let b : Node<usize> = Node { data: 2, next: None, prev: None };
-    let new_dll = DoublyLinkedList::new();
-    assert_eq!(new_dll.head, None);
+    let new_dll = DoublyLinkedList::<i32>::new();
+    assert!(new_dll.head.is_none());
   }
 
   #[test]
   fn test_add_to_dll() {
-    let new_dll = DoublyLinkedList::new();
+    let mut new_dll = DoublyLinkedList::<i32>::new();
     new_dll.add(1);
-    new_dll.add(2);
-    match new_dll.head {
-      Some(head_node) => {
-        assert_eq!(head_node.data, 2);
-      }
-      None => {
-        assert!(false);
-      }
-    }
+    //new_dll.add(2);
+    assert!(new_dll.head.is_some());
+
+    // Does this just fail if it's missing?
+    let dll_head = new_dll.head.expect("Doubly Linked List missing head!");
+    unsafe { assert_eq!((*dll_head).data, 1) };
   }
 
   #[test]
   fn remove_from_dll() {
-    let new_dll = DoublyLinkedList::new();
+    let mut new_dll = DoublyLinkedList::<i32>::new();
     new_dll.add(1);
     new_dll.add(2);
     new_dll.remove();
-    match new_dll.head {
-      Some(head_node) => {
-        assert_eq!(head_node.data, 1);
-      }
-      None => {
-        assert!(false);
-      }
-    }
+    assert!(new_dll.head.is_some());
+
+    // Does this just fail if it's missing?
+    let dll_head = new_dll.head.expect("Doubly Linked List missing head!");
+    unsafe { assert_eq!((*dll_head).data, 1) };
   }
+
 }

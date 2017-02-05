@@ -16,7 +16,6 @@ use self::tdr::TDR;
 use self::isr::ISR;
 use self::defs::*;
 use peripheral::{rcc, gpio};
-use io::write_str;
 
 pub use self::control::{WordLength, Mode, Parity, StopLength, HardwareFlowControl};
 pub use self::baudr::BaudRate;
@@ -148,5 +147,5 @@ pub fn init() {
 
     usart2.enable_usart();
 
-    write_str("Hello, World!\n");
+    println!("Hello, World!");
 }

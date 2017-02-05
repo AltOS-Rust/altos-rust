@@ -2,6 +2,19 @@
 use core::fmt::{self, Write, Arguments};
 use peripheral::usart::{UsartX, Usart};
 
+#[cfg(not(test))]
+macro_rules! print {
+    ($($arg:tt)*) => ({
+        $crate::io::write_fmt(format_args!($($arg)*));
+    });
+}
+
+#[cfg(not(test))]
+macro_rules! println {
+    ($fmt:expr) => (print!(concat!($fmt, "\n")));
+    ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
+}
+
 struct Serial {
     usart: Usart,
 }

@@ -4,6 +4,7 @@ use core::fmt::{self, Write, Arguments};
 use peripheral::usart::{UsartX, Usart, USART2_CHAN};
 
 // TODO: Make kernel print macros
+#[macro_export]
 #[cfg(not(test))]
 macro_rules! print {
     ($($arg:tt)*) => ({
@@ -11,6 +12,7 @@ macro_rules! print {
     });
 }
 
+#[macro_export]
 #[cfg(not(test))]
 macro_rules! println {
     ($fmt:expr) => (print!(concat!($fmt, "\n")));

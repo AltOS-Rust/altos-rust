@@ -18,10 +18,10 @@
 // use atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 // Keeping this above stuff the same for now
 
-#![feature(alloc)]
+// #![feature(alloc)]
 #![feature(const_fn)]
 
-extern crate alloc;
+// extern crate alloc;
 mod dlinkedlist;
 
 // /*

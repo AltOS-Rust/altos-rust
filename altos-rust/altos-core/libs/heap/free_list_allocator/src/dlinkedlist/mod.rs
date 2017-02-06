@@ -3,8 +3,11 @@
 
 // TODO: File should probably be relocated but I'm not sure where yet
 
+use core::mem;
+use core::ptr;
+
 // Why is repr(C) here?
-#[repr(C)]
+// #[repr(C)]
 pub struct Node<T> {
   data: T,
   next: Option<*mut Node<T>>,
@@ -37,16 +40,17 @@ impl<T> DoublyLinkedList<T> {
   fn add(&mut self, node_data: T) {
     match self.head {
       Some(head) => {
+        println!("in Some(head)");
         let new_node: *mut Node<T> = &mut Node::new(node_data);
-        let mut current_head = head;
         unsafe {
-          (*current_head).prev = Some(new_node);
-          (*new_node).next = Some(current_head);
+          //println!("setting next and prev");
+          (*new_node).next = Some(head);
+          (*head).prev = Some(new_node);
         }
-        self.head = Some(new_node);
+        self.head = Some(new_node)
       },
       None => {
-        self.head = Some(&mut Node::new(node_data));
+        self.head = Some(&mut Node::new(node_data))
       }
     }
   }
@@ -72,6 +76,9 @@ impl<T> DoublyLinkedList<T> {
       }
     }
   }
+
+  // Add and remove anywhere in list
+  // Find memory amount from node
 }
 
 #[cfg(test)]
@@ -88,12 +95,14 @@ mod tests {
   fn test_add_to_dll() {
     let mut new_dll = DoublyLinkedList::<i32>::new();
     new_dll.add(1);
-    //new_dll.add(2);
+    new_dll.add(2);
+    //new_dll.add(3);
+    //new_dll.add(4);
     assert!(new_dll.head.is_some());
 
     // Does this just fail if it's missing?
     let dll_head = new_dll.head.expect("Doubly Linked List missing head!");
-    unsafe { assert_eq!((*dll_head).data, 1) };
+    unsafe { assert_eq!((*dll_head).data, 2) };
   }
 
   #[test]
@@ -101,12 +110,14 @@ mod tests {
     let mut new_dll = DoublyLinkedList::<i32>::new();
     new_dll.add(1);
     new_dll.add(2);
+    new_dll.add(3);
+    new_dll.add(4);
     new_dll.remove();
     assert!(new_dll.head.is_some());
 
     // Does this just fail if it's missing?
     let dll_head = new_dll.head.expect("Doubly Linked List missing head!");
-    unsafe { assert_eq!((*dll_head).data, 1) };
+    unsafe { assert_eq!((*dll_head).data, 3) };
   }
 
 }

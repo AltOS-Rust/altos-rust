@@ -3,6 +3,8 @@
 //
 // Created by Daniel Seitz on 11/30/16
 
+mod usart;
+
 use arm::asm::bkpt;
 use altos_core::syscall;
 use interrupt;
@@ -144,23 +146,12 @@ extern "C" fn pend_sv_handler() {
 
 /// Interrupt handler for Usart2
 extern "C" fn usart2_handler() {
-    use peripheral::usart::{UsartX, Usart, USART2_CHAN};
-    use io::TX_BUFFER;
+    use peripheral::usart::{UsartX, Usart};
+    use self::usart::usart_tx;
     // Whatever bits are stored in the usart2 in use, are reflected in
     // the address for this usart2 variable as well.
-    let mut usart2 = Usart::new(UsartX::Usart2);
-    unsafe {
-        if usart2.get_txe() {
-            if let Some(byte) = TX_BUFFER.remove() {
-                usart2.transmit_byte(byte);
-            }
-            else {
-                usart2.disable_transmit_interrupt();
-                syscall::wake(USART2_CHAN);
-            }
-        }
-    }
-
+    let usart2 = Usart::new(UsartX::Usart2);
+    usart_tx(usart2);
 /*
     let nvic = interrupt::nvic();
     // TODO: This will get replaced by an enum in the `interrupt` mod

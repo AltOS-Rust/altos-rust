@@ -7,73 +7,64 @@ use core::mem;
 use core::ptr;
 
 // Why is repr(C) here?
-// #[repr(C)]
+#[repr(C)]
 pub struct Node<T> {
   data: T,
-  next: Option<*mut Node<T>>,
-  prev: Option<*mut Node<T>>,
+  next: *mut Node<T>,
+  prev: *mut Node<T>,
 }
 
 impl<T> Node<T> {
   const fn new(node_data: T) -> Self {
     Node {
       data: node_data,
-      next: None,
-      prev: None,
+      next: ptr::null_mut(),
+      prev: ptr::null_mut(),
     }
   }
 }
 
 // Not sure about naming
 pub struct DoublyLinkedList<T> {
-  head: Option<*mut Node<T>>,
+  head: *mut Node<T>,
 }
 
 impl<T> DoublyLinkedList<T> {
   const fn new() -> Self {
     DoublyLinkedList {
-      head: None,
+      head: ptr::null_mut(),
     }
   }
 
   // Add to the doubly linked list at head
   fn add(&mut self, node_data: T) {
-    match self.head {
-      Some(head) => {
-        println!("in Some(head)");
-        let new_node: *mut Node<T> = &mut Node::new(node_data);
-        unsafe {
-          //println!("setting next and prev");
-          (*new_node).next = Some(head);
-          (*head).prev = Some(new_node);
-        }
-        self.head = Some(new_node)
-      },
-      None => {
-        self.head = Some(&mut Node::new(node_data))
+    if !self.head.is_null() {
+      let new_node: *mut Node<T> = &mut Node::new(node_data);
+      unsafe {
+        //println!("setting next and prev");
+        (*new_node).next = self.head;
+        (*self.head).prev = new_node;
       }
+      self.head = new_node;
+    }
+    else {
+      self.head = &mut Node::new(node_data);
     }
   }
 
   // Start with remove first element
   fn remove(&mut self) {
-    match self.head {
-      Some(head) => {
-        let current_head = head;
-        unsafe { self.head = (*current_head).next };
-        match self.head {
-          Some(head) => {
-            unsafe { (*head).prev = None };
-          },
-          // Don't care if empty
-          None => ()
-        }
-        drop(current_head);
-      },
-      None => {
-        // Not sure what to do here
-        panic!("Trying to remove from empty list");
+    if !self.head.is_null() {
+      unsafe {
+        let next_node = (*self.head).next;
+        //drop(self.head);
+        self.head = next_node;
+        (*self.head).prev = ptr::null_mut();
+        //println!("Head data: {}", (*self.head).data);
       }
+    }
+    else {
+      panic!("Trying to remove from empty list");
     }
   }
 
@@ -88,7 +79,7 @@ mod tests {
   #[test]
   fn test_empty_dll() {
     let new_dll = DoublyLinkedList::<i32>::new();
-    assert!(new_dll.head.is_none());
+    assert!(new_dll.head.is_null());
   }
 
   #[test]
@@ -96,13 +87,13 @@ mod tests {
     let mut new_dll = DoublyLinkedList::<i32>::new();
     new_dll.add(1);
     new_dll.add(2);
-    //new_dll.add(3);
+    new_dll.add(3);
     //new_dll.add(4);
-    assert!(new_dll.head.is_some());
+    assert!(!new_dll.head.is_null());
 
     // Does this just fail if it's missing?
-    let dll_head = new_dll.head.expect("Doubly Linked List missing head!");
-    unsafe { assert_eq!((*dll_head).data, 2) };
+    //let dll_head = new_dll.head.expect("Doubly Linked List missing head!");
+    unsafe { assert_eq!((*new_dll.head).data, 3) };
   }
 
   #[test]
@@ -113,11 +104,11 @@ mod tests {
     new_dll.add(3);
     new_dll.add(4);
     new_dll.remove();
-    assert!(new_dll.head.is_some());
+    assert!(!new_dll.head.is_null());
 
     // Does this just fail if it's missing?
-    let dll_head = new_dll.head.expect("Doubly Linked List missing head!");
-    unsafe { assert_eq!((*dll_head).data, 3) };
+    //let dll_head = new_dll.head.expect("Doubly Linked List missing head!");
+    unsafe { assert_eq!((*new_dll.head).data, 3) };
   }
 
 }

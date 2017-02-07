@@ -1,14 +1,14 @@
 // Leaving this stuff the same as in bump allocator
 // #![feature(allocator)]
-// #![feature(const_fn)]
+#![feature(const_fn)]
 // #![feature(asm)]
 // #![feature(cfg_target_has_atomic)]
 //
 // #![cfg_attr(not(test), allocator)]
-// #![no_std]
+#![no_std]
 //
-// #[cfg(test)]
-// extern crate std;
+#[cfg(test)]
+extern crate std;
 //
 // #[cfg(all(target_arch="arm", not(target_has_atomic="ptr")))]
 // extern crate cm0_atomic as atomic;
@@ -19,7 +19,6 @@
 // Keeping this above stuff the same for now
 
 // #![feature(alloc)]
-#![feature(const_fn)]
 
 // extern crate alloc;
 mod dlinkedlist;

@@ -6,6 +6,7 @@ use core::fmt::{self, Write, Arguments};
 use peripheral::usart::{UsartX, Usart, USART2_CHAN};
 
 pub static mut TX_BUFFER: RingBuffer = RingBuffer::new();
+pub static mut RX_BUFFER: RingBuffer = RingBuffer::new();
 
 #[macro_export]
 macro_rules! kprint {

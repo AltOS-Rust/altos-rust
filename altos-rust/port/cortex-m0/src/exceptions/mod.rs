@@ -167,3 +167,4 @@ extern "C" fn usart2_handler() {
     nvic.clear_pending(28);
 */
 }
+

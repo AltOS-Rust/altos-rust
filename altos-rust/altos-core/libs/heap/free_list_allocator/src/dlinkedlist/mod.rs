@@ -3,64 +3,82 @@
 
 // TODO: File should probably be relocated but I'm not sure where yet
 
+// Change: Make it a regular linked list, have add/remove functions
+// How to create node at specific passed in memory position
+
 use core::mem;
 use core::ptr;
 
 // Why is repr(C) here?
 #[repr(C)]
-pub struct Node<T> {
-  data: T,
-  next: *mut Node<T>,
-  prev: *mut Node<T>,
+pub struct Node {
+  data: usize,
+  next: *mut Node,
 }
 
-impl<T> Node<T> {
-  const fn new(node_data: T) -> Self {
-    Node {
-      data: node_data,
-      next: ptr::null_mut(),
-      prev: ptr::null_mut(),
+impl Node {
+  fn new(position: *mut u8, node_data: usize) -> *mut Node {
+    let node_position = position as *mut Node;
+    unsafe {
+      ptr::write(node_position, Node {
+        data: node_data,
+        next: ptr::null_mut(),
+      });
     }
+    node_position
   }
 }
 
 // Not sure about naming
-pub struct DoublyLinkedList<T> {
-  head: *mut Node<T>,
+pub struct LinkedList {
+  head: *mut Node,
 }
 
-impl<T> DoublyLinkedList<T> {
-  const fn new() -> Self {
-    DoublyLinkedList {
+impl LinkedList {
+  pub const fn new() -> Self {
+    LinkedList {
       head: ptr::null_mut(),
     }
   }
 
-  // Add to the doubly linked list at head
-  fn add(&mut self, node_data: T) {
+  // Always add at head
+  pub fn add(&mut self, position: *mut u8, node_data: usize) {
     if !self.head.is_null() {
-      let new_node: *mut Node<T> = &mut Node::new(node_data);
+      let new_node = Node::new(position, node_data);
       unsafe {
-        //println!("setting next and prev");
         (*new_node).next = self.head;
-        (*self.head).prev = new_node;
       }
       self.head = new_node;
     }
     else {
-      self.head = &mut Node::new(node_data);
+      self.head = Node::new(position, node_data);
     }
   }
 
-  // Start with remove first element
+  pub fn allocate(&mut self, needed_size: usize) -> *mut u8 {
+    // Needs alignment as well
+    // Not doing any checking yet for enough memory
+    unsafe {
+      (*self.head).data -= needed_size;
+    }
+    // Need to copy node to new starting location
+    // Allocate node at other end of free mem?
+    let current_pos = self.head as *mut u8;
+    unsafe {
+      let new_pos = current_pos.offset(needed_size as isize);
+      // Shouldn't need to call size_of every time probably
+      ptr::copy(current_pos, new_pos, mem::size_of::<Node>());
+    }
+    current_pos
+  }
+
+  // Currently just removes first element
   fn remove(&mut self) {
     if !self.head.is_null() {
       unsafe {
-        let next_node = (*self.head).next;
-        //drop(self.head);
-        self.head = next_node;
-        (*self.head).prev = ptr::null_mut();
-        //println!("Head data: {}", (*self.head).data);
+        let current_head = self.head;
+        self.head = (*self.head).next;
+        drop(current_head);
       }
     }
     else {
@@ -77,38 +95,35 @@ mod tests {
   use super::*;
 
   #[test]
-  fn test_empty_dll() {
-    let new_dll = DoublyLinkedList::<i32>::new();
-    assert!(new_dll.head.is_null());
+  fn test_empty_ll() {
+    let new_ll = LinkedList::new();
+    assert!(new_ll.head.is_null());
   }
 
-  #[test]
-  fn test_add_to_dll() {
-    let mut new_dll = DoublyLinkedList::<i32>::new();
-    new_dll.add(1);
-    new_dll.add(2);
-    new_dll.add(3);
-    //new_dll.add(4);
-    assert!(!new_dll.head.is_null());
-
-    // Does this just fail if it's missing?
-    //let dll_head = new_dll.head.expect("Doubly Linked List missing head!");
-    unsafe { assert_eq!((*new_dll.head).data, 3) };
-  }
-
-  #[test]
-  fn remove_from_dll() {
-    let mut new_dll = DoublyLinkedList::<i32>::new();
-    new_dll.add(1);
-    new_dll.add(2);
-    new_dll.add(3);
-    new_dll.add(4);
-    new_dll.remove();
-    assert!(!new_dll.head.is_null());
-
-    // Does this just fail if it's missing?
-    //let dll_head = new_dll.head.expect("Doubly Linked List missing head!");
-    unsafe { assert_eq!((*new_dll.head).data, 3) };
-  }
-
+  // #[test]
+  // fn test_add_to_ll() {
+  //   let mut new_ll = LinkedList::new();
+  //   //let test_num : usize = 3;
+  //   new_ll.add(1);
+  //   new_ll.add(2);
+  //   //new_ll.add(test_num);
+  //   assert!(!new_ll.head.is_null());
+  //
+  //   unsafe { assert_eq!((*new_ll.head).data, 2) };
+  // }
+  //
+  // #[test]
+  // fn remove_from_ll() {
+  //   let mut new_ll = LinkedList::new();
+  //   new_ll.add(1);
+  //   new_ll.add(2);
+  //   new_ll.add(3);
+  //   new_ll.add(4);
+  //   new_ll.remove();
+  //   assert!(!new_ll.head.is_null());
+  //
+  //   // Does this just fail if it's missing?
+  //   //let dll_head = new_dll.head.expect("Doubly Linked List missing head!");
+  //   unsafe { assert_eq!((*new_ll.head).data, 3) };
+  // }
 }

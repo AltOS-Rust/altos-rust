@@ -71,7 +71,7 @@ impl DebugSerial {
     }
 
     fn write_byte(&mut self, byte: u8) {
-        while !self.usart.get_txe() {}
+        while !self.usart.is_tx_reg_empty() {}
         self.usart.transmit_byte(byte);
     }
 }

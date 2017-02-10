@@ -46,10 +46,6 @@ impl UsartControl {
         self.cr1.set_receiver_not_empty_interrupt(false);
     }
 
-    pub fn get_rxneie(&self) -> bool {
-        self.cr1.get_rxneie()
-    }
-
     pub fn enable_transmit_complete_interrupt(&mut self) {
         self.cr1.set_transmit_complete_interrupt(true);
     }
@@ -58,20 +54,12 @@ impl UsartControl {
         self.cr1.set_transmit_complete_interrupt(false);
     }
 
-    pub fn get_tcie(&self) -> bool {
-        self.cr1.get_tcie()
-    }
-
     pub fn enable_transmit_interrupt(&mut self) {
         self.cr1.set_transmit_interrupt(true);
     }
 
     pub fn disable_transmit_interrupt(&mut self) {
         self.cr1.set_transmit_interrupt(false);
-    }
-
-    pub fn get_txeie(&self) -> bool {
-        self.cr1.get_txeie()
     }
 
     pub fn set_parity(&mut self, parity: Parity) {
@@ -194,12 +182,6 @@ impl CR1 {
         }
     }
 
-    fn get_rxneie(&self) -> bool {
-        unsafe {
-            *self.addr() & CR1_RXNEIE != 0
-        }
-    }
-
     fn set_transmit_complete_interrupt(&mut self, enable: bool) {
         unsafe {
             let mut reg = self.addr();
@@ -210,12 +192,6 @@ impl CR1 {
         }
     }
 
-    fn get_tcie(&self) -> bool {
-        unsafe {
-            *self.addr() & CR1_TCIE != 0
-        }
-    }
-
     fn set_transmit_interrupt(&mut self, enable: bool) {
         unsafe {
             let mut reg = self.addr();
@@ -223,12 +199,6 @@ impl CR1 {
             if enable {
                 *reg |= CR1_TXEIE;
             }
-        }
-    }
-
-    fn get_txeie(&self) -> bool {
-        unsafe {
-            *self.addr() & CR1_TXEIE != 0
         }
     }
 

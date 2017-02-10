@@ -5,7 +5,7 @@ use io::TX_BUFFER;
 use io::RX_BUFFER;
 
 pub fn usart_tx(mut usart: Usart) {
-    if usart.get_txe() {
+    if usart.is_tx_reg_empty() {
         if let Some(byte) = unsafe { TX_BUFFER.remove() } {
             usart.transmit_byte(byte);
         }
@@ -15,9 +15,15 @@ pub fn usart_tx(mut usart: Usart) {
         }
     }
 
-    if usart.get_tc() {
+    if usart.is_transmission_complete() {
         usart.disable_transmit_complete_interrupt();
         syscall::wake(USART2_TC_CHAN);
-        usart.clear_tc();
+        usart.clear_tc_flag();
+    }
+}
+
+pub fn usart_rx(mut usart: Usart) {
+    if usart.is_rx_reg_full() {
+        usart.load_byte();
     }
 }

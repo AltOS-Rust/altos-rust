@@ -6,6 +6,7 @@ mod control;
 mod defs;
 mod baudr;
 mod tdr;
+mod rdr;
 mod isr;
 mod icr;
 
@@ -14,6 +15,7 @@ use volatile::Volatile;
 use self::control::UsartControl;
 use self::baudr::BRR;
 use self::tdr::TDR;
+use self::rdr::RDR;
 use self::isr::ISR;
 use self::icr::ICR;
 use self::defs::*;
@@ -38,6 +40,7 @@ pub struct Usart {
     control: UsartControl,
     baud: BRR,
     tdr: TDR,
+    rdr: RDR,
     isr: ISR,
     icr: ICR,
 }
@@ -56,6 +59,7 @@ impl Usart {
                 control: UsartControl::new(USART1_ADDR),
                 baud: BRR::new(USART1_ADDR),
                 tdr: TDR::new(USART1_ADDR),
+                rdr: RDR::new(USART1_ADDR),
                 isr: ISR::new(USART1_ADDR),
                 icr: ICR::new(USART1_ADDR),
             },
@@ -64,6 +68,7 @@ impl Usart {
                 control: UsartControl::new(USART2_ADDR),
                 baud: BRR::new(USART2_ADDR),
                 tdr: TDR::new(USART2_ADDR),
+                rdr: RDR::new(USART2_ADDR),
                 isr: ISR::new(USART2_ADDR),
                 icr: ICR::new(USART2_ADDR),
             },
@@ -95,10 +100,6 @@ impl Usart {
         self.control.disable_receiver_not_empty_interrupt();
     }
 
-    pub fn get_rxneie(&self) -> bool {
-        self.control.get_rxneie()
-    }
-
     pub fn enable_transmit_complete_interrupt(&mut self) {
         self.control.enable_transmit_complete_interrupt();
     }
@@ -107,20 +108,12 @@ impl Usart {
         self.control.disable_transmit_complete_interrupt();
     }
 
-    pub fn get_tcie(&mut self) -> bool {
-        self.control.get_tcie()
-    }
-
     pub fn enable_transmit_interrupt(&mut self) {
         self.control.enable_transmit_interrupt();
     }
 
     pub fn disable_transmit_interrupt(&mut self) {
         self.control.disable_transmit_interrupt();
-    }
-
-    pub fn get_txeie(&mut self) -> bool {
-        self.control.get_txeie()
     }
 
     pub fn set_parity(&mut self, parity: Parity) {
@@ -155,23 +148,27 @@ impl Usart {
         self.tdr.store(byte);
     }
 
-    pub fn get_rxne(&self) -> bool {
+    pub fn load_byte(&self) -> u8 {
+        self.rdr.load()
+    }
+
+    pub fn is_rx_reg_full(&self) -> bool {
         self.isr.get_rxne()
     }
 
-    pub fn get_tc(&self) -> bool {
+    pub fn is_transmission_complete(&self) -> bool {
         self.isr.get_tc()
     }
 
-    pub fn get_txe(&self) -> bool {
+    pub fn is_tx_reg_empty(&self) -> bool {
         self.isr.get_txe()
     }
 
-    pub fn clear_ore(&self) {
+    pub fn clear_ore_flag(&self) {
         self.icr.clear_ore();
     }
 
-    pub fn clear_tc(&self) {
+    pub fn clear_tc_flag(&self) {
         self.icr.clear_tc();
     }
 }

@@ -11,19 +11,6 @@ pub static mut RX_BUFFER: RingBuffer = RingBuffer::new();
 static WRITE_LOCK: Mutex<()> = Mutex::new(());
 
 #[macro_export]
-macro_rules! kprint {
-    ($($arg:tt)*) => ({
-        $crate::io::debug_fmt(format_args!($($arg)*));
-    });
-}
-
-#[macro_export]
-macro_rules! kprintln {
-    ($fmt:expr) => (kprint!(concat!($fmt, "\n")));
-    ($fmt:expr, $($arg:tt)*) => (kprint!(concat!($fmt, "\n"), $($arg)*));
-}
-
-#[macro_export]
 #[cfg(not(test))]
 macro_rules! print {
     ($($arg:tt)*) => ({
@@ -118,6 +105,7 @@ pub fn write_str(s: &str) {
 }
 
 // NOTE: debug assumes interrupts are turned off, so does not need lock.
+#[no_mangle]
 pub fn debug_fmt(args: Arguments) {
     let usart2 = Usart::new(UsartX::Usart2);
     let mut serial = DebugSerial::new(usart2);
@@ -126,6 +114,7 @@ pub fn debug_fmt(args: Arguments) {
 }
 
 // NOTE: debug assumes interrupts are turned off, so does not need lock.
+#[no_mangle]
 pub fn debug_str(s: &str) {
     let usart2 = Usart::new(UsartX::Usart2);
     let mut serial = DebugSerial::new(usart2);

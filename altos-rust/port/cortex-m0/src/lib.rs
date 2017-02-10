@@ -17,6 +17,7 @@
 #[macro_use]
 extern crate std;
 
+#[macro_use]
 extern crate altos_core;
 
 pub extern crate arm;
@@ -102,6 +103,8 @@ pub fn init() -> ! {
     init_clock();
     init_ticks();
     init_usart();
+
+    kprintln!("Initialization Complete");
 
     unsafe { application_entry() };
 }

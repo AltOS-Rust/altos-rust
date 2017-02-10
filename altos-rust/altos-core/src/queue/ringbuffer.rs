@@ -3,7 +3,12 @@
 //
 // Created by Daniel Seitz on 2/5/17
 
-// TODO: Make variable sized ring buffers?
+// TODO: Make variable sized ring buffers? On further research, this doesn't seem to be possible at
+// this time. From the documentation on the array primitive type:
+// "...Rust does not yet support code that is generic over the size of an array type."
+//
+// So... I guess we can make multiple types each with a different size, like RingBuffer8,
+// RingBuffer16, etc. If we need larger buffers.
 /// The size of any ring buffers
 pub const RING_BUFFER_SIZE: usize = 8;
 

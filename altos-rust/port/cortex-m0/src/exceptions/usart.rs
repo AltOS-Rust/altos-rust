@@ -2,6 +2,7 @@
 use peripheral::usart::{Usart, USART2_CHAN};
 use altos_core::syscall;
 use io::TX_BUFFER;
+use io::RX_BUFFER;
 
 pub fn usart_tx(mut usart: Usart) {
     unsafe {

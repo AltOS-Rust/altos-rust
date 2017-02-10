@@ -7,6 +7,7 @@ mod defs;
 mod baudr;
 mod tdr;
 mod isr;
+mod icr;
 
 use super::{Control, Register};
 use volatile::Volatile;
@@ -14,6 +15,7 @@ use self::control::UsartControl;
 use self::baudr::BRR;
 use self::tdr::TDR;
 use self::isr::ISR;
+use self::icr::ICR;
 use self::defs::*;
 use peripheral::{rcc, gpio};
 use interrupt;

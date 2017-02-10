@@ -1,12 +1,14 @@
 
 use altos_core::syscall::sleep;
-//use altos_core::sync::CriticalSection;
+use altos_core::sync::Mutex;
 use altos_core::queue::RingBuffer;
 use core::fmt::{self, Write, Arguments};
-use peripheral::usart::{UsartX, Usart, USART2_TX_BUFFER_FULL_CHAN};
+use peripheral::usart::{UsartX, Usart, USART2_TX_BUFFER_FULL_CHAN, USART2_TC_CHAN};
 
 pub static mut TX_BUFFER: RingBuffer = RingBuffer::new();
 pub static mut RX_BUFFER: RingBuffer = RingBuffer::new();
+
+static WRITE_LOCK: Mutex<()> = Mutex::new(());
 
 #[macro_export]
 macro_rules! kprint {
@@ -57,7 +59,6 @@ impl Serial {
     }
 }
 
-// TODO: Need to lock this to avoid data race
 impl Write for Serial {
     fn write_str(&mut self, string: &str) -> fmt::Result {
         for byte in string.as_bytes() {
@@ -66,8 +67,9 @@ impl Write for Serial {
             }
             self.buffer_byte(*byte);
         }
+        self.usart.enable_transmit_complete_interrupt();
         self.usart.enable_transmit_interrupt();
-        sleep(USART2_TX_BUFFER_FULL_CHAN);
+        sleep(USART2_TC_CHAN);
         Ok(())
     }
 }
@@ -103,6 +105,7 @@ pub fn write_fmt(args: Arguments) {
     let usart2 = Usart::new(UsartX::Usart2);
     let mut serial = Serial::new(usart2);
 
+    let _g = WRITE_LOCK.lock();
     serial.write_fmt(args).ok();
 }
 
@@ -110,9 +113,11 @@ pub fn write_str(s: &str) {
     let usart2 = Usart::new(UsartX::Usart2);
     let mut serial = Serial::new(usart2);
 
+    let _g = WRITE_LOCK.lock();
     serial.write_str(s).ok();
 }
 
+// NOTE: debug assumes interrupts are turned off, so does not need lock.
 pub fn debug_fmt(args: Arguments) {
     let usart2 = Usart::new(UsartX::Usart2);
     let mut serial = DebugSerial::new(usart2);
@@ -120,6 +125,7 @@ pub fn debug_fmt(args: Arguments) {
     serial.write_fmt(args).ok();
 }
 
+// NOTE: debug assumes interrupts are turned off, so does not need lock.
 pub fn debug_str(s: &str) {
     let usart2 = Usart::new(UsartX::Usart2);
     let mut serial = DebugSerial::new(usart2);

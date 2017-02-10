@@ -33,3 +33,25 @@ impl ICR {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test;
+
+    #[test]
+    fn test_icr_clear_ore() {
+        let mut icr = test::create_register::<ICR>();
+        icr.clear_ore();
+
+        assert_eq!(icr.register_value(), 0b1 << 3);
+    }
+
+    #[test]
+    fn test_icr_clear_tc() {
+        let mut icr = test::create_register::<ICR>();
+        icr.clear_tc();
+
+        assert_eq!(icr.register_value(), 0b1 << 6);
+    }
+}

@@ -39,6 +39,7 @@ pub struct Usart {
     baud: BRR,
     tdr: TDR,
     isr: ISR,
+    icr: ICR,
 }
 
 impl Control for Usart {
@@ -56,6 +57,7 @@ impl Usart {
                 baud: BRR::new(USART1_ADDR),
                 tdr: TDR::new(USART1_ADDR),
                 isr: ISR::new(USART1_ADDR),
+                icr: ICR::new(USART1_ADDR),
             },
             UsartX::Usart2 => Usart {
                 mem_addr: USART2_ADDR,
@@ -63,6 +65,7 @@ impl Usart {
                 baud: BRR::new(USART2_ADDR),
                 tdr: TDR::new(USART2_ADDR),
                 isr: ISR::new(USART2_ADDR),
+                icr: ICR::new(USART2_ADDR),
             },
         }
     }
@@ -162,6 +165,14 @@ impl Usart {
 
     pub fn get_txe(&self) -> bool {
         self.isr.get_txe()
+    }
+
+    pub fn clear_ore(&self) {
+        self.icr.clear_ore();
+    }
+
+    pub fn clear_tc(&self) {
+        self.icr.clear_tc();
     }
 }
 

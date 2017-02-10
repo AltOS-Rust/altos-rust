@@ -152,10 +152,5 @@ extern "C" fn usart2_handler() {
     // the address for this usart2 variable as well.
     let usart2 = Usart::new(UsartX::Usart2);
     usart_tx(usart2);
-/*
-    let nvic = interrupt::nvic();
-    // TODO: This will get replaced by an enum in the `interrupt` mod
-    nvic.clear_pending(28);
-*/
 }
 

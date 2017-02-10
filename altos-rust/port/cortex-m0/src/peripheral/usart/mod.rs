@@ -7,6 +7,7 @@ mod defs;
 mod baudr;
 mod tdr;
 mod isr;
+mod icr;
 
 use super::{Control, Register};
 use volatile::Volatile;
@@ -14,6 +15,7 @@ use self::control::UsartControl;
 use self::baudr::BRR;
 use self::tdr::TDR;
 use self::isr::ISR;
+use self::icr::ICR;
 use self::defs::*;
 use peripheral::{rcc, gpio};
 use interrupt;
@@ -21,7 +23,8 @@ use interrupt;
 pub use self::control::{WordLength, Mode, Parity, StopLength, HardwareFlowControl};
 pub use self::baudr::BaudRate;
 
-pub const USART2_CHAN: usize = 43;
+pub const USART2_TX_BUFFER_FULL_CHAN: usize = 43;
+pub const USART2_TC_CHAN: usize = 43 * 2;
 
 #[derive(Copy, Clone, Debug)]
 pub enum UsartX {
@@ -36,6 +39,7 @@ pub struct Usart {
     baud: BRR,
     tdr: TDR,
     isr: ISR,
+    icr: ICR,
 }
 
 impl Control for Usart {
@@ -53,6 +57,7 @@ impl Usart {
                 baud: BRR::new(USART1_ADDR),
                 tdr: TDR::new(USART1_ADDR),
                 isr: ISR::new(USART1_ADDR),
+                icr: ICR::new(USART1_ADDR),
             },
             UsartX::Usart2 => Usart {
                 mem_addr: USART2_ADDR,
@@ -60,6 +65,7 @@ impl Usart {
                 baud: BRR::new(USART2_ADDR),
                 tdr: TDR::new(USART2_ADDR),
                 isr: ISR::new(USART2_ADDR),
+                icr: ICR::new(USART2_ADDR),
             },
         }
     }
@@ -149,12 +155,24 @@ impl Usart {
         self.tdr.store(byte);
     }
 
-    pub fn get_tc(&mut self) -> bool {
+    pub fn get_rxne(&self) -> bool {
+        self.isr.get_rxne()
+    }
+
+    pub fn get_tc(&self) -> bool {
         self.isr.get_tc()
     }
 
-    pub fn get_txe(&mut self) -> bool {
+    pub fn get_txe(&self) -> bool {
         self.isr.get_txe()
+    }
+
+    pub fn clear_ore(&self) {
+        self.icr.clear_ore();
+    }
+
+    pub fn clear_tc(&self) {
+        self.icr.clear_tc();
     }
 }
 

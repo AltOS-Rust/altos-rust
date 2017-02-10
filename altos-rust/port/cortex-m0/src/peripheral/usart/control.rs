@@ -1,4 +1,3 @@
-// Daniel Seitz and RJ Russell
 
 use super::super::Register;
 use super::defs::*;

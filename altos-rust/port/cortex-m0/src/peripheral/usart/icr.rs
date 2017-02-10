@@ -23,13 +23,13 @@ impl Register for ICR {
 impl ICR {
     pub fn clear_ore(&self) {
         unsafe {
-            *self.addr() | ICR_ORECF;
+            *self.addr() |= ICR_ORECF;
         }
     }
 
     pub fn clear_tc(&self) {
         unsafe {
-            *self.addr() | ICR_TCCF;
+            *self.addr() |= ICR_TCCF;
         }
     }
 }

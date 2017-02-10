@@ -23,7 +23,8 @@ use interrupt;
 pub use self::control::{WordLength, Mode, Parity, StopLength, HardwareFlowControl};
 pub use self::baudr::BaudRate;
 
-pub const USART2_CHAN: usize = 43;
+pub const USART2_TX_BUFFER_FULL_CHAN: usize = 43;
+pub const USART2_TC_CHAN: usize = 43 * 2;
 
 #[derive(Copy, Clone, Debug)]
 pub enum UsartX {

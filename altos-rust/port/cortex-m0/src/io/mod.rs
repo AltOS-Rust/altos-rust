@@ -3,7 +3,7 @@ use altos_core::syscall::sleep;
 //use altos_core::sync::CriticalSection;
 use altos_core::queue::RingBuffer;
 use core::fmt::{self, Write, Arguments};
-use peripheral::usart::{UsartX, Usart, USART2_CHAN};
+use peripheral::usart::{UsartX, Usart, USART2_TX_BUFFER_FULL_CHAN};
 
 pub static mut TX_BUFFER: RingBuffer = RingBuffer::new();
 pub static mut RX_BUFFER: RingBuffer = RingBuffer::new();
@@ -51,7 +51,7 @@ impl Serial {
                 // FIXME?: Might need to put this in a critical section?
                 //let _g = CriticalSection::begin();
                 self.usart.enable_transmit_interrupt();
-                sleep(USART2_CHAN);
+                sleep(USART2_TX_BUFFER_FULL_CHAN);
             }
         }
     }
@@ -62,18 +62,18 @@ impl Write for Serial {
     fn write_str(&mut self, string: &str) -> fmt::Result {
         for byte in string.as_bytes() {
             if *byte == b'\n' {
-              self.buffer_byte(b'\r');
+                self.buffer_byte(b'\r');
             }
             self.buffer_byte(*byte);
         }
         self.usart.enable_transmit_interrupt();
-        sleep(USART2_CHAN);
+        sleep(USART2_TX_BUFFER_FULL_CHAN);
         Ok(())
     }
 }
 
 struct DebugSerial {
-    usart: Usart,
+usart: Usart,
 }
 
 impl DebugSerial {
@@ -91,7 +91,7 @@ impl Write for DebugSerial {
     fn write_str(&mut self, string: &str) -> fmt::Result {
         for byte in string.as_bytes() {
             if *byte == b'\n' {
-              self.write_byte(b'\r');
+                self.write_byte(b'\r');
             }
             self.write_byte(*byte);
         }

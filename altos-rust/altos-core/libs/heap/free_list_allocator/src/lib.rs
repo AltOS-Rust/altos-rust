@@ -51,6 +51,7 @@ impl FreeListAllocator {
   /// Allocates a block of memory with the given size and alignment.
   #[inline(never)]
   pub fn allocate(&mut self, size: usize, align: usize) -> Option<*mut u8> {
+    // Do we even care about alignment variable?
     Some(self.heap_list.allocate(size))
   }
 }
@@ -73,6 +74,7 @@ pub extern fn __rust_deallocate(_ptr: *mut u8, _size: usize, _align: usize) {
 #[cfg(not(test))]
 pub extern fn __rust_usable_size(size: usize, _align: usize) -> usize {
   // This must be at least size, but if we're giving it more memory, we can return that
+  // We should return result of align_up with alignment equal to node size
   size
 }
 

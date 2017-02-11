@@ -1,8 +1,7 @@
 // Linked list code for memory allocator
 // This is intended for use by the free_list_allocator functionality
 
-use core::mem;
-use core::ptr;
+use core::{mem, ptr};
 
 // Should not need to call function every time
 // static mut MIN_ALLOC_SIZE : usize = 8;
@@ -43,58 +42,60 @@ impl LinkedList {
     self.head = node_position;
   }
 
-  // This currently functions just like the bump allocator
-  pub fn allocate(&mut self, needed_size: usize) -> *mut u8 {
-    let node_size = mem::size_of::<Node>();
-    let using_size = use_size(needed_size);
+  // For some reason, this isn't working
+  fn relocate_node(&self, current_pos: *mut Node, offset_val: usize) -> *mut Node {
     unsafe {
-      // Need to also make sure we have enough space for node
-      // Remove node if we don't
-      if using_size > (*self.head).data {
-        panic!("No more memory!");
-      }
-      (*self.head).data -= using_size;
+      let new_pos = current_pos.offset(offset_val as isize);
+      // For some reason, just using copy here causes a compiler error
+      ptr::copy_nonoverlapping(current_pos, new_pos, mem::size_of::<Node>());
+      new_pos as *mut Node
     }
-    // Need to copy node to new starting location
-    // Can we get around this by allocating node at other end of free mem?
-    let current_pos = self.head as *mut u8;
-    unsafe {
-      let new_pos = current_pos.offset(using_size as isize);
-      // Shouldn't need to call size_of every time
-      ptr::copy(current_pos, new_pos, node_size);
-      self.head = new_pos as *mut Node;
-    }
-    current_pos
   }
 
-  /// Allocate memory using first fit strategy
-  // pub fn ff_allocate(&mut self, needed_size: usize) {
-  //   // Traverse until we find big enough node
-  //   // If we get to end without finding node, panic!
-  //   unsafe {
-  //     let head_size = (*self.head).data;
-  //     let using_size = use_size(needed_size);
-  //     let remaining_size = head_size - using_size;
-  //     match remaining_size {
-  //       rs < 0 => ,
-  //       rs < mem::size_of::<Node>() => ,
-  //       // Greater than or equal to node size
-  //       _ => ,
-  //       // Less than zero -> Not enough, move to next node
-  //       // Less than node size -> Not enough for node, give back all
-  //       // Node size or greater -> Enough for new node
-  //     }
-  //   }
-  //   /*
-  //   Cases:
-  //   - Node is entirely consumed (Destroy and move to next)
-  //     - At head: move head to next
-  //     - In middle: Take previous and connect to next
-  //   - Node has enough space
-  //     - At head: move head forward
-  //     - In middle: Allocate the space, adjust the node, change leading node ptr
-  //   */
-  // }
+  // Allocate memory using first fit strategy
+  pub fn allocate(&mut self, needed_size: usize) -> *mut u8 {
+    let mut alloc_location: *mut u8 = ptr::null_mut();
+    unsafe {
+      let (mut previous, mut current) = (self.head, self.head);
+      while !current.is_null() {
+        let current_size = (*current).data;
+        let using_size = use_size(needed_size);
+        // let remaining_size = current_size - using_size;
+        // Due to alignment, we should never get a case
+        // where 0 < remaining_size < node_size
+
+        // Node does not have enough space to satisfy requirement
+        if current_size < using_size {
+          previous = current;
+          // If current is null, this will not work yo!
+          current = (*previous).next;
+          continue;
+        }
+        // There is no node space remaining
+        else if current_size == using_size {
+          // If at head, there is no previous to adjust
+          if self.head == current {
+            self.head = (*self.head).next;
+          }
+          else {
+            (*previous).next = (*current).next;
+          }
+          alloc_location = current as *mut u8;
+          break;
+        }
+        // Node has enough space and a node can be maintained
+        else {
+          (*current).data -= using_size;
+          (*previous).next = self.relocate_node(current, using_size);
+        }
+      }
+    }
+
+    if alloc_location.is_null() {
+      panic!("Out of memory.");
+    }
+    alloc_location
+  }
 
   fn deallocate() {
     /*
@@ -112,6 +113,7 @@ impl LinkedList {
 }
 
 fn use_size(needed_size: usize) -> usize {
+  // We always need to align up to node size or we end up with with potential leaks
   align_up(needed_size, mem::size_of::<Node>())
 }
 

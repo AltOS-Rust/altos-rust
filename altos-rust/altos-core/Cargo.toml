@@ -10,6 +10,7 @@ crate-type = ["rlib"]
 default = []
 
 bump_alloc = ["bump_allocator"]
+free_list_alloc = ["free_list_allocator"]
 default_alloc = []
 cm0 = []
 test = []

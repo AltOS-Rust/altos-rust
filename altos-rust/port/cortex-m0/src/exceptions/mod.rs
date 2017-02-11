@@ -1,7 +1,20 @@
-// exceptions/mod.rs
-// AltOSRust
-//
-// Created by Daniel Seitz on 11/30/16
+/*
+ * Copyright © 2017 AltOS-Rust Team
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+ */
 
 mod usart;
 
@@ -73,8 +86,8 @@ extern "C" fn systick_handler() {
   time::system_tick();
 }
 
-/// Tell OS to context switch tasks, this should be set to the lowest priority so that all other
-/// interrupts are serviced first
+/// Tell OS to context switch tasks, this should be set to the lowest priority
+/// so that all other interrupts are serviced first
 #[naked]
 extern "C" fn pend_sv_handler() {
   #[cfg(target_arch="arm")]
@@ -147,10 +160,12 @@ extern "C" fn pend_sv_handler() {
 /// Interrupt handler for Usart2
 extern "C" fn usart2_handler() {
     use peripheral::usart::{UsartX, Usart};
-    use self::usart::usart_tx;
-    // Whatever bits are stored in the usart2 in use, are reflected in
-    // the address for this usart2 variable as well.
+    use self::usart::{usart_tx, usart_rx};
+    // Bits set in this register are stored in the usart2 in use, and
+    // are reflected in the address for this usart2 variable as well.
     let usart2 = Usart::new(UsartX::Usart2);
+    usart2.clear_idle_flag();
+    usart_rx(usart2);
     usart_tx(usart2);
 }
 

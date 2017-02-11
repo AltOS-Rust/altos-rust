@@ -1,9 +1,33 @@
-// Base addresses for USART 1 and 2
+/*
+ * Copyright © 2017 AltOS-Rust Team
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+ */
+
+//! This file contains the constants associated with the bit definitions
+//! for the registers being used.
+//! This is not a complete listing, however, all constants used throughout
+//! the program are listed here, there are bit definitions that are listed
+//! and not being used, or not listed at all.
+
+/// Base addresses for USART 1 and 2
 pub const USART1_ADDR: *const u32 = 0x4001_3800 as *const _;
 pub const USART2_ADDR: *const u32 = 0x4000_4400 as *const _;
 
 // ------------------------------------
-// USARTx - CR1 Bit definitions
+/// USARTx - CR1 Bit definitions
 // ------------------------------------
 pub const CR1_OFFSET: u32 = 0x00;
 pub const CR1_UE:     u32 = 0b1;
@@ -30,7 +54,7 @@ pub const CR1_M1:     u32 = 0b1 << 28;
 // Bits 29 - 31 are reserved and must be kept at reset value.
 
 // ------------------------------------
-// USARTx - CR2 bit definitions
+/// USARTx - CR2 bit definitions
 // ------------------------------------
 pub const CR2_OFFSET: u32 = 0x04;
 // Bits 0 - 3 are reserved and must be kept at reset value.
@@ -58,24 +82,24 @@ pub const CR2_ADD:       u32 = 0b1111 << 24; // This might need to change
 pub const CR2_ADD1:      u32 = 0b1111 << 28; // This might need to change
 
 // ------------------------------------
-// USARTx - CR3 bit definitions
+/// USARTx - CR3 bit definitions
 pub const CR3_OFFSET: u32 = 0x08;
 pub const CR3_RTSE:   u32 = 0b1 << 8;
 pub const CR3_CTSE:   u32 = 0b1 << 9;
 
 // ------------------------------------
-// USARTx - BRR bit definitions
+/// USARTx - BRR bit definitions
 // ------------------------------------
 pub const BRR_OFFSET: u32 = 0x0C;
 pub const DIV_MASK: u32   = 0b1111;
 
 // ------------------------------------
-// USARTx - GTPR bit definitions
+/// USARTx - GTPR bit definitions
 // ------------------------------------
 pub const GTPR_OFFSET: u32 = 0x10;
 
 // ------------------------------------
-// USARTx - ISR bit definitions
+/// USARTx - ISR bit definitions
 // ------------------------------------
 pub const ISR_OFFSET: u32 = 0x1C;
 pub const ISR_PE: u32     = 0b1;
@@ -88,7 +112,7 @@ pub const ISR_TC: u32     = 0b1 << 6;
 pub const ISR_TXE: u32    = 0b1 << 7;
 
 // ------------------------------------
-// USARTx - ICR bit definitions
+/// USARTx - ICR bit definitions
 // ------------------------------------
 pub const ICR_OFFSET: u32 = 0x20;
 pub const ICR_PECF: u32   = 0b1;
@@ -111,12 +135,12 @@ pub const ICR_WUCF: u32 = 0b1 << 20;
 // Bit 21 - 31 reserved. Must be kept at reset value.
 
 // ------------------------------------
-// USARTx - RDR bit definitions
+/// USARTx - RDR bit definitions
 // ------------------------------------
 pub const RDR_OFFSET: u32 = 0x24;
 
 // ------------------------------------
-// USARTx - TDR bit definitions
+/// USARTx - TDR bit definitions
 // ------------------------------------
 pub const TDR_OFFSET: u32 = 0x28;
 

@@ -30,8 +30,8 @@ pub fn application_entry() -> ! {
         *led = Some(Port::new(3, gpio::Group::B));
     }
 
-    kernel::syscall::new_task(hello_task, Args::empty(), 1024, Priority::Normal, "hello_task");
-    kernel::syscall::new_task(goodbye_task, Args::empty(), 1024, Priority::Normal, "goodbye_task");
+//    kernel::syscall::new_task(hello_task, Args::empty(), 1024, Priority::Normal, "hello_task");
+//    kernel::syscall::new_task(goodbye_task, Args::empty(), 1024, Priority::Normal, "goodbye_task");
     kernel::task::start_scheduler();
 
     loop { unsafe { arm::asm::bkpt() }; }

@@ -1,3 +1,20 @@
+/*
+ * Copyright © 2017 AltOS-Rust Team
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+ */
 
 use altos_core::syscall::sleep;
 use altos_core::sync::Mutex;
@@ -5,9 +22,13 @@ use altos_core::queue::RingBuffer;
 use core::fmt::{self, Write, Arguments};
 use peripheral::usart::{UsartX, Usart, USART2_TX_BUFFER_FULL_CHAN, USART2_TC_CHAN};
 
+/// Buffer for transmitting bytes
 pub static mut TX_BUFFER: RingBuffer = RingBuffer::new();
+
+/// Buffer for receiving bytes
 pub static mut RX_BUFFER: RingBuffer = RingBuffer::new();
 
+// Mutex to ensure transmitted data is not jumbled.
 static WRITE_LOCK: Mutex<()> = Mutex::new(());
 
 #[macro_export]
@@ -30,10 +51,13 @@ struct Serial {
 }
 
 impl Serial {
+    // Creates a new Serial object that is initialized to the Usart variable.
     fn new(usart: Usart) -> Self {
         Serial { usart: usart }
     }
 
+    // Inserts a byte into the TX buffer, if byte cannot be inserted loops
+    // and sleeps on the TX_BUFFER_FULL channel.
     fn buffer_byte(&mut self, byte: u8) {
         unsafe {
             while !TX_BUFFER.insert(byte) {
@@ -46,6 +70,8 @@ impl Serial {
     }
 }
 
+// Implementing the Write trait for the Serial struct.
+// Allows for use of print and println.
 impl Write for Serial {
     fn write_str(&mut self, string: &str) -> fmt::Result {
         for byte in string.as_bytes() {
@@ -62,7 +88,7 @@ impl Write for Serial {
 }
 
 struct DebugSerial {
-usart: Usart,
+    usart: Usart,
 }
 
 impl DebugSerial {

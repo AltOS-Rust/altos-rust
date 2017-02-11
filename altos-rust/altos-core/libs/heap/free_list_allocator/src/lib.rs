@@ -54,6 +54,13 @@ impl FreeListAllocator {
     // Do we even care about alignment variable?
     Some(self.heap_list.allocate(size))
   }
+
+  /// Deallocates a block of memory with the given size and alignment.
+  #[inline(never)]
+  pub fn deallocate(&mut self, alloc_ptr: *mut u8, size: usize, align: usize) {
+    // Do we even care about alignment variable?
+    self.heap_list.deallocate(alloc_ptr, size);
+  }
 }
 
 #[no_mangle]
@@ -68,6 +75,9 @@ pub extern fn __rust_allocate(size: usize, align: usize) -> *mut u8 {
 #[cfg(not(test))]
 pub extern fn __rust_deallocate(_ptr: *mut u8, _size: usize, _align: usize) {
   // TODO: This should actually be implemented
+  unsafe {
+    FL_ALLOCATOR.deallocate(_ptr, _size, _align)
+  }
 }
 
 #[no_mangle]

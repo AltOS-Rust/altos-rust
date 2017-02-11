@@ -60,14 +60,13 @@ impl LinkedList {
       while !current.is_null() {
         let current_size = (*current).data;
         let using_size = use_size(needed_size);
-        // let remaining_size = current_size - using_size;
         // Due to alignment, we should never get a case
         // where 0 < remaining_size < node_size
 
         // Node does not have enough space to satisfy requirement
         if current_size < using_size {
           previous = current;
-          // If current is null, this will not work yo!
+          // If current is null, this will not work!
           current = (*previous).next;
           continue;
         }
@@ -87,6 +86,7 @@ impl LinkedList {
         else {
           (*current).data -= using_size;
           (*previous).next = self.relocate_node(current, using_size);
+          break;
         }
       }
     }
@@ -97,17 +97,42 @@ impl LinkedList {
     alloc_location
   }
 
-  fn deallocate() {
+  pub fn deallocate(&mut self, alloc_ptr: *mut u8, size: usize) {
+    unsafe {
+      // We can immediately add the node at the deallocated position
+      let alloc_node_ptr = alloc_ptr as *mut Node;
+      let used_memory = use_size(size);
+      ptr::write(&mut *alloc_node_ptr, Node::new(used_memory));
+
+      let (mut previous, mut current) = (self.head, self.head);
+      // Memory location to be added at head of the list
+      if alloc_node_ptr < current {
+        (*alloc_node_ptr).next = current;
+        self.head = alloc_node_ptr;
+        return;
+      }
+      while !current.is_null() {
+        // Will this comparison work the way I expect? Comparing pointer positions.
+        if previous < alloc_node_ptr && alloc_node_ptr < current {
+          (*previous).next = alloc_node_ptr;
+          (*alloc_node_ptr).next = current;
+          return;
+        }
+        previous = current;
+        current = (*previous).next;
+      }
+      // At this point, we know that it needs to be added at the end
+      (*previous).next = alloc_node_ptr;
+    }
     /*
-    Cases:
+    TODO: We can still implement merging to deal with fragmentation
     - Nothing adjacent: Make new node, connect to closest nodes
     - Adjacent at tail: Merge with tail node, move node, switch leading ptr
     - Adjacent at lead: Merge with lead, no additional changes
     - Adjacent at both: Merge two with lead (add sizes, switch lead ptr)
-
-    - Simplified version: Always create new node, insert at proper location
     */
   }
+  // fn traverse() {}
   // fn reallocate_inplace() {}
   // fn reallocate() {}
 }
@@ -142,7 +167,7 @@ mod tests {
   use super::*;
 
   // TODO: Figure out what to do for testing this stuff
-  // Can we mock memory by claiming big chunk arbitrarily?
+  // Can we claim an arbitrary amount of memory to use for testing?
 
   #[test]
   fn test_empty_ll() {

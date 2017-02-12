@@ -30,11 +30,18 @@ pub fn application_entry() -> ! {
   }
 
   kernel::syscall::new_task(blink_1, Args::empty(), 512, Priority::Normal, "blink_1");
+  kernel::syscall::new_task(useful_task, Args::empty(), 128, Priority::Normal, "useful_task1");
   kernel::syscall::new_task(blink_2, Args::empty(), 512, Priority::Normal, "blink_2");
+  kernel::syscall::new_task(useful_task, Args::empty(), 256, Priority::Normal, "useful_task2");
   kernel::syscall::new_task(blink_sleep, Args::empty(), 512, Priority::Normal, "blink_3");
+  kernel::syscall::new_task(useful_task, Args::empty(), 512, Priority::Normal, "useful_task3");
   kernel::task::start_scheduler();
 
   loop { unsafe { arm::asm::bkpt() }; }
+}
+
+fn useful_task(_args: &mut Args) {
+  kernel::syscall::exit();
 }
 
 fn blink_1(_args: &mut Args) {

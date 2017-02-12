@@ -42,12 +42,15 @@ impl LinkedList {
     self.head = node_position;
   }
 
-  // For some reason, this isn't working
+  // This will only relocate nodes to higher addresses in memory
+  // but that's all we're using it for
   fn relocate_node(&self, current_pos: *mut Node, offset_val: usize) -> *mut Node {
     unsafe {
-      let new_pos = current_pos.offset(offset_val as isize);
-      // For some reason, just using copy here causes a compiler error
-      ptr::copy_nonoverlapping(current_pos, new_pos, mem::size_of::<Node>());
+      // If we don't convert this, offset does not work correctly
+      let current_ptr = current_pos as *mut u8;
+      let new_pos = current_ptr.offset(offset_val as isize) as *mut Node;
+      let current_node = ptr::read(current_pos);
+      mem::forget(mem::replace(&mut *new_pos, current_node));
       new_pos as *mut Node
     }
   }
@@ -67,7 +70,7 @@ impl LinkedList {
         if current_size < using_size {
           previous = current;
           // If current is null, this will not work!
-          current = (*previous).next;
+          current = (*current).next;
           continue;
         }
         // There is no node space remaining
@@ -79,15 +82,19 @@ impl LinkedList {
           else {
             (*previous).next = (*current).next;
           }
-          alloc_location = current as *mut u8;
-          break;
         }
         // Node has enough space and a node can be maintained
         else {
           (*current).data -= using_size;
-          (*previous).next = self.relocate_node(current, using_size);
-          break;
+          if self.head == current {
+            self.head = self.relocate_node(current, using_size);
+          }
+          else {
+            (*previous).next = self.relocate_node(current, using_size);
+          }
         }
+        alloc_location = current as *mut u8;
+        break;
       }
     }
 
@@ -119,7 +126,7 @@ impl LinkedList {
           return;
         }
         previous = current;
-        current = (*previous).next;
+        current = (*current).next;
       }
       // At this point, we know that it needs to be added at the end
       (*previous).next = alloc_node_ptr;

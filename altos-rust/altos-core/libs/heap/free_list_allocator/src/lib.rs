@@ -28,7 +28,7 @@ pub fn init_heap(heap_start: usize, heap_size: usize) {
 pub struct FreeListAllocator {
   heap_start: usize,
   heap_size: usize,
-  heap_list: free_list::LinkedList,
+  heap_list: free_list::FreeList,
 }
 
 impl FreeListAllocator {
@@ -37,7 +37,7 @@ impl FreeListAllocator {
     FreeListAllocator {
       heap_start: 0,
       heap_size: 0,
-      heap_list: free_list::LinkedList::new(),
+      heap_list: free_list::FreeList::new(),
     }
   }
 

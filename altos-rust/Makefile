@@ -3,6 +3,7 @@ static_lib = lib$(binary).a
 linker_script = cortex_m0.ld
 target = thumbv6m-none-eabi
 core_lib = altos_core
+port_lib = cortex_m0
 
 build_path = build/
 
@@ -13,6 +14,9 @@ debug_build = $(debug_build_path)$(binary)
 release_static_lib = target/$(target)/release/$(static_lib)
 release_build_path = $(build_path)release/
 release_build = $(release_build_path)$(binary)
+
+doc_target_path = target/doc
+doc_build_path = $(build_path)doc
 
 path_to_cm0 = port/cortex-m0/
 
@@ -32,6 +36,9 @@ test_dependencies = altos_core \
 # --lib flag only runs the unit test suite, doc tests are currently an issue for cross-compiled
 #  platforms. See: https://github.com/rust-lang/cargo/issues/1789
 test_args = $(foreach dep, $(test_dependencies),-p $(dep)) --lib
+
+### DOC ###
+doc_args = -p $(port_lib) --lib
 
 ### LINKER ###
 linker = arm-none-eabi-ld
@@ -82,6 +89,11 @@ gdb-ocd: debug
 
 test:
 	@cargo test $(test_args)
+
+doc:
+	@mkdir -p $(build_path)
+	@$(cargo) doc $(doc_args)
+	@cp -r $(doc_target_path) $(doc_build_path)
 
 test_verbose:
 	@$(cargo) test $(test_args) -- --nocapture

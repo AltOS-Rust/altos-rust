@@ -58,11 +58,11 @@ impl LinkedList {
   // Allocate memory using first fit strategy
   pub fn allocate(&mut self, needed_size: usize) -> *mut u8 {
     let mut alloc_location: *mut u8 = ptr::null_mut();
+    let using_size = use_size(needed_size);
     unsafe {
       let (mut previous, mut current) = (self.head, self.head);
       while !current.is_null() {
         let current_size = (*current).data;
-        let using_size = use_size(needed_size);
         // Due to alignment, we should never get a case
         // where 0 < remaining_size < node_size
 

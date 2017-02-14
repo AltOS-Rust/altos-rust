@@ -144,9 +144,26 @@ impl FreeList {
   // fn reallocate() {}
 }
 
+// This ensures the block size actually allocated is a multiple of the BlockHeader size.
+// Actual allocation size >= requested size (obviously)
 fn use_size(needed_size: usize) -> usize {
-  // We always need to align up to block size or we end up with with potential leaks
   align_up(needed_size, mem::size_of::<BlockHeader>())
+}
+
+// Returns whichever alignment is larger, BlockHeader's or the requested one.
+// Assumes that both BlockHeader and the requested alignment are powers of 2
+// TODO: Is this a valid assumption for BlockHeader? is the power of 2 thing necessary? Multiple
+fn common_alignment(align: usize) -> usize {
+  let block_hdr_align = mem::align_of::<BlockHeader>();
+
+  if (block_hdr_align % align) == 0 {
+    block_hdr_align
+  }
+  else if (align % block_hdr_align) == 0 {
+    align
+  } else {
+    panic!("common_alignment - 'cannot align'")
+  }
 }
 
 /// Align downwards. Returns the greatest x with alignment `align` so that x <= addr.

@@ -216,7 +216,12 @@ mod tests {
   }
 
   #[test]
-  fn usize_returns_multiple_of_block_header_size() {
+  fn use_size_returns_multiple_of_block_header_size() {
+    let block_hdr_size: usize = mem::size_of::<BlockHeader>();
+    let request_size: usize = 17;
+    let alloc_size = use_size(request_size);
+    assert!(request_size % block_hdr_size != 0);
+    assert!(alloc_size % block_hdr_size == 0);
 
   }
 }

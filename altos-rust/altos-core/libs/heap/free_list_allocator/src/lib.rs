@@ -7,6 +7,7 @@
 #![no_std]
 
 #[cfg(test)]
+#[macro_use]
 extern crate std;
 
 #[cfg(all(target_arch="arm", not(target_has_atomic="ptr")))]
@@ -44,7 +45,7 @@ impl FreeListAllocator {
   pub fn init(&mut self, heap_start: usize, heap_size: usize) {
     self.heap_start = heap_start;
     self.heap_size = heap_size;
-    // Should initially populate list with single node containing all memory
+    // Should initially populate list with single block containing all memory
     self.heap_list.init(heap_start, heap_size);
   }
 
@@ -113,6 +114,43 @@ mod tests {
   use super::*;
   use std::sync::Arc;
   use std::vec::Vec;
+  use core::mem::{size_of, align_of};
+  use free_list::BlockHeader;
 
+  const HEAP_SIZE: usize = 2048;
+
+
+  #[test]
+  #[should_panic]
+  fn basic_allocation() {
+    let mut heap: [u8; HEAP_SIZE] = [0; HEAP_SIZE];
+    let heap_start = &heap[0] as *const u8;
+    let mut allocator = FreeListAllocator::new();
+    let mut allocator = FreeListAllocator::new();
+    allocator.init(heap_start as usize, HEAP_SIZE);
+
+    assert!(allocator.allocate(512, 1).is_some());
+    assert!(allocator.allocate(512, 1).is_some());
+    assert!(allocator.allocate(512, 2).is_some());
+    // should_panic
+    assert!(allocator.allocate(1024, 1).is_none());
+  }
+
+  /*
+  #[test]
+  #[should_panic]
+  fn alignment() {
+      let mut heap: [u8; HEAP_SIZE] = [0; HEAP_SIZE];
+      let mut allocator = FreeListAllocator::new();
+      let heap_start = &heap[0] as *const u8;
+      let mut allocator = FreeListAllocator::new();
+      allocator.init(heap_start as usize, HEAP_SIZE);
+
+      assert!(allocator.allocate(512, 2).is_some());
+      // should panic
+      assert!(allocator.allocate(512, align_of::<BlockHeader>()).is_some());
+      assert!(allocator.allocate(512, 3).is_none());
+  }
+  */
   // TODO: Implement tests for this
 }

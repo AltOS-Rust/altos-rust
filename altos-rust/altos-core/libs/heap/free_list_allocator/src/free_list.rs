@@ -56,6 +56,7 @@ impl FreeList {
   }
 
   // Allocate memory using first fit strategy
+  // TODO: This probably needs to deal with alignment in someway
   pub fn allocate(&mut self, needed_size: usize) -> *mut u8 {
     let mut alloc_location: *mut u8 = ptr::null_mut();
     let using_size = use_size(needed_size);
@@ -152,7 +153,7 @@ fn use_size(needed_size: usize) -> usize {
 
 // Returns whichever alignment is larger, BlockHeader's or the requested one.
 // Assumes that both BlockHeader and the requested alignment are powers of 2
-// TODO: Is this a valid assumption for BlockHeader? is the power of 2 thing necessary? Multiple
+// TODO: Is this a valid assumption for BlockHeader? is the power of 2 thing necessary?
 fn common_alignment(align: usize) -> usize {
   let block_hdr_align = mem::align_of::<BlockHeader>();
 
@@ -190,12 +191,32 @@ pub fn align_up(addr: usize, align: usize) -> usize {
 mod tests {
   use super::*;
 
+  const HEAP_SIZE: usize = 2048;
+
   // TODO: Figure out what to do for testing this stuff
   // Can we claim an arbitrary amount of memory to use for testing?
 
   #[test]
-  fn test_empty_ll() {
-    let new_ll = FreeList::new();
-    assert!(new_ll.head.is_null());
+  fn empty_free_list() {
+    let free_list = FreeList::new();
+    assert!(free_list.head.is_null());
+  }
+
+  #[test]
+  fn free_list_init() {
+    let mut heap: [u8; HEAP_SIZE] = [0; HEAP_SIZE];
+    let heap_start = &heap[0] as *const u8;
+    let mut free_list = FreeList::new();
+    free_list.init(heap_start as usize, HEAP_SIZE);
+
+    assert_eq!(free_list.head, heap_start as *mut BlockHeader);
+    unsafe {
+        assert_eq!((*free_list.head).block_size, HEAP_SIZE);
+    }
+  }
+
+  #[test]
+  fn usize_returns_multiple_of_block_header_size() {
+
   }
 }

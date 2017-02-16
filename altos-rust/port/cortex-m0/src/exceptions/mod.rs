@@ -20,7 +20,6 @@ mod usart;
 
 use arm::asm::bkpt;
 use altos_core::syscall;
-use interrupt;
 
 #[cfg(not(test))]
 #[cfg(target_arch="arm")]
@@ -157,15 +156,13 @@ extern "C" fn pend_sv_handler() {
   }
 }
 
-/// Interrupt handler for Usart2
+// Interrupt handler for Usart2
 extern "C" fn usart2_handler() {
     use peripheral::usart::{UsartX, Usart};
-    use self::usart::{usart_tx, usart_rx};
+    use self::usart::usart_tx;
     // Bits set in this register are stored in the usart2 in use, and
     // are reflected in the address for this usart2 variable as well.
     let usart2 = Usart::new(UsartX::Usart2);
-    usart2.clear_idle_flag();
-    usart_rx(usart2);
     usart_tx(usart2);
 }
 

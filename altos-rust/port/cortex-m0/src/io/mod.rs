@@ -16,6 +16,14 @@
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
  */
 
+//! This module handles input and output through the serial port.
+//!
+//! It implements print formatting for debug and for non-debug purposes.
+//! Serial and DebugSerial types provide interfaces for printing characters
+//! to the serial port.
+//!
+//! This module contains implementations of helper macros for print and println.
+
 use altos_core::syscall::sleep;
 use altos_core::sync::Mutex;
 use altos_core::queue::RingBuffer;
@@ -31,6 +39,8 @@ pub static mut RX_BUFFER: RingBuffer = RingBuffer::new();
 // Mutex to ensure transmitted data is not jumbled.
 static WRITE_LOCK: Mutex<()> = Mutex::new(());
 
+/// Print a formatted string to the serial port. This macro is intended for
+/// user code and should not be used to print within the kernel code.
 #[macro_export]
 #[cfg(not(test))]
 macro_rules! print {
@@ -39,6 +49,9 @@ macro_rules! print {
     });
 }
 
+/// Print a formatted string, with a new line appended to it, to the serial port.
+/// This macro is intended for user code and should not be used to print within
+/// the kernel code.
 #[macro_export]
 #[cfg(not(test))]
 macro_rules! println {
@@ -51,13 +64,10 @@ struct Serial {
 }
 
 impl Serial {
-    // Creates a new Serial object that is initialized to the Usart variable.
     fn new(usart: Usart) -> Self {
         Serial { usart: usart }
     }
 
-    // Inserts a byte into the TX buffer, if byte cannot be inserted loops
-    // and sleeps on the TX_BUFFER_FULL channel.
     fn buffer_byte(&mut self, byte: u8) {
         unsafe {
             while !TX_BUFFER.insert(byte) {
@@ -70,8 +80,6 @@ impl Serial {
     }
 }
 
-// Implementing the Write trait for the Serial struct.
-// Allows for use of print and println.
 impl Write for Serial {
     fn write_str(&mut self, string: &str) -> fmt::Result {
         for byte in string.as_bytes() {
@@ -105,6 +113,8 @@ impl DebugSerial {
 impl Write for DebugSerial {
     fn write_str(&mut self, string: &str) -> fmt::Result {
         for byte in string.as_bytes() {
+            // If at end of line, write a carriage return because
+            // minicom doesn't go to beginning of line on its own.
             if *byte == b'\n' {
                 self.write_byte(b'\r');
             }
@@ -114,6 +124,7 @@ impl Write for DebugSerial {
     }
 }
 
+#[doc(hidden)]
 pub fn write_fmt(args: Arguments) {
     let usart2 = Usart::new(UsartX::Usart2);
     let mut serial = Serial::new(usart2);
@@ -122,6 +133,7 @@ pub fn write_fmt(args: Arguments) {
     serial.write_fmt(args).ok();
 }
 
+#[doc(hidden)]
 pub fn write_str(s: &str) {
     let usart2 = Usart::new(UsartX::Usart2);
     let mut serial = Serial::new(usart2);
@@ -132,6 +144,7 @@ pub fn write_str(s: &str) {
 
 // NOTE: debug assumes interrupts are turned off, so does not need lock.
 #[no_mangle]
+#[doc(hidden)]
 pub fn debug_fmt(args: Arguments) {
     let usart2 = Usart::new(UsartX::Usart2);
     let mut serial = DebugSerial::new(usart2);
@@ -141,6 +154,7 @@ pub fn debug_fmt(args: Arguments) {
 
 // NOTE: debug assumes interrupts are turned off, so does not need lock.
 #[no_mangle]
+#[doc(hidden)]
 pub fn debug_str(s: &str) {
     let usart2 = Usart::new(UsartX::Usart2);
     let mut serial = DebugSerial::new(usart2);

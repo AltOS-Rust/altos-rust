@@ -16,57 +16,34 @@
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
  */
 
-/// This submodule contains the function implementations for the Usartx_ISR.
-/// The ISR is the interrupt service register and is responsible for generating
-/// the interrupts for the Usart.
-///
-/// The bit definitions used for the bit operations are located in: defs.rs
+/* This submodule contains the function implementations for the Usartx_ISR.
+ * The ISR is the interrupt service register and is responsible for generating
+ * the interrupts for the Usart.
+ */
 
 use super::super::Register;
 use super::defs::*;
 
-/// Stores base address of the ISR, which is the address
-/// of the Usart being used to access this register.
 #[derive(Copy, Clone, Debug)]
 pub struct ISR {
     base_addr: *const u32,
 }
 
-/// Implements the Register trait for Usartx_ISR.
-/// Stores base address for the interrupt service register, which is the address
-/// of the Usart being used to access this register. Uses the base address
-/// combined with the register offset to calculate the register address.
 impl Register for ISR {
-    /* Sets the base address as the Usart address.
-     * Returns itself to the calling routine.
-     */
     fn new(base_addr: *const u32) -> Self {
         ISR { base_addr: base_addr }
     }
 
-    /* Helper function to calcluate the address of ISR.
-     * Supplies the base address to the `addr()` Register routine.
-     * Used in conjunction with the 'mem_offset' function below.
-     */
     fn base_addr(&self) -> *const u32 {
         self.base_addr
     }
 
-    /* Helper function to calculate the address of ISR.
-     * Supplies the ISR offset address back to the 'addr()' Register routine.
-     * Used in conjuction with the 'base_addr' function above.
-     */
     fn mem_offset(&self) -> u32 {
         ISR_OFFSET
     }
 }
 
-/// Function implementations for the Usartx_ISR.
-/// These functions are called from the wrapper functions defined
-/// for the Usart struct.
 impl ISR {
-
-    /// Returns true if the RXNE flag is set, false otherwise.
     /* Bit 5 RXNE: Read data register not empty
      *   This bit is set by hardware when the content of the RDR shift register
      *   has been transferred to the USARTx_RDR. It is cleared by a
@@ -83,7 +60,6 @@ impl ISR {
         }
     }
 
-    /// Returns true if the transmit complete flag is set, false otherwise.
     /* Bit 6 - TC: Transmission Complete
      *   This bit is set by hardware if the transmission of a frame containing
      *   data is complete and if TXE is set. An interrupt is generated if TCIE=1
@@ -101,7 +77,6 @@ impl ISR {
         }
     }
 
-    /// Returns true of the transmit data register is empty, false otherwise.
     /* Bit 7 - TXE: Transmit data register empty
      *   This bit is set by hardware when the content of the USARTx_TDR
      *   has been transferred into the shift register.

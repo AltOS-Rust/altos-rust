@@ -218,10 +218,16 @@ mod tests {
   #[test]
   fn use_size_returns_multiple_of_block_header_size() {
     let block_hdr_size: usize = mem::size_of::<BlockHeader>();
-    let request_size: usize = 17;
-    let alloc_size = use_size(request_size);
+    let mut request_size: usize = 11; // prime number
+    let mut alloc_size = use_size(request_size);
+
     assert!(request_size % block_hdr_size != 0);
     assert!(alloc_size % block_hdr_size == 0);
 
+    request_size = block_hdr_size + 1;
+    alloc_size = use_size(request_size);
+
+    assert!(request_size % block_hdr_size != 0);
+    assert!(alloc_size == 2 * block_hdr_size);
   }
 }

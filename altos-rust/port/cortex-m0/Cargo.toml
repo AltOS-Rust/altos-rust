@@ -6,6 +6,11 @@ authors = ["Daniel Seitz <dnseitz@gmail.com>"]
 [lib]
 crate-type = ["rlib"]
 
+[features]
+default = []
+
+doc = []
+
 #[dev-dependencies]
 #volatile = { path = "../../libs/volatile" }
 [dev-dependencies.altos_core]

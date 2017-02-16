@@ -71,9 +71,9 @@ pub mod kernel {
     }
 }
 
-#[cfg(not(test))]
+#[cfg(not(any(test, feature="doc")))]
 #[lang = "eh_personality"] extern "C" fn eh_personality() {}
-#[cfg(not(test))]
+#[cfg(not(any(test, feature="doc")))]
 #[lang = "panic_fmt"]
 extern "C" fn panic_fmt(fmt: core::fmt::Arguments,
                         (file, line): (&'static str, u32)) -> ! {

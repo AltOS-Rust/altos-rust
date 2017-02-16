@@ -256,18 +256,18 @@ impl Usart {
 
     /// Clear the ORE flag. ORE flag is set when data is received when
     /// the RDR is full.
-    pub fn clear_ore_flag(&self) {
+    pub fn clear_ore_flag(&mut self) {
         self.icr.clear_ore();
     }
 
     /// Clear the TC flag. TC flag is set when transmission of a
     /// series of packets is complete.
-    pub fn clear_tc_flag(&self) {
+    pub fn clear_tc_flag(&mut self) {
         self.icr.clear_tc();
     }
 
     /// Clear the IDLE flag. IDLE flag is set when an idle line is detected. :P
-    pub fn clear_idle_flag(&self) {
+    pub fn clear_idle_flag(&mut self) {
         self.icr.clear_idle();
     }
 }

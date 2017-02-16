@@ -48,7 +48,7 @@ impl ICR {
     /*  Bit 3 ORECF: Overrun error clear flag
      *  Writing 1 to this bit clears the ORE flag in the USARTx_ISR.
      */
-    pub fn clear_ore(&self) {
+    pub fn clear_ore(&mut self) {
         unsafe {
             *self.addr() |= ICR_ORECF;
         }
@@ -57,7 +57,7 @@ impl ICR {
     /* Bit 4 IDLECF: Idle line detected clear flag
      * Writing 1 to this bit clears the IDLE flag in the USARTx_ISR.
      */
-    pub fn clear_idle(&self) {
+    pub fn clear_idle(&mut self) {
         unsafe {
             *self.addr() |= ICR_IDLECF;
         }
@@ -66,7 +66,7 @@ impl ICR {
     /* Bit 6 TCCF: Transmission complete clear flag
      * Writing 1 to this bit clears the TC flag in the USARTx_ISR.
      */
-    pub fn clear_tc(&self) {
+    pub fn clear_tc(&mut self) {
         unsafe {
             *self.addr() |= ICR_TCCF;
         }

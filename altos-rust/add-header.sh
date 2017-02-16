@@ -20,7 +20,7 @@ function main(){
     # check if the header already exists
     # if so, dont replace it, leave the file alone
     # if it doesnt exist we need to create it
-    head -15 $file | grep "GNU"
+    head -15 $file | grep "GNU" >/dev/null
     status=$?
     if [ $status -eq 0 ]; then
       # header already exists

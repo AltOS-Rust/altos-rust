@@ -126,7 +126,6 @@ mod tests {
     let mut heap: [u8; HEAP_SIZE] = [0; HEAP_SIZE];
     let heap_start = &heap[0] as *const u8;
     let mut allocator = FreeListAllocator::new();
-    let mut allocator = FreeListAllocator::new();
     allocator.init(heap_start as usize, HEAP_SIZE);
 
     assert!(allocator.allocate(512, 1).is_some());

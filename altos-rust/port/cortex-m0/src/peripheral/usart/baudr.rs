@@ -1,8 +1,30 @@
-// Daniel Seitz and RJ Russell
+/*
+ * Copyright © 2017 AltOS-Rust Team
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+ */
+
+/* This submodule contains the function implementations for the Usartx_BRR.
+ * The BRR is the baud rate register and is responsible for setting the
+ * baud rate based on what the user needs.
+ */
 
 use super::super::Register;
 use super::defs::*;
 
+/// Five most common baud rates available.
 #[derive(Copy, Clone)]
 pub enum BaudRate {
     Hz4800,
@@ -12,7 +34,7 @@ pub enum BaudRate {
     Hz115200,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct BRR {
     base_addr: *const u32,
 }
@@ -32,7 +54,18 @@ impl Register for BRR {
 }
 
 impl BRR {
-    pub fn set_baud_rate(&self, baud_rate: BaudRate, clock_rate: u32, over8: bool) {
+    /* Bits 31:16 Reserved, must be kept at reset value.
+     * Bits 15:4 BRR[15:4]
+     *   BRR[15:4] = USARTDIV[15:4]
+     * Bits 3:0 BRR[3:0]
+     *   When OVER8 = 0, BRR[3:0] = USARTDIV[3:0].
+     *   When OVER8 = 1:
+     *   BRR[2:0] = USARTDIV[3:0] shifted 1 bit to the right.
+     *   BRR[3] must be kept cleared.
+     */
+    pub fn set_baud_rate(&mut self, baud_rate: BaudRate,
+                         clock_rate: u32, over8: bool) {
+
         let mut rate = match baud_rate {
             BaudRate::Hz4800 => clock_rate/4_800,
             BaudRate::Hz9600 => clock_rate/9_600,

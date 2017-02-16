@@ -1,38 +1,91 @@
-// peripheral/serial/mod.rs
-// AltOSRust
-//
-// Created by Daniel Seitz on 11/30/16
+/*
+ * Copyright © 2017 AltOS-Rust Team
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+ */
+
+//! This module is the highest level in the Usart heirarchy for implementing
+//! the serial driver.
+//!
+//! Configuration for each of the two Usart registers, and each of the registers
+//! that are offset from Usartx, and the public functions used to initialize,
+//! configure, and manipulate the bits for each register is defined in this file.
+//!
+//! The functions here are used as wrappers that pass the call down through
+//! each necessary level (one or more), until the actual register is reached
+//! and is able to set the bits for itself accordingly.
+//!
+//! This module is also responsible for initial setup of the Usart register
+//! (Either Usart1 or Usart2)
+
 mod control;
 mod defs;
 mod baudr;
 mod tdr;
+mod rdr;
 mod isr;
+mod icr;
 
 use super::{Control, Register};
 use volatile::Volatile;
 use self::control::UsartControl;
 use self::baudr::BRR;
 use self::tdr::TDR;
+use self::rdr::RDR;
 use self::isr::ISR;
+use self::icr::ICR;
 use self::defs::*;
 use peripheral::{rcc, gpio};
+use interrupt;
 
 pub use self::control::{WordLength, Mode, Parity, StopLength, HardwareFlowControl};
 pub use self::baudr::BaudRate;
 
-#[derive(Copy, Clone)]
+/// Defines the wake/sleep channel for the TX buffer when full.
+pub const USART2_TX_BUFFER_FULL_CHAN: usize = 43;
+/// Defines the wake/sleep channel for when transmission complete flag is set.
+pub const USART2_TC_CHAN: usize = 43 * 2;
+
+/// STM32F0 has two Usart registers available.
+#[derive(Copy, Clone, Debug)]
 pub enum UsartX {
+    /// Connected to PA9 (TX) and PA10 (RX).
     Usart1,
+    /// Usart2 is the debug serial.
+    /// Connected to PA2 (TX) and PA3 (RX).
     Usart2,
 }
 
-#[derive(Copy, Clone)]
+/// Usart is the serial peripheral. This type is used to configure
+/// the serial peripheral to send and receive data through the serial bus.
+#[derive(Copy, Clone, Debug)]
 pub struct Usart {
+    // Memory address of the Usart
     mem_addr: *const u32,
+    // Collection of control registers
     control: UsartControl,
+    // Baud rate register
     baud: BRR,
+    // Transmit data register
     tdr: TDR,
+    // Read data register
+    rdr: RDR,
+    // Interrupt service register
     isr: ISR,
+    // Interrupt clear register
+    icr: ICR,
 }
 
 impl Control for Usart {
@@ -42,6 +95,8 @@ impl Control for Usart {
 }
 
 impl Usart {
+    /// Creates a new Usart object to configure the specifications for
+    /// the serial peripheral.
     pub fn new(x: UsartX) -> Self {
         match x {
             UsartX::Usart1 => Usart {
@@ -49,75 +104,182 @@ impl Usart {
                 control: UsartControl::new(USART1_ADDR),
                 baud: BRR::new(USART1_ADDR),
                 tdr: TDR::new(USART1_ADDR),
+                rdr: RDR::new(USART1_ADDR),
                 isr: ISR::new(USART1_ADDR),
+                icr: ICR::new(USART1_ADDR),
             },
             UsartX::Usart2 => Usart {
                 mem_addr: USART2_ADDR,
                 control: UsartControl::new(USART2_ADDR),
                 baud: BRR::new(USART2_ADDR),
                 tdr: TDR::new(USART2_ADDR),
+                rdr: RDR::new(USART2_ADDR),
                 isr: ISR::new(USART2_ADDR),
+                icr: ICR::new(USART2_ADDR),
             },
         }
     }
 
-    // TODO: Change &self -> &mut self for all these?? Maybe??
-    pub fn enable_usart(&self) {
+    /// Enable the Usart.
+    pub fn enable_usart(&mut self) {
         self.control.enable_usart();
     }
 
-    pub fn disable_usart(&self) {
+    /// Disable the Usart.
+    pub fn disable_usart(&mut self) {
         self.control.disable_usart();
     }
 
-    pub fn set_word_length(&self, length: WordLength) {
-        self.control.set_word_length(length);
+    /// Check if Usart is enabled. Returns true if enabled, false otherwise.
+    pub fn is_usart_enabled(&mut self) -> bool {
+        self.control.is_usart_enabled()
     }
 
-    pub fn set_mode(&self, mode: Mode) {
+    /// Set the Usart mode for transmit and receive configurations.
+    pub fn set_mode(&mut self, mode: Mode) {
         self.control.set_mode(mode);
     }
 
-    pub fn set_parity(&self, parity: Parity) {
+    /// Enable the RXNE interrupt. This interrupt occurs when the
+    /// receive data register has data in it.
+    pub fn enable_receiver_not_empty_interrupt(&mut self) {
+        self.control.enable_receiver_not_empty_interrupt();
+    }
+
+    /// Disable the RXNE interrupt. This interrupt occurs when the
+    /// receive data register has data in it.
+    pub fn disable_receiver_not_empty_interrupt(&mut self) {
+        self.control.disable_receiver_not_empty_interrupt();
+    }
+
+    /// Enable the TC interrupt. This interrupt occurs when complete
+    /// transmission of the data is finished.
+    pub fn enable_transmit_complete_interrupt(&mut self) {
+        self.control.enable_transmit_complete_interrupt();
+    }
+
+    /// Disable the TC interrupt. This interrupt occurs when complete
+    /// transmission of the data is finished.
+    pub fn disable_transmit_complete_interrupt(&mut self) {
+        self.control.disable_transmit_complete_interrupt();
+    }
+
+    /// Enable the TXE interrupt. This interrupt occurs when the transmit
+    /// data register is ready for more data.
+    pub fn enable_transmit_interrupt(&mut self) {
+        self.control.enable_transmit_interrupt();
+    }
+
+    /// Disable the TXE interrupt. This interrupt occurs when the transmit
+    /// data register is ready for more data.
+    pub fn disable_transmit_interrupt(&mut self) {
+        self.control.disable_transmit_interrupt();
+    }
+
+    /// Enables parity checking. Used to determine if data corruption
+    /// has occurred.
+    pub fn set_parity(&mut self, parity: Parity) {
         self.control.set_parity(parity);
     }
 
-    pub fn set_stop_bits(&self, length: StopLength) {
-        self.control.set_stop_bits(length);
+    /// Sets the length of each data packet.
+    pub fn set_word_length(&mut self, length: WordLength) {
+        self.control.set_word_length(length);
     }
 
-    pub fn enable_over8(&self) {
+    /// Enable oversampling by 8.
+    pub fn enable_over8(&mut self) {
         self.control.enable_over8();
     }
 
-    pub fn disable_over8(&self) {
+    /// Default to oversampling by 16.
+    pub fn disable_over8(&mut self) {
         self.control.disable_over8();
     }
 
-    pub fn set_hardware_flow_control(&self, hfc: HardwareFlowControl) {
+    /// Set the number of stop bits.
+    pub fn set_stop_bits(&mut self, length: StopLength) {
+        self.control.set_stop_bits(length);
+    }
+
+    /// Set hardware flow control mode.
+    ///
+    /// # Note
+    /// Implementation for this functionality is not complete.
+    pub fn set_hardware_flow_control(&mut self, hfc: HardwareFlowControl) {
         self.control.set_hardware_flow_control(hfc);
     }
 
-    pub fn set_baud_rate(&self, baud_rate: BaudRate, clock_rate: u32) {
+    // --------------------------------------------------------------
+
+    /// Set baud rate based on clock rate function argument.
+    pub fn set_baud_rate(&mut self, baud_rate: BaudRate, clock_rate: u32) {
         self.baud.set_baud_rate(baud_rate, clock_rate, self.control.get_over8());
     }
 
-    pub fn transmit_byte(&self, byte: u8) {
+    // --------------------------------------------------------------
+
+    /// Move byte to TDR in order to transmit it.
+    pub fn transmit_byte(&mut self, byte: u8) {
         self.tdr.store(byte);
     }
 
-    pub fn get_txe(&self) -> bool {
+    // --------------------------------------------------------------
+
+    /// Load byte from RDR.
+    pub fn load_byte(&self) -> u8 {
+        self.rdr.load()
+    }
+
+    // --------------------------------------------------------------
+
+    /// Check if RXNE flag is set. RNXE flag is set when the RDR has
+    /// data available. Returns true if RXNE flag is set, false otherwise.
+    pub fn is_rx_reg_full(&self) -> bool {
+        self.isr.get_rxne()
+    }
+
+    /// Check if TC flag is set. TC flag is set when transmission of a
+    /// series of packets is complete. Returns true if TC flag is set,
+    /// false otherwise.
+    pub fn is_transmission_complete(&self) -> bool {
+        self.isr.get_tc()
+    }
+
+    /// Check if TXE flag is set. TXE flag is set when the TDR is empty.
+    /// Returns true if TXE flag is set, false otherwise.
+    pub fn is_tx_reg_empty(&self) -> bool {
         self.isr.get_txe()
+    }
+
+    // --------------------------------------------------------------
+
+    /// Clear the ORE flag. ORE flag is set when data is received when
+    /// the RDR is full.
+    pub fn clear_ore_flag(&self) {
+        self.icr.clear_ore();
+    }
+
+    /// Clear the TC flag. TC flag is set when transmission of a
+    /// series of packets is complete.
+    pub fn clear_tc_flag(&self) {
+        self.icr.clear_tc();
+    }
+
+    /// Clear the IDLE flag. IDLE flag is set when an idle line is detected. :P
+    pub fn clear_idle_flag(&self) {
+        self.icr.clear_idle();
     }
 }
 
+/// Initialize the Usart2 peripheral.
+///
+/// Connects the necessary GPIO pins, sets the clock, enables interrupts,
+/// and currently configures the Usart2 to 9600 8N1 configuration.
 pub fn init() {
     let rcc = rcc::rcc();
-    //rcc.enable_peripheral(rcc::Peripheral::USART1);
     rcc.enable_peripheral(rcc::Peripheral::USART2);
 
-
-    //gpio::GPIO::enable(gpio::Group::A);
     gpio::GPIO::enable(gpio::Group::A);
     let mut pa2 = gpio::Port::new(2, gpio::Group::A);
     let mut pa3 = gpio::Port::new(3, gpio::Group::A);
@@ -132,26 +294,23 @@ pub fn init() {
     pa2.set_pull(gpio::Pull::Up);
     pa3.set_pull(gpio::Pull::Up);
 
-    let usart2 = Usart::new(UsartX::Usart2);
+    let mut usart2 = Usart::new(UsartX::Usart2);
     usart2.disable_usart();
+
     usart2.set_word_length(WordLength::Eight);
-    usart2.set_mode(Mode::Transmit);
+    usart2.set_mode(Mode::All);
     usart2.set_parity(Parity::None);
     usart2.set_hardware_flow_control(HardwareFlowControl::None);
 
+    let clock_rate = rcc.get_system_clock_rate();
+    usart2.set_baud_rate(BaudRate::Hz9600, clock_rate);
 
-    let cr = rcc.get_system_clock_rate();
-    usart2.set_baud_rate(BaudRate::Hz9600, cr);
-
+    usart2.enable_receiver_not_empty_interrupt();
+    usart2.enable_transmit_interrupt();
     usart2.enable_usart();
 
-    write(usart2, "Hello, World!");
-}
-
-pub fn write(usart2: Usart, string: &str) {
-  //let usart2 = Usart::new(UsartX::Usart2);
-  for byte in string.as_bytes() {
-    while !usart2.get_txe() {}
-    usart2.transmit_byte(*byte);
-  }
+    let nvic = interrupt::nvic();
+    // TODO: The number 28 here should be replaced by an enum in the
+    // `interrupt` module
+    nvic.enable_interrupt(28);
 }

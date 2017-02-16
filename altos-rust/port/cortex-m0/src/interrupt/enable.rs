@@ -19,6 +19,7 @@ impl EnableControl {
     }
   }
 
+  // TODO: Come back and replace the interrupt argument with an enum
   pub fn enable_interrupt(&self, interrupt: u8) {
     self.iser.enable_interrupt(interrupt);
   }

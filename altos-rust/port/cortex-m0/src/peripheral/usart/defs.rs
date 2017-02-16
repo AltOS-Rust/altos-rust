@@ -1,3 +1,28 @@
+/*
+ * Copyright © 2017 AltOS-Rust Team
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+ */
+
+/* This file contains the constants associated with the bit definitions
+ * for the registers being used.
+ * This is not a complete listing, however, all constants used throughout
+ * the program are listed here, there are bit definitions that are listed
+ * and not being used, or not listed at all.
+ */
+
 // Base addresses for USART 1 and 2
 pub const USART1_ADDR: *const u32 = 0x4001_3800 as *const _;
 pub const USART2_ADDR: *const u32 = 0x4000_4400 as *const _;
@@ -32,7 +57,7 @@ pub const CR1_M1:     u32 = 0b1 << 28;
 // ------------------------------------
 // USARTx - CR2 bit definitions
 // ------------------------------------
-pub const CR2_OFFSET:    u32 = 0x04;
+pub const CR2_OFFSET: u32 = 0x04;
 // Bits 0 - 3 are reserved and must be kept at reset value.
 pub const CR2_ADDM7:     u32 = 0b1 << 4;
 pub const CR2_LBDL:      u32 = 0b1 << 5;
@@ -86,6 +111,29 @@ pub const ISR_IDLE: u32   = 0b1 << 4;
 pub const ISR_RXNE: u32   = 0b1 << 5;
 pub const ISR_TC: u32     = 0b1 << 6;
 pub const ISR_TXE: u32    = 0b1 << 7;
+
+// ------------------------------------
+// USARTx - ICR bit definitions
+// ------------------------------------
+pub const ICR_OFFSET: u32 = 0x20;
+pub const ICR_PECF: u32   = 0b1;
+pub const ICR_FECF: u32   = 0b1 << 1;
+pub const ICR_NCF: u32    = 0b1 << 2;
+pub const ICR_ORECF: u32  = 0b1 << 3;
+pub const ICR_IDLECF: u32 = 0b1 << 4;
+// Bit 5 reserved. Must be kept at reset value.
+pub const ICR_TCCF: u32 = 0b1 << 6;
+// Bit 7 reserved. Must be kept at reset value.
+pub const ICR_LBDCF: u32 = 0b1 << 8;
+pub const ICR_CTSCF: u32 = 0b1 << 9;
+// Bit 10 reserved. Must be kept at reset value.
+pub const ICR_RTOCF: u32 = 0b1 << 11;
+pub const ICR_EOBCF: u32 = 0b1 << 12;
+// Bit 13 - 16 reserved. Must be kept at reset value.
+pub const ICR_CMCF: u32 = 0b1 << 17;
+// Bit 18 and 19 reserved. Must be kept at reset value.
+pub const ICR_WUCF: u32 = 0b1 << 20;
+// Bit 21 - 31 reserved. Must be kept at reset value.
 
 // ------------------------------------
 // USARTx - RDR bit definitions

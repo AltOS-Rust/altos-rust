@@ -8,10 +8,12 @@
 mod queue;
 mod atomic_queue;
 mod sorted_list;
+mod ringbuffer;
 
 pub use self::queue::*;
 pub use self::atomic_queue::*;
 pub use self::sorted_list::*;
+pub use self::ringbuffer::*;
 
 use alloc::boxed::Box;
 use core::ops::{Deref, DerefMut};

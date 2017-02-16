@@ -9,6 +9,7 @@
 pub mod rcc;
 pub mod gpio;
 pub mod systick;
+#[cfg(feature="serial")]
 pub mod usart;
 
 use volatile::Volatile;

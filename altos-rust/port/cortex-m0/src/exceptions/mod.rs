@@ -16,6 +16,7 @@
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
  */
 
+#[cfg(feature="serial")]
 mod usart;
 
 use arm::asm::bkpt;
@@ -158,11 +159,16 @@ extern "C" fn pend_sv_handler() {
 
 // Interrupt handler for Usart2
 extern "C" fn usart2_handler() {
-    use peripheral::usart::{UsartX, Usart};
-    use self::usart::usart_tx;
-    // Bits set in this register are stored in the usart2 in use, and
-    // are reflected in the address for this usart2 variable as well.
-    let usart2 = Usart::new(UsartX::Usart2);
-    usart_tx(usart2);
+    #[cfg(feature="serial")]
+    {
+        use peripheral::usart::{UsartX, Usart};
+        use self::usart::usart_tx;
+        // Bits set in this register are stored in the usart2 in use, and
+        // are reflected in the address for this usart2 variable as well.
+        let usart2 = Usart::new(UsartX::Usart2);
+        usart_tx(usart2);
+    }
+    #[cfg(not(feature="serial"))]
+    default_handler();
 }
 

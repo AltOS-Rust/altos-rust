@@ -53,7 +53,7 @@ impl FreeListAllocator {
   #[inline(never)]
   pub fn allocate(&mut self, size: usize, align: usize) -> Option<*mut u8> {
     // Do we even care about alignment variable?
-    Some(self.heap_list.allocate(size))
+    Some(self.heap_list.allocate(size, align))
   }
 
   /// Deallocates a block of memory with the given size and alignment.
@@ -132,8 +132,7 @@ mod tests {
     assert!(allocator.allocate(512, 1).is_some());
     assert!(allocator.allocate(512, 1).is_some());
     assert!(allocator.allocate(512, 2).is_some());
-    // should_panic
-    assert!(allocator.allocate(1024, 1).is_none());
+    assert!(allocator.allocate(1024, 1).is_none()); // should panic
   }
 
   /*

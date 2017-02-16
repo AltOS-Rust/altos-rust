@@ -57,9 +57,10 @@ impl FreeList {
 
   // Allocate memory using first fit strategy
   // TODO: This probably needs to deal with alignment in someway
-  pub fn allocate(&mut self, needed_size: usize) -> *mut u8 {
+  pub fn allocate(&mut self, request_size: usize, request_align: usize) -> *mut u8 {
     let mut alloc_location: *mut u8 = ptr::null_mut();
-    let using_size = use_size(needed_size);
+    let using_size = use_size(request_size);
+    let using_align = use_align(request_align);
     unsafe {
       let (mut previous, mut current) = (self.head, self.head);
       while !current.is_null() {
@@ -147,14 +148,14 @@ impl FreeList {
 
 // This ensures the block size actually allocated is a multiple of the BlockHeader size.
 // Actual allocation size >= requested size (obviously)
-fn use_size(needed_size: usize) -> usize {
-  align_up(needed_size, mem::size_of::<BlockHeader>())
+fn use_size(request_size: usize) -> usize {
+  align_up(request_size, mem::size_of::<BlockHeader>())
 }
 
 // Returns whichever alignment is larger, BlockHeader's or the requested one.
 // Assumes that both BlockHeader and the requested alignment are powers of 2
 // TODO: Is this a valid assumption for BlockHeader? is the power of 2 thing necessary?
-fn common_alignment(align: usize) -> usize {
+fn use_align(align: usize) -> usize {
   let block_hdr_align = mem::align_of::<BlockHeader>();
 
   if (block_hdr_align % align) == 0 {
@@ -163,7 +164,7 @@ fn common_alignment(align: usize) -> usize {
   else if (align % block_hdr_align) == 0 {
     align
   } else {
-    panic!("common_alignment - 'cannot align'")
+    panic!("use_align - 'cannot align'")
   }
 }
 
@@ -213,6 +214,22 @@ mod tests {
     unsafe {
         assert_eq!((*free_list.head).block_size, HEAP_SIZE);
     }
+  }
+
+  #[test]
+  #[should_panic]
+  fn use_align_returns_common_multiple_of_request_size_and_block_header_size() {
+    let block_hdr_align = mem::align_of::<BlockHeader>();
+    let mut alloc_align = use_align(1);
+
+    assert!(alloc_align % block_hdr_align == 0);
+
+    alloc_align = use_align(2);
+
+    assert!(alloc_align % block_hdr_align == 0);
+    assert!(alloc_align % 2 == 0);
+
+    alloc_align = use_align(3); // should panic
   }
 
   #[test]

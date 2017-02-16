@@ -10,6 +10,7 @@ crate-type = ["rlib"]
 default = []
 
 doc = []
+serial = []
 
 #[dev-dependencies]
 #volatile = { path = "../../libs/volatile" }

@@ -222,5 +222,6 @@ fn init_ticks() {
 }
 
 fn init_usart() {
+    #[cfg(feature="serial")]
     peripheral::usart::init();
 }

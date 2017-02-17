@@ -90,11 +90,11 @@ test:
 
 doc:
 	@mkdir -p $(build_path)
-	@$(cargo) doc $(doc_args)
-	@cp -r $(doc_target_path) $(doc_build_path)
+	@cd port/cortex-m0; \
+	cargo doc $(doc_args) --features "doc serial";
+	@cp -r $(doc_target_path) $(doc_build_path);
 
 test_verbose:
 	@$(cargo) test $(test_args) -- --nocapture
 
 size: debug
-

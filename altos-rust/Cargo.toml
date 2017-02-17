@@ -6,8 +6,9 @@ authors = ["Daniel Seitz <dnseitz@gmail.com>"]
 [lib]
 crate-type = ["staticlib"]
 
-[target.thumbv6m-none-eabi.dependencies]
-cortex_m0 = { path = "port/cortex-m0" }
+[target.thumbv6m-none-eabi.dependencies.cortex_m0]
+path = "port/cortex-m0"
+features = ["serial"]
 
 [profile.dev]
 opt-level = 1

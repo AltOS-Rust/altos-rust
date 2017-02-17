@@ -154,7 +154,6 @@ fn use_size(request_size: usize) -> usize {
 
 // Returns whichever alignment is larger, BlockHeader's or the requested one.
 // Assumes that both BlockHeader and the requested alignment are powers of 2
-// TODO: Is this a valid assumption for BlockHeader? is the power of 2 thing necessary?
 fn use_align(align: usize) -> usize {
   let block_hdr_align = mem::align_of::<BlockHeader>();
 

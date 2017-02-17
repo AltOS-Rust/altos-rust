@@ -5,3 +5,4 @@ authors = ["Patrick Douglas <pcdouglas94@gmail.com>"]
 
 [target.thumbv6m-none-eabi.dependencies]
 cm0_atomic = { path = "../../cm0_atomic" }
+cm0_spin = { path = "../../cm0_spin" }

@@ -94,7 +94,7 @@ impl RingBuffer {
 mod tests {
     use super::*;
 
-#[test]
+    #[test]
     fn test_ring_buffer_insert() {
         let mut buffer = RingBuffer::new();
 
@@ -107,7 +107,7 @@ mod tests {
         assert_eq!(buffer.data[2], 2);
     }
 
-#[test]
+    #[test]
     fn test_ring_buffer_remove() {
         let mut buffer = RingBuffer::new();
 
@@ -121,7 +121,7 @@ mod tests {
         assert_eq!(buffer.remove(), None);
     }
 
-#[test]
+    #[test]
     fn test_ring_buffer_overflow_drops_insertion_byte() {
         let mut buffer = RingBuffer::new();
 
@@ -135,7 +135,7 @@ mod tests {
         assert_eq!(buffer.data[0], 0);
     }
 
-#[test]
+    #[test]
     fn test_ring_buffer_is_empty() {
         let mut buffer = RingBuffer::new();
 

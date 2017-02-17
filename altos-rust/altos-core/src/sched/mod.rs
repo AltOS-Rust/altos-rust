@@ -96,7 +96,6 @@ pub fn switch_context() {
 
 /// Start running the first task in the queue
 pub fn start_scheduler() {
-    kprintln!("Starting Scheduler");
     task::init_idle_task();
     for i in Priority::all() {
       if let Some(mut task) = PRIORITY_QUEUES[i].dequeue() {

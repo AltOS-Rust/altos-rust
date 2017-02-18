@@ -34,8 +34,8 @@ use core::cell::UnsafeCell;
 /// kernel thread then there will be no contention over the resources and so deadlock will be a
 /// non-issue.
 pub struct SpinMutex<T: ?Sized> {
-  lock: AtomicBool,
-  data: UnsafeCell<T>,
+    lock: AtomicBool,
+    data: UnsafeCell<T>,
 }
 
 /// A guard that controls access to a shared resource.
@@ -44,110 +44,110 @@ pub struct SpinMutex<T: ?Sized> {
 /// then use that guard to access the shared data. When the guard goes out of scope the lock will
 /// automatically be freed.
 pub struct SpinGuard<'mx, T: ?Sized + 'mx> {
-  lock: &'mx AtomicBool,
-  data: &'mx mut T,
+    lock: &'mx AtomicBool,
+    data: &'mx mut T,
 }
 
 unsafe impl<T: ?Sized + Send> Send for SpinMutex<T> {}
 unsafe impl<T: ?Sized + Send> Sync for SpinMutex<T> {}
 
 impl<T> SpinMutex<T> {
-  /// Create a new `SpinMutex` wrapping the provided data.
-  pub const fn new(data: T) -> Self {
-    SpinMutex {
-      lock: ATOMIC_BOOL_INIT,
-      data: UnsafeCell::new(data),
+    /// Create a new `SpinMutex` wrapping the provided data.
+    pub const fn new(data: T) -> Self {
+        SpinMutex {
+            lock: ATOMIC_BOOL_INIT,
+            data: UnsafeCell::new(data),
+      }
     }
-  }
 }
 
 impl<T: ?Sized> SpinMutex<T> {
-  fn obtain_lock(&self) {
-    while self.lock.compare_and_swap(false, true, Ordering::Acquire) != false {/* spin */}
-  }
-
-  /// Try to obtain the lock in a blocking fashion.
-  ///
-  /// If the lock is not able to be obtained, the thread will just spin waiting for the lock to
-  /// become unlocked by another thread.
-  ///
-  /// # Example
-  ///
-  /// ```rust,no_run
-  /// use altos_core::sync::SpinMutex;
-  ///
-  /// let lock = SpinMutex::new(0);
-  ///
-  /// // Acquire the lock
-  /// let mut guard = lock.lock();
-  /// // We are guaranteed to have the lock now until `guard` is dropped
-  /// *guard = 100;
-  /// drop(guard); // Could just let guard drop out of scope too...
-  /// ```
-  pub fn lock(&self) -> SpinGuard<T> {
-    self.obtain_lock();
-    SpinGuard {
-      lock: &self.lock,
-      // UNSAFE: access to data is controlled by lock
-      data: unsafe { &mut *self.data.get() },
+    fn obtain_lock(&self) {
+        while self.lock.compare_and_swap(false, true, Ordering::Acquire) != false {/* spin */}
     }
-  }
 
-  /// Try to obtain the lock in a non-blocking fashion.
-  ///
-  /// If the lock is not able to be obtained, instead of blocking this just returns `None`. This is
-  /// useful if a thread has other potential work to do instead of waiting on this shared resource.
-  ///
-  /// # Example
-  ///
-  /// ```rust,no_run
-  /// use altos_core::sync::SpinMutex;
-  ///
-  /// let lock = SpinMutex::new(0);
-  ///
-  /// let guard = lock.try_lock();
-  /// if let Some(guard) = guard {
-  ///   // Do work with the shared resource...
-  /// }
-  /// else {
-  ///   // Move on with life
-  /// }
-  /// ```
-  pub fn try_lock(&self) -> Option<SpinGuard<T>> {
-    if self.lock.compare_and_swap(false, true, Ordering::Acquire) == false {
-      Some(
+    /// Try to obtain the lock in a blocking fashion.
+    ///
+    /// If the lock is not able to be obtained, the thread will just spin waiting for the lock to
+    /// become unlocked by another thread.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use altos_core::sync::SpinMutex;
+    ///
+    /// let lock = SpinMutex::new(0);
+    ///
+    /// // Acquire the lock
+    /// let mut guard = lock.lock();
+    /// // We are guaranteed to have the lock now until `guard` is dropped
+    /// *guard = 100;
+    /// drop(guard); // Could just let guard drop out of scope too...
+    /// ```
+    pub fn lock(&self) -> SpinGuard<T> {
+        self.obtain_lock();
         SpinGuard {
-          lock: &self.lock,
-          // UNSAFE: executing this branch means we've obtained the lock
-          data: unsafe { &mut *self.data.get() },
+            lock: &self.lock,
+            // UNSAFE: access to data is controlled by lock
+            data: unsafe { &mut *self.data.get() },
         }
-      )
     }
-    else {
-      None
+
+    /// Try to obtain the lock in a non-blocking fashion.
+    ///
+    /// If the lock is not able to be obtained, instead of blocking this just returns `None`. This is
+    /// useful if a thread has other potential work to do instead of waiting on this shared resource.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// use altos_core::sync::SpinMutex;
+    ///
+    /// let lock = SpinMutex::new(0);
+    ///
+    /// let guard = lock.try_lock();
+    /// if let Some(guard) = guard {
+    ///   // Do work with the shared resource...
+    /// }
+    /// else {
+    ///   // Move on with life
+    /// }
+    /// ```
+    pub fn try_lock(&self) -> Option<SpinGuard<T>> {
+        if self.lock.compare_and_swap(false, true, Ordering::Acquire) == false {
+            Some(
+                SpinGuard {
+                    lock: &self.lock,
+                    // UNSAFE: executing this branch means we've obtained the lock
+                    data: unsafe { &mut *self.data.get() },
+                }
+            )
+        }
+        else {
+            None
+        }
     }
-  }
 }
 
 impl<'mx, T: ?Sized> Deref for SpinGuard<'mx, T> {
-  type Target = T;
+    type Target = T;
 
-  fn deref(&self) -> &T {
-    &*self.data
-  }
+    fn deref(&self) -> &T {
+        &*self.data
+    }
 }
 
 impl<'mx, T: ?Sized> DerefMut for SpinGuard<'mx, T> {
-  fn deref_mut(&mut self) -> &mut T {
-    &mut *self.data
-  }
+    fn deref_mut(&mut self) -> &mut T {
+        &mut *self.data
+    }
 }
 
 impl<'mx, T: ?Sized> Drop for SpinGuard<'mx, T> {
-  /// Dropping the guard will unlock the lock it came from
-  fn drop(&mut self) {
-    self.lock.store(false, Ordering::Release);
-  }
+    /// Dropping the guard will unlock the lock it came from
+    fn drop(&mut self) {
+        self.lock.store(false, Ordering::Release);
+    }
 }
 
 #[cfg(test)]

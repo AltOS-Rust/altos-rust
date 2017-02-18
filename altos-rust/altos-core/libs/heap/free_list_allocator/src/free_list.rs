@@ -1,20 +1,19 @@
 /*
-* Copyright © 2017 AltOS-Rust Team
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation; either version 2 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful, but
-* WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-* General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License along
-* with this program; if not, write to the Free Software Foundation, Inc.,
-* 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-*/
+ * Copyright (C) 2017  AltOS-Rust Team
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 // Linked list code for memory allocator
 // This is intended for use by the free_list_allocator functionality
@@ -59,20 +58,8 @@ impl FreeList {
         self.head = block_position;
     }
 
-    // This will only relocate blocks to higher addresses in memory
-    // but that's all we're using it for
-    fn relocate_block(&self, current_pos: *mut BlockHeader, offset_val: usize) -> *mut BlockHeader {
-        unsafe {
-            // If we don't convert this, offset does not work correctly
-            let current_ptr = current_pos as *mut u8;
-            let new_pos = current_ptr.offset(offset_val as isize) as *mut BlockHeader;
-            let current_block = ptr::read(current_pos);
-            mem::forget(mem::replace(&mut *new_pos, current_block));
-            new_pos as *mut BlockHeader
-        }
-    }
-
     // Allocate memory using first fit strategy
+    // Returns pointer to allocated memory, or null if no memory is remaining
     pub fn allocate(&mut self, request_size: usize, request_align: usize) -> *mut u8 {
         let mut alloc_location: *mut u8 = ptr::null_mut();
         let using_size = use_size(request_size);
@@ -105,10 +92,10 @@ impl FreeList {
                 else {
                     (*current).block_size -= using_size;
                     if self.head == current {
-                        self.head = self.relocate_block(current, using_size);
+                        self.head = self.shift_block_forward(current, using_size);
                     }
                     else {
-                        (*previous).next_block = self.relocate_block(current, using_size);
+                        (*previous).next_block = self.shift_block_forward(current, using_size);
                     }
                 }
                 alloc_location = current as *mut u8;
@@ -116,9 +103,6 @@ impl FreeList {
             }
         }
 
-        if alloc_location.is_null() {
-            panic!("Out of memory");
-        }
         alloc_location
     }
 
@@ -158,8 +142,22 @@ impl FreeList {
         */
     }
     // fn traverse() {}
+
+    // Might be necessary if we want to handle reallocations better
     // fn reallocate_inplace() {}
     // fn reallocate() {}
+
+    // This relocates BlockHeaders in memory, used when we do allocations.
+    fn shift_block_forward(&self, current_pos: *mut BlockHeader, offset_val: usize) -> *mut BlockHeader {
+        unsafe {
+            // If we don't convert this, offset does not work correctly
+            let current_ptr = current_pos as *mut u8;
+            let new_pos = current_ptr.offset(offset_val as isize) as *mut BlockHeader;
+            let current_block = ptr::read(current_pos);
+            mem::forget(mem::replace(&mut *new_pos, current_block));
+            new_pos as *mut BlockHeader
+        }
+    }
 }
 
 // This ensures the block size actually allocated is a multiple of the BlockHeader size.
@@ -229,6 +227,7 @@ mod tests {
     // Check each of the node merging cases
     // Different sizes of memory
     // Test different alignments in free list
+    // Check that shift_block_forward function works correctly
 
     // Free list starts out with head set to null on creation
     #[test]

@@ -1,20 +1,19 @@
 /*
-* Copyright © 2017 AltOS-Rust Team
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation; either version 2 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful, but
-* WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-* General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License along
-* with this program; if not, write to the Free Software Foundation, Inc.,
-* 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
-*/
+ * Copyright (C) 2017  AltOS-Rust Team
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 /*
  * The free list allocator uses a linked list to keep track of blocks of free memory, allowing
@@ -51,8 +50,6 @@ pub fn init_heap(heap_start: usize, heap_size: usize) {
 }
 
 pub struct FreeListAllocator {
-    heap_start: usize,
-    heap_size: usize,
     heap_list: free_list::FreeList,
 }
 
@@ -60,15 +57,11 @@ impl FreeListAllocator {
     /// Creates a new free list allocator
     pub const fn new() -> Self {
         FreeListAllocator {
-            heap_start: 0,
-            heap_size: 0,
             heap_list: free_list::FreeList::new(),
         }
     }
 
     pub fn init(&mut self, heap_start: usize, heap_size: usize) {
-        self.heap_start = heap_start;
-        self.heap_size = heap_size;
         // List starts with a single block containing all the memory
         self.heap_list.init(heap_start, heap_size);
     }
@@ -144,6 +137,15 @@ mod tests {
 
     // TODO: Implement more tests for this
     // What tests should go in here as opposed to free_list.rs?
+
+    /*
+    Test
+    __rust_allocate
+    __rust_deallocate
+    __rust_usable_size
+    __rust_reallocate_inplace
+    __rust_reallocate
+    */
 
     #[test]
     #[should_panic]

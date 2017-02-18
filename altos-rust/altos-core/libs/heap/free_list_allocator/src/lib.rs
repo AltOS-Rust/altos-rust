@@ -16,6 +16,12 @@
 * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 */
 
+/*
+ * The free list allocator uses a linked list to keep track of blocks of free memory, allowing
+ * for more efficient use of memory than the bump allocator. This allocator reclaims memory
+ * on deallocations and allocates memory using the first fit strategy.
+ */
+
 #![feature(allocator)]
 #![feature(const_fn)]
 #![feature(asm)]
@@ -34,13 +40,11 @@ extern crate cm0_atomic as atomic;
 #[cfg(target_has_atomic="ptr")]
 use core::sync::atomic as atomic;
 
-// Not sure if we need to be using this or not
-//use atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
-
 mod free_list;
 
 static mut FL_ALLOCATOR : FreeListAllocator = FreeListAllocator::new();
 
+/// Initializes the free list with the given heap memory starting position and size
 /// Call this before doing any heap allocation. This MUST only be called once
 pub fn init_heap(heap_start: usize, heap_size: usize) {
     unsafe { FL_ALLOCATOR.init(heap_start, heap_size) };
@@ -65,14 +69,13 @@ impl FreeListAllocator {
     pub fn init(&mut self, heap_start: usize, heap_size: usize) {
         self.heap_start = heap_start;
         self.heap_size = heap_size;
-        // Should initially populate list with single block containing all memory
+        // List starts with a single block containing all the memory
         self.heap_list.init(heap_start, heap_size);
     }
 
     /// Allocates a block of memory with the given size and alignment.
     #[inline(never)]
     pub fn allocate(&mut self, size: usize, align: usize) -> Option<*mut u8> {
-        // Do we even care about alignment variable?
         // Do we need to be using Option here?
         Some(self.heap_list.allocate(size, align))
     }
@@ -96,7 +99,6 @@ pub extern fn __rust_allocate(size: usize, align: usize) -> *mut u8 {
 #[no_mangle]
 #[cfg(not(test))]
 pub extern fn __rust_deallocate(_ptr: *mut u8, _size: usize, _align: usize) {
-    // TODO: This should actually be implemented
     unsafe {
         FL_ALLOCATOR.deallocate(_ptr, _size, _align)
     }
@@ -105,23 +107,22 @@ pub extern fn __rust_deallocate(_ptr: *mut u8, _size: usize, _align: usize) {
 #[no_mangle]
 #[cfg(not(test))]
 pub extern fn __rust_usable_size(size: usize, _align: usize) -> usize {
-    // This must be at least size, but if we're giving it more memory, we can return that
-    // We should return result of align_up with alignment equal to node size
-    size
+    // TODO: This actually needs to return result from minimum block alignment or value of _align
+    // So if minimal block size is 16, align is 32, and size is 5, usable size is 32
+    free_list::use_size(size)
 }
 
 #[no_mangle]
 #[cfg(not(test))]
 pub extern fn __rust_reallocate_inplace(_ptr: *mut u8, size: usize, _new_size: usize, _align: usize) -> usize {
-    // Tries to expand the size in place, but returns old size if it can't
+    // TODO: This could search the list and try to expand to _new_size
     size
 }
 
 #[no_mangle]
 #[cfg(not(test))]
 pub extern fn __rust_reallocate(ptr: *mut u8, size: usize, new_size: usize, align: usize) -> *mut u8 {
-    // If we can expand the space without moving, we do
-    // Otherwise move to a new location
+    // TODO: Could call __rust_reallocate_inplace first before doing a normal reallocation
     use core::{ptr, cmp};
 
     let new_ptr = __rust_allocate(new_size, align);
@@ -142,6 +143,7 @@ mod tests {
     const HEAP_SIZE: usize = 2048;
 
     // TODO: Implement more tests for this
+    // What tests should go in here as opposed to free_list.rs?
 
     #[test]
     #[should_panic]

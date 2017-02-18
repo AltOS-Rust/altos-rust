@@ -75,6 +75,9 @@ impl FreeList {
     // Allocate memory using first fit strategy
     // TODO: This probably needs to deal with alignment in someway
     pub fn allocate(&mut self, request_size: usize, request_align: usize) -> *mut u8 {
+        if !request_align.is_power_of_two() {
+            panic!("allocate - alignment must be power of 2");
+        }
         let mut alloc_location: *mut u8 = ptr::null_mut();
         let using_size = use_size(request_size);
         let using_align = use_align(request_align);
@@ -169,10 +172,15 @@ fn use_size(request_size: usize) -> usize {
     align_up(request_size, mem::size_of::<BlockHeader>())
 }
 
+// Bumps block header alignment up to the nearest power of 2. Assumes the passed align is a
+// power of 2 already (screening is done in free_list.allocate()).
 // Returns whichever alignment is larger, BlockHeader's or the requested one.
-// Assumes that both BlockHeader and the requested alignment are powers of 2
 fn use_align(align: usize) -> usize {
-    let block_hdr_align = mem::align_of::<BlockHeader>();
+    let mut block_hdr_align = mem::align_of::<BlockHeader>();
+    // This is a little inelegant maybe we can change it later.
+    while !block_hdr_align.is_power_of_two() {
+        block_hdr_align += 1;
+    }
 
     if (block_hdr_align % align) == 0 {
         block_hdr_align
@@ -237,10 +245,12 @@ mod tests {
         let block_hdr_align = mem::align_of::<BlockHeader>();
         let mut alloc_align = use_align(1);
 
+        assert!(alloc_align.is_power_of_two());
         assert!(alloc_align % block_hdr_align == 0);
 
         alloc_align = use_align(2);
 
+        assert!(alloc_align.is_power_of_two());
         assert!(alloc_align % block_hdr_align == 0);
         assert!(alloc_align % 2 == 0);
 

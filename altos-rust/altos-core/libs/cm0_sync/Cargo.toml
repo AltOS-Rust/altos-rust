@@ -1,5 +1,5 @@
 [package]
-name = "cm0_spin"
+name = "cm0_sync"
 version = "0.1.0"
 authors = ["Daniel Seitz <dnseitz@gmail.com>"]
 

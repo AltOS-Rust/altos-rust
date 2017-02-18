@@ -18,7 +18,6 @@
 // laid out. It's a dumb but straigtforward hack and allow us to make heap allocation thread-safe.
 
 
-
 use atomic::{ATOMIC_BOOL_INIT, AtomicBool, Ordering};
 use core::ops::{Drop, Deref, DerefMut};
 use core::cell::UnsafeCell;

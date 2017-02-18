@@ -31,6 +31,9 @@ pub struct BlockHeader {
     next_block: *mut BlockHeader,
 }
 
+// unsafe impl Send for BlockHeader {}
+// unsafe impl Sync for BlockHeader {}
+
 impl BlockHeader {
     const fn new(size: usize) -> Self {
         BlockHeader {
@@ -43,6 +46,11 @@ impl BlockHeader {
 pub struct FreeList {
     head: *mut BlockHeader,
 }
+
+// These are (trivially) implemented so FreeList objects can be passed
+// between threads.
+unsafe impl Send for FreeList {}
+unsafe impl Sync for FreeList {}
 
 impl FreeList {
     pub const fn new() -> Self {

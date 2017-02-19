@@ -25,7 +25,6 @@
 #![feature(const_fn)]
 #![feature(asm)]
 #![feature(cfg_target_has_atomic)]
-
 #![cfg_attr(not(test), allocator)]
 #![no_std]
 
@@ -36,11 +35,19 @@ extern crate std;
 #[cfg(all(target_arch="arm", not(target_has_atomic="ptr")))]
 extern crate cm0_atomic as atomic;
 
+//#[cfg(all(target_arch="arm", not(target_has_atomic="ptr")))]
+extern crate cm0_sync as sync;
+
 #[cfg(target_has_atomic="ptr")]
 use core::sync::atomic as atomic;
 
+// Not sure if we need to be using this or not
+//use atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
+
 mod free_list;
 
+static SYNC_FL_ALLOCATOR : sync::spin::SpinMutex<FreeListAllocator> =
+    sync::spin::SpinMutex::new(FreeListAllocator::new());
 static mut FL_ALLOCATOR : FreeListAllocator = FreeListAllocator::new();
 
 /// Initializes the free list with the given heap memory starting position and size

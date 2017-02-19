@@ -111,10 +111,10 @@ impl<T> AtomicPtr<T> {
     }
   }
 
-  pub fn compare_exchange(&self, 
-                           current: *mut T, 
-                           new: *mut T, 
-                           _success: Ordering, 
+  pub fn compare_exchange(&self,
+                           current: *mut T,
+                           new: *mut T,
+                           _success: Ordering,
                            _fail: Ordering)
                            -> Result<*mut T, *mut T> {
     atomic! {
@@ -210,11 +210,11 @@ impl<T: Copy + PartialOrd> Atomic<T> {
     }
   }
 
-  pub fn compare_exchange(&self, 
-                           current: T, 
-                           new: T, 
-                           _success: Ordering, 
-                           _fail: Ordering) 
+  pub fn compare_exchange(&self,
+                           current: T,
+                           new: T,
+                           _success: Ordering,
+                           _fail: Ordering)
                            -> Result<T, T> {
     atomic! {
       unsafe {
@@ -229,11 +229,11 @@ impl<T: Copy + PartialOrd> Atomic<T> {
     }
   }
 
-  pub fn compare_exchange_weak(&self, 
-                                current: T, 
-                                new: T, 
-                                success: Ordering, 
-                                fail: Ordering) 
+  pub fn compare_exchange_weak(&self,
+                                current: T,
+                                new: T,
+                                success: Ordering,
+                                fail: Ordering)
                                 -> Result<T, T> {
     self.compare_exchange(current, new, success, fail)
   }
@@ -303,7 +303,7 @@ impl<T: Copy + BitXor<Output=T>> Atomic<T> {
 
 #[cfg(test)]
 mod tests {
-  // As a side note, these operations are not actually atomic when compiled 
+  // As a side note, these operations are not actually atomic when compiled
   // for anything other than single CPU ARM
   use super::{Atomic, Ordering};
 

@@ -61,12 +61,21 @@ impl FreeList {
     }
 
     pub fn init(&mut self, heap_start: usize, heap_size: usize) {
-        let block_position = heap_start as *mut BlockHeader;
-        unsafe {
-            ptr::write(&mut *block_position, BlockHeader::new(heap_size));
-        }
-        self.head = block_position;
         self.block_hdr_size = mem::size_of::<BlockHeader>();
+
+        let init_block_position =
+            alignment::align_up(heap_start, self.block_hdr_size) as *mut BlockHeader;
+        let init_block_size =
+            alignment::use_size(
+                heap_size - (heap_start - init_block_position as usize),
+                self.block_hdr_size
+            );
+
+        unsafe {
+            ptr::write(&mut *init_block_position, BlockHeader::new(init_block_size));
+        }
+
+        self.head = init_block_position;
     }
 
     pub fn get_block_hdr_size(&self) -> usize {
@@ -210,6 +219,23 @@ mod tests {
         }
     }
 
+    // Initializing the free list adjusts first memory block so the adress and size
+    // are multiples of block header size.
+    #[test]
+    fn free_list_init_adjusts_to_block_header_size() {
+        let heap_size: usize = 2048 + 1;
+        // Can't use test::get_free_list_with_size because we need heap_start
+        let heap_start = test::get_memory(heap_size);
+
+        let mut free_list = FreeList::new();
+        free_list.init(heap_start as usize, heap_size);
+
+        assert!(!free_list.head.is_null());
+        unsafe {
+            assert!((*free_list.head).block_size % free_list.block_hdr_size == 0);
+        }
+    }
+
     // Multiple allocations without deallocations
     #[test]
     fn free_list_multiple_allocations() {
@@ -248,6 +274,8 @@ mod tests {
             assert_eq!((*(*free_list.head).next_block).block_size, heap_size - (512 + 128 + 512));
         }
     }
+
+
 
     // Does allocations and then several deallocations
     #[test]

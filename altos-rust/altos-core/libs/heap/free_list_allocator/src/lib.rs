@@ -38,6 +38,8 @@ extern crate cm0_atomic as atomic;
 //#[cfg(all(target_arch="arm", not(target_has_atomic="ptr")))]
 extern crate cm0_sync as sync;
 
+use sync::spin::SpinMutex;
+
 #[cfg(target_has_atomic="ptr")]
 use core::sync::atomic as atomic;
 
@@ -50,14 +52,19 @@ mod alignment;
 #[cfg(test)]
 mod test;
 
-static mut FL_ALLOCATOR : FreeListAllocator = FreeListAllocator::new();
-static SYNC_FL_ALLOCATOR : sync::spin::SpinMutex<FreeListAllocator> =
-    sync::spin::SpinMutex::new(FreeListAllocator::new());
+static mut FL_ALLOCATOR : SpinMutex<FreeListAllocator> =
+    SpinMutex::new(FreeListAllocator::new());
+
+//static SYNC_FL_ALLOCATOR : sync::spin::SpinMutex<FreeListAllocator> =
+  //  sync::spin::SpinMutex::new(FreeListAllocator::new());
 
 /// Initializes the free list with the given heap memory starting position and size
 /// Call this before doing any heap allocation. This MUST only be called once
 pub fn init_heap(heap_start: usize, heap_size: usize) {
-    unsafe { FL_ALLOCATOR.init(heap_start, heap_size) };
+    unsafe {
+        let mut guard = FL_ALLOCATOR.lock();
+        (*guard).init(heap_start, heap_size);
+    }
 }
 
 pub struct FreeListAllocator {
@@ -101,7 +108,8 @@ impl FreeListAllocator {
 #[cfg(not(test))]
 pub extern fn __rust_allocate(size: usize, align: usize) -> *mut u8 {
     unsafe {
-        FL_ALLOCATOR.allocate(size, align)
+        let mut guard = FL_ALLOCATOR.lock();
+        (*guard).allocate(size, align)
     }
 }
 
@@ -109,7 +117,8 @@ pub extern fn __rust_allocate(size: usize, align: usize) -> *mut u8 {
 #[cfg(not(test))]
 pub extern fn __rust_deallocate(_ptr: *mut u8, _size: usize, _align: usize) {
     unsafe {
-        FL_ALLOCATOR.deallocate(_ptr, _size, _align)
+        let mut guard = FL_ALLOCATOR.lock();
+        (*guard).deallocate(_ptr, _size, _align)
     }
 }
 
@@ -119,7 +128,8 @@ pub extern fn __rust_usable_size(size: usize, _align: usize) -> usize {
     // TODO: This actually needs to return result from minimum block alignment or value of _align
     // So if minimal block size is 16, align is 32, and size is 5, usable size is 32
     unsafe {
-        alignment::use_size(size, FL_ALLOCATOR.heap_list.get_block_hdr_size())
+        let guard = FL_ALLOCATOR.lock();
+        alignment::use_size(size, (*guard).heap_list.get_block_hdr_size())
     }
 }
 

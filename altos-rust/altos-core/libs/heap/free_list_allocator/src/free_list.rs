@@ -76,9 +76,6 @@ impl FreeList {
     // Allocate memory using first fit strategy
     // Returns pointer to allocated memory, or null if no memory is remaining
     pub fn allocate(&mut self, request_size: usize, request_align: usize) -> *mut u8 {
-        if !request_align.is_power_of_two() {
-            panic!("allocate - alignment must be power of 2");
-        }
         let mut alloc_location: *mut u8 = ptr::null_mut();
         let using_size = alignment::use_size(request_size, self.block_hdr_size);
         let using_align = alignment::use_align(request_align, self.block_hdr_size);
@@ -181,23 +178,7 @@ impl FreeList {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::vec::Vec;
-
-    // This produces a section of memory that we can use for testing by creating an array
-    // Returns the starting address of this memory
-    fn _get_memory(heap_size: usize) -> *const u8 {
-        let heap: Vec<u8> = vec![0; heap_size];
-        &heap[0] as *const u8
-    }
-
-    // Gets an initialized free list with the requested memory for testing purposes
-    fn _get_free_list_with_size(heap_size: usize) -> FreeList {
-        let heap_start = _get_memory(heap_size);
-
-        let mut free_list = FreeList::new();
-        free_list.init(heap_start as usize, heap_size);
-        free_list
-    }
+    use test;
 
     // TODO: Needs more test cases
     // Check each of the node merging cases
@@ -216,8 +197,8 @@ mod tests {
     #[test]
     fn free_list_init() {
         let heap_size: usize = 2048;
-        // Can't use _get_free_list_with_size because we need heap_start
-        let heap_start = _get_memory(heap_size);
+        // Can't use test::get_free_list_with_size because we need heap_start
+        let heap_start = test::get_memory(heap_size);
 
         let mut free_list = FreeList::new();
         free_list.init(heap_start as usize, heap_size);
@@ -233,7 +214,7 @@ mod tests {
     #[test]
     fn free_list_multiple_allocations() {
         let heap_size: usize = 2048;
-        let mut free_list = _get_free_list_with_size(heap_size);
+        let mut free_list = test::get_free_list_with_size(heap_size);
 
         // Allocations we're using in these tests should be multiple of size_of::<BlockHeader>()
         // This is to avoid having to account for alignment with this test
@@ -250,7 +231,7 @@ mod tests {
     #[test]
     fn free_list_allocations_and_single_deallocation() {
         let heap_size: usize = 2048;
-        let mut free_list = _get_free_list_with_size(heap_size);
+        let mut free_list = test::get_free_list_with_size(heap_size);
 
         free_list.allocate(512, 1);
         let alloc_ptr = free_list.allocate(128, 1);
@@ -272,7 +253,7 @@ mod tests {
     #[test]
     fn free_list_allocations_and_multiple_deallocations() {
         let heap_size: usize = 2048;
-        let mut free_list = _get_free_list_with_size(heap_size);
+        let mut free_list = test::get_free_list_with_size(heap_size);
 
         free_list.allocate(256, 1);
         let alloc_ptr = free_list.allocate(256, 1);
@@ -294,7 +275,7 @@ mod tests {
     #[test]
     fn free_list_allocations_use_entire_free_block() {
         let heap_size: usize = 1024;
-        let mut free_list = _get_free_list_with_size(heap_size);
+        let mut free_list = test::get_free_list_with_size(heap_size);
 
         let alloc_ptr = free_list.allocate(256, 1);
         free_list.allocate(256, 1);
@@ -313,32 +294,4 @@ mod tests {
             assert!((*free_list.head).next_block.is_null());
         }
     }
-
-    // Free list runs out of memory completely
-    // #[test]
-    // #[should_panic]
-    // fn free_list_out_of_memory() {
-    //     let heap_size: usize = 512;
-    //     let mut free_list = _get_free_list_with_size(heap_size);
-    //
-    //     free_list.allocate(256, 1);
-    //     free_list.allocate(256, 1);
-    //
-    //     // This should panic due to 0 memory left
-    //     free_list.allocate(256, 1);
-    // }
-
-    // Free list does not have enough memory for new allocation
-    // #[test]
-    // #[should_panic]
-    // fn free_list_not_enough_memory() {
-    //     let heap_size: usize = 512;
-    //     let mut free_list = _get_free_list_with_size(heap_size);
-    //
-    //     free_list.allocate(256, 1);
-    //     free_list.allocate(128, 1);
-    //
-    //     // This should panic due to not enough memory
-    //     free_list.allocate(256, 1);
-    // }
 }

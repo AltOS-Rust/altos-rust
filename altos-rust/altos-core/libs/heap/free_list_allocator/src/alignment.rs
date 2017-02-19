@@ -21,8 +21,6 @@
 
 // TODO: This file should probably be moved so that it can be utilized by both allocators
 
-use core::mem;
-
 // This ensures the block size actually allocated is a multiple of the BlockHeader size.
 // Actual allocation size >= requested size (obviously)
 pub fn use_size(request_size: usize, block_hdr_size: usize) -> usize {
@@ -87,7 +85,7 @@ mod tests {
         assert!(alloc_align % block_hdr_align == 0);
         assert!(alloc_align % 2 == 0);
 
-        alloc_align = use_align(3, block_hdr_align); // should panic
+        use_align(3, block_hdr_align); // should panic
     }
 
     #[test]

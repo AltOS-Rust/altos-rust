@@ -45,10 +45,11 @@ use core::sync::atomic as atomic;
 //use atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 
 mod free_list;
+mod alignment;
 
+static mut FL_ALLOCATOR : FreeListAllocator = FreeListAllocator::new();
 static SYNC_FL_ALLOCATOR : sync::spin::SpinMutex<FreeListAllocator> =
     sync::spin::SpinMutex::new(FreeListAllocator::new());
-static mut FL_ALLOCATOR : FreeListAllocator = FreeListAllocator::new();
 
 /// Initializes the free list with the given heap memory starting position and size
 /// Call this before doing any heap allocation. This MUST only be called once
@@ -75,9 +76,14 @@ impl FreeListAllocator {
 
     /// Allocates a block of memory with the given size and alignment.
     #[inline(never)]
-    pub fn allocate(&mut self, size: usize, align: usize) -> Option<*mut u8> {
-        // Do we need to be using Option here?
-        Some(self.heap_list.allocate(size, align))
+    pub fn allocate(&mut self, size: usize, align: usize) -> *mut u8 {
+        // Should we be using an option here?
+        let alloc_ptr = self.heap_list.allocate(size, align);
+        // Is this the right place for checking if we're out of memory?
+        if alloc_ptr.is_null() {
+            panic!("Out of memory")
+        }
+        alloc_ptr
     }
 
     /// Deallocates a block of memory with the given size and alignment.
@@ -92,7 +98,7 @@ impl FreeListAllocator {
 #[cfg(not(test))]
 pub extern fn __rust_allocate(size: usize, align: usize) -> *mut u8 {
     unsafe {
-        FL_ALLOCATOR.allocate(size, align).expect("out of memory")
+        FL_ALLOCATOR.allocate(size, align)
     }
 }
 
@@ -109,7 +115,9 @@ pub extern fn __rust_deallocate(_ptr: *mut u8, _size: usize, _align: usize) {
 pub extern fn __rust_usable_size(size: usize, _align: usize) -> usize {
     // TODO: This actually needs to return result from minimum block alignment or value of _align
     // So if minimal block size is 16, align is 32, and size is 5, usable size is 32
-    free_list::use_size(size)
+    unsafe {
+        alignment::use_size(size, FL_ALLOCATOR.heap_list.get_block_hdr_size())
+    }
 }
 
 #[no_mangle]
@@ -162,10 +170,11 @@ mod tests {
         let mut allocator = FreeListAllocator::new();
         allocator.init(heap_start as usize, HEAP_SIZE);
 
-        assert!(allocator.allocate(512, 1).is_some());
-        assert!(allocator.allocate(512, 1).is_some());
-        assert!(allocator.allocate(512, 2).is_some());
-        assert!(allocator.allocate(1024, 1).is_none()); // should panic
+        assert!(!allocator.allocate(512, 1).is_null());
+        assert!(!allocator.allocate(512, 1).is_null());
+        assert!(!allocator.allocate(512, 2).is_null());
+        
+        allocator.allocate(1024, 1); // should panic
     }
 
     /*

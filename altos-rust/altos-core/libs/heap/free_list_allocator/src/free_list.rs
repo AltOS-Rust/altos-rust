@@ -15,14 +15,15 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Linked list code for memory allocator
-// This is intended for use by the free_list_allocator functionality
+/*
+ * Linked list code for memory allocator
+ * This is intended for use by the free_list_allocator functionality
+ */
 
 use core::{mem, ptr};
 
 use alignment;
 
-// TODO: Add Option to next_block
 // BlockHeader keeps track of a free block of memory
 #[repr(C)]
 pub struct BlockHeader {
@@ -39,6 +40,8 @@ impl BlockHeader {
     }
 }
 
+// FreeList is a linked list which keeps track of free blocks of memory
+// Free blocks are embedded in the free memory itself
 pub struct FreeList {
     block_hdr_size: usize,
     head: *mut BlockHeader,
@@ -59,20 +62,19 @@ impl FreeList {
 
     pub fn init(&mut self, heap_start: usize, heap_size: usize) {
         self.block_hdr_size = mem::size_of::<BlockHeader>();
-
-        let init_block_position =
-            alignment::align_up(heap_start, self.block_hdr_size) as *mut BlockHeader;
-        let init_block_size =
-            alignment::use_size(
-                heap_size - (heap_start - init_block_position as usize),
-                self.block_hdr_size
-            );
-
-        unsafe {
-            ptr::write(&mut *init_block_position, BlockHeader::new(init_block_size));
+        // Forcing BlockHeader size to be a power of two avoids weird issues with alignment
+        // and extra logic we would have to include elsewhere
+        if !self.block_hdr_size.is_power_of_two() {
+            panic!("")
         }
 
-        self.head = init_block_position;
+        let start_position = heap_start as *mut BlockHeader;
+        let use_heap_size = alignment::align_down(heap_size, self.block_hdr_size);
+        unsafe {
+            ptr::write(&mut *start_position, BlockHeader::new(use_heap_size));
+        }
+
+        self.head = start_position;
     }
 
     pub fn get_block_hdr_size(&self) -> usize {
@@ -84,7 +86,7 @@ impl FreeList {
     pub fn allocate(&mut self, request_size: usize, request_align: usize) -> *mut u8 {
 
         let mut alloc_location: *mut u8 = ptr::null_mut();
-        let using_size = alignment::use_size(request_size, self.block_hdr_size);
+        let using_size = alignment::align_up(request_size, self.block_hdr_size);
         let using_align = alignment::use_align(request_align, self.block_hdr_size);
 
         unsafe {
@@ -142,14 +144,22 @@ impl FreeList {
             }
         }
 
-        alloc_location as *mut u8
+        alloc_location
     }
+
+    /*
+    TODO: We can still implement merging to deal with fragmentation
+    - Nothing adjacent: Make new block, connect to closest blocks
+    - Adjacent at tail: Merge with tail block, move block, switch leading ptr
+    - Adjacent at lead: Merge with lead, no additional changes
+    - Adjacent at both: Merge two with lead (add sizes, switch lead ptr)
+    */
 
     pub fn deallocate(&mut self, alloc_ptr: *mut u8, size: usize) {
         unsafe {
             // We can immediately add the block at the deallocated position
             let alloc_block_ptr = alloc_ptr as *mut BlockHeader;
-            let used_memory = alignment::use_size(size, self.block_hdr_size);
+            let used_memory = alignment::align_up(size, self.block_hdr_size);
             ptr::write(&mut *alloc_block_ptr, BlockHeader::new(used_memory));
 
             let (mut previous, mut current) = (ptr::null_mut(), self.head);
@@ -172,19 +182,7 @@ impl FreeList {
             // At this point, we know that it needs to be added at the end
             (*previous).next_block = alloc_block_ptr;
         }
-        /*
-        TODO: We can still implement merging to deal with fragmentation
-        - Nothing adjacent: Make new block, connect to closest blocks
-        - Adjacent at tail: Merge with tail block, move block, switch leading ptr
-        - Adjacent at lead: Merge with lead, no additional changes
-        - Adjacent at both: Merge two with lead (add sizes, switch lead ptr)
-        */
     }
-    // fn traverse() {}
-
-    // Might be necessary if we want to handle reallocations better
-    // fn reallocate_inplace() {}
-    // fn reallocate() {}
 
     // This relocates BlockHeaders in memory, used when we do allocations.
     fn shift_block_forward(&self, current_pos: *mut BlockHeader, offset_val: usize) -> *mut BlockHeader {
@@ -289,8 +287,6 @@ mod tests {
             assert_eq!((*(*free_list.head).next_block).block_size, heap_size - (512 + 128 + 512));
         }
     }
-
-
 
     // Does allocations and then several deallocations
     #[test]

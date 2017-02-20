@@ -129,7 +129,7 @@ pub extern fn __rust_usable_size(size: usize, _align: usize) -> usize {
     // So if minimal block size is 16, align is 32, and size is 5, usable size is 32
     unsafe {
         let guard = FL_ALLOCATOR.lock();
-        alignment::use_size(size, (*guard).heap_list.get_block_hdr_size())
+        alignment::align_up(size, (*guard).heap_list.get_block_hdr_size())
     }
 }
 
@@ -166,8 +166,8 @@ mod tests {
             heap_list: test::get_free_list_with_size(heap_size),
         }
     }
+
     // TODO: Implement more tests for this
-    // What tests should go in here as opposed to free_list.rs?
 
     /*
     Test

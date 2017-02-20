@@ -30,9 +30,6 @@ pub struct BlockHeader {
     next_block: *mut BlockHeader,
 }
 
-// unsafe impl Send for BlockHeader {}
-// unsafe impl Sync for BlockHeader {}
-
 impl BlockHeader {
     const fn new(size: usize) -> Self {
         BlockHeader {
@@ -85,25 +82,29 @@ impl FreeList {
     // Allocate memory using first fit strategy
     // Returns pointer to allocated memory, or null if no memory is remaining
     pub fn allocate(&mut self, request_size: usize, request_align: usize) -> *mut u8 {
+
         let mut alloc_location: *mut u8 = ptr::null_mut();
         let using_size = alignment::use_size(request_size, self.block_hdr_size);
         let using_align = alignment::use_align(request_align, self.block_hdr_size);
+
         unsafe {
             let (mut previous, mut current) = (ptr::null_mut(), self.head);
             while !current.is_null() {
+                let alloc_start = alignment::align_up(current as usize, using_align);
+                let align_diff = alloc_start - current as usize;
                 let current_size = (*current).block_size;
                 // Due to alignment, we should never get a case
                 // where 0 < remaining_size < block_size
 
-                // BlockHeader does not have enough space to satisfy requirement
-                if current_size < using_size {
+                // Block does not have enough space to satisfy requirements of aligment and size
+                if current_size < using_size || current_size - align_diff < using_size {
                     previous = current;
                     // If current is null, this will not work!
                     current = (*current).next_block;
                     continue;
                 }
-                // There is no block space remaining
-                else if current_size == using_size {
+                // Block is correct size and alignment.
+                else if current_size == using_size && align_diff == 0 {
                     // If at head, there is no previous to adjust
                     if self.head == current {
                         self.head = (*self.head).next_block;
@@ -112,8 +113,8 @@ impl FreeList {
                         (*previous).next_block = (*current).next_block;
                     }
                 }
-                // BlockHeader has enough space and a block can be maintained
-                else {
+                // Current block is larger than required and has the correct alignment
+                else if align_diff == 0 {
                     (*current).block_size -= using_size;
                     if self.head == current {
                         self.head = self.shift_block_forward(current, using_size);
@@ -122,12 +123,26 @@ impl FreeList {
                         (*previous).next_block = self.shift_block_forward(current, using_size);
                     }
                 }
-                alloc_location = current as *mut u8;
+                // Current block is larger than required but has exactly the right size to
+                // accomodate the alignment and size requirements
+                else if current_size == using_size + align_diff {
+                    (*current).block_size = align_diff;
+                }
+                // Current block is larger than required and because of alignment, the allocation
+                // divides it in two.
+                else {
+                    (*current).block_size = current_size - using_size - align_diff;
+                    let upper_block = self.shift_block_forward(current, using_size + align_diff);
+                    ptr::write(current as *mut BlockHeader, BlockHeader::new(align_diff));
+                    (*current).next_block = upper_block;
+
+                }
+                alloc_location = alloc_start as *mut u8;
                 break;
             }
         }
 
-        alloc_location
+        alloc_location as *mut u8
     }
 
     pub fn deallocate(&mut self, alloc_ptr: *mut u8, size: usize) {

@@ -32,19 +32,10 @@
 #[macro_use]
 extern crate std;
 
-#[cfg(all(target_arch="arm", not(target_has_atomic="ptr")))]
-extern crate cm0_atomic as atomic;
-
-//#[cfg(all(target_arch="arm", not(target_has_atomic="ptr")))]
 extern crate cm0_sync as sync;
 
 use sync::spin::SpinMutex;
-
-#[cfg(target_has_atomic="ptr")]
-use core::sync::atomic as atomic;
-
-// Not sure if we need to be using this or not
-//use atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
+use free_list::FreeList;
 
 mod free_list;
 mod alignment;
@@ -52,55 +43,16 @@ mod alignment;
 #[cfg(test)]
 mod test;
 
-static mut FL_ALLOCATOR : SpinMutex<FreeListAllocator> =
-    SpinMutex::new(FreeListAllocator::new());
+static mut FL_ALLOCATOR : SpinMutex<FreeList> =
+    SpinMutex::new(FreeList::new());
 
-//static SYNC_FL_ALLOCATOR : sync::spin::SpinMutex<FreeListAllocator> =
-  //  sync::spin::SpinMutex::new(FreeListAllocator::new());
 
 /// Initializes the free list with the given heap memory starting position and size
 /// Call this before doing any heap allocation. This MUST only be called once
 pub fn init_heap(heap_start: usize, heap_size: usize) {
     unsafe {
         let mut guard = FL_ALLOCATOR.lock();
-        (*guard).init(heap_start, heap_size);
-    }
-}
-
-pub struct FreeListAllocator {
-    heap_list: free_list::FreeList,
-}
-
-impl FreeListAllocator {
-    /// Creates a new free list allocator
-    pub const fn new() -> Self {
-        FreeListAllocator {
-            heap_list: free_list::FreeList::new(),
-        }
-    }
-
-    pub fn init(&mut self, heap_start: usize, heap_size: usize) {
-        // List starts with a single block containing all the memory
-        self.heap_list.init(heap_start, heap_size);
-    }
-
-    /// Allocates a block of memory with the given size and alignment.
-    #[inline(never)]
-    pub fn allocate(&mut self, size: usize, align: usize) -> *mut u8 {
-        // Should we be using an option here?
-        let alloc_ptr = self.heap_list.allocate(size, align);
-        // Is this the right place for checking if we're out of memory?
-        if alloc_ptr.is_null() {
-            panic!("Out of memory")
-        }
-        alloc_ptr
-    }
-
-    /// Deallocates a block of memory with the given size and alignment.
-    #[inline(never)]
-    pub fn deallocate(&mut self, alloc_ptr: *mut u8, size: usize, align: usize) {
-        // Do we even care about alignment variable?
-        self.heap_list.deallocate(alloc_ptr, size, align);
+        guard.init(heap_start, heap_size);
     }
 }
 
@@ -109,16 +61,18 @@ impl FreeListAllocator {
 pub extern fn __rust_allocate(size: usize, align: usize) -> *mut u8 {
     unsafe {
         let mut guard = FL_ALLOCATOR.lock();
-        (*guard).allocate(size, align)
+        guard.allocate(size, align)
     }
 }
 
 #[no_mangle]
 #[cfg(not(test))]
 pub extern fn __rust_deallocate(_ptr: *mut u8, _size: usize, _align: usize) {
+    // This ignores align currently
+    // TODO: Deal with align
     unsafe {
         let mut guard = FL_ALLOCATOR.lock();
-        (*guard).deallocate(_ptr, _size, _align)
+        guard.deallocate(_ptr, _size, _align)
     }
 }
 
@@ -129,7 +83,7 @@ pub extern fn __rust_usable_size(size: usize, _align: usize) -> usize {
     // So if minimal block size is 16, align is 32, and size is 5, usable size is 32
     unsafe {
         let guard = FL_ALLOCATOR.lock();
-        alignment::align_up(size, (*guard).heap_list.get_block_hdr_size())
+        alignment::align_up(size, guard.get_block_hdr_size())
     }
 }
 
@@ -155,11 +109,14 @@ pub extern fn __rust_reallocate(ptr: *mut u8, size: usize, new_size: usize, alig
 
 #[cfg(test)]
 mod tests {
+    /*
     use super::*;
     use std::sync::Arc;
     use std::vec::Vec;
     use core::mem::{size_of, align_of};
     use free_list::BlockHeader;
+    use test;
+    */
 
     // fn _get_test_fl_allocator_with_size(heap_size: usize) -> FreeListAllocator {
     //     FreeListAllocator {
@@ -171,11 +128,11 @@ mod tests {
 
     /*
     Test
-    __rust_allocate
-    __rust_deallocate
-    __rust_usable_size
-    __rust_reallocate_inplace
-    __rust_reallocate
+        __rust_allocate
+        __rust_deallocate
+        __rust_usable_size
+        __rust_reallocate_inplace
+        __rust_reallocate
     */
 
     // Free list allocator does not have enough memory for new allocation
@@ -206,4 +163,5 @@ mod tests {
     //     // This should panic due to 0 memory left
     //     fl_allocator.allocate(256, 1);
     // }
+
 }

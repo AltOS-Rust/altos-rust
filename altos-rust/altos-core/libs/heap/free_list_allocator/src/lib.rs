@@ -43,26 +43,24 @@ mod alignment;
 #[cfg(test)]
 mod test;
 
-static mut FL_ALLOCATOR : SpinMutex<FreeList> =
+static FL_ALLOCATOR : SpinMutex<FreeList> =
     SpinMutex::new(FreeList::new());
 
 
 /// Initializes the free list with the given heap memory starting position and size
 /// Call this before doing any heap allocation. This MUST only be called once
 pub fn init_heap(heap_start: usize, heap_size: usize) {
-    unsafe {
-        let mut guard = FL_ALLOCATOR.lock();
-        guard.init(heap_start, heap_size);
-    }
+
+    let mut guard = FL_ALLOCATOR.lock();
+    guard.init(heap_start, heap_size);
+
 }
 
 #[no_mangle]
 #[cfg(not(test))]
 pub extern fn __rust_allocate(size: usize, align: usize) -> *mut u8 {
-    unsafe {
-        let mut guard = FL_ALLOCATOR.lock();
-        guard.allocate(size, align)
-    }
+    let mut guard = FL_ALLOCATOR.lock();
+    guard.allocate(size, align)
 }
 
 #[no_mangle]
@@ -70,10 +68,8 @@ pub extern fn __rust_allocate(size: usize, align: usize) -> *mut u8 {
 pub extern fn __rust_deallocate(_ptr: *mut u8, _size: usize, _align: usize) {
     // This ignores align currently
     // TODO: Deal with align
-    unsafe {
-        let mut guard = FL_ALLOCATOR.lock();
-        guard.deallocate(_ptr, _size)
-    }
+    let mut guard = FL_ALLOCATOR.lock();
+    guard.deallocate(_ptr, _size)
 }
 
 #[no_mangle]
@@ -81,10 +77,8 @@ pub extern fn __rust_deallocate(_ptr: *mut u8, _size: usize, _align: usize) {
 pub extern fn __rust_usable_size(size: usize, _align: usize) -> usize {
     // TODO: This actually needs to return result from minimum block alignment or value of _align
     // So if minimal block size is 16, align is 32, and size is 5, usable size is 32
-    unsafe {
-        let guard = FL_ALLOCATOR.lock();
-        alignment::use_size(size, guard.get_block_hdr_size())
-    }
+    let guard = FL_ALLOCATOR.lock();
+    alignment::use_size(size, guard.get_block_hdr_size())
 }
 
 #[no_mangle]

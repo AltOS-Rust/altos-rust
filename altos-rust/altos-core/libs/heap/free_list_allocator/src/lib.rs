@@ -100,7 +100,7 @@ impl FreeListAllocator {
     #[inline(never)]
     pub fn deallocate(&mut self, alloc_ptr: *mut u8, size: usize, align: usize) {
         // Do we even care about alignment variable?
-        self.heap_list.deallocate(alloc_ptr, size);
+        self.heap_list.deallocate(alloc_ptr, size, align);
     }
 }
 

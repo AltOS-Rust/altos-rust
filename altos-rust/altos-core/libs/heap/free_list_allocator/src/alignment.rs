@@ -43,12 +43,38 @@ pub fn align_down(addr: usize, align: usize) -> usize {
 /// Align upwards. Returns the smallest x with alignment `align` so that x >= addr.
 /// The alignment must be a power of 2.
 pub fn align_up(addr: usize, align: usize) -> usize {
-    align_down(addr + align - 1, align)
+    align_down(addr + (if align == 0 { 0 } else { align - 1 }), align)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn use_align_picks_larger_alignment() {
+        assert_eq!(use_align(8, 8), 8);
+        assert_eq!(use_align(8, 16), 16);
+        assert_eq!(use_align(16, 8), 16);
+    }
+
+    #[test]
+    fn align_up_aligns_correctly() {
+        assert_eq!(align_up(8, 0), 8);
+        assert_eq!(align_up(8, 1), 8);
+        assert_eq!(align_up(2, 8), 8);
+        assert_eq!(align_up(8, 8), 8);
+        assert_eq!(align_up(4, 16), 16);
+        assert_eq!(align_up(12, 16), 16);
+    }
+
+    #[test]
+    fn align_down_aligns_correctly() {
+        assert_eq!(align_down(8, 0), 8);
+        assert_eq!(align_down(8, 1), 8);
+        assert_eq!(align_down(12, 8), 8);
+        assert_eq!(align_down(8, 16), 0);
+        assert_eq!(align_down(17, 16), 16);
+    }
 
     #[test]
     fn use_align_returns_common_multiple_of_request_size_and_block_header_size() {

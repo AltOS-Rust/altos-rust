@@ -74,8 +74,7 @@ pub fn start_first_task() {
           "cpsie i\n", /* first task has its context, so interrupts can be enabled */
           "bx r3\n", /* start executing user code */
            ".align 4\n",
-          "current_task_const_2: .word CURRENT_TASK
-")
+          "current_task_const_2: .word CURRENT_TASK\n")
       : /* no outputs */
       : /* no inputs */
       : /* no clobbers */
@@ -125,8 +124,7 @@ pub fn begin_critical() -> usize {
 pub fn end_critical(primask: usize) {
   unsafe {
     #[cfg(target_arch="arm")]
-    asm!(
-      "msr PRIMASK, $0"
+    asm!("msr PRIMASK, $0"
       : /* no outputs */
       : "r"(primask)
       : /* no clobbers */

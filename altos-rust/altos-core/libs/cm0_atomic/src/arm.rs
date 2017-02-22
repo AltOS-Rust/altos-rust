@@ -26,10 +26,8 @@ macro_rules! start_critical {
       #![cfg(target_arch="arm")]
       asm!(
         concat!(
-          "mrs $0, PRIMASK
-",
-          "cpsid i
-")
+          "mrs $0, PRIMASK\n",
+          "cpsid i\n")
         : "=r"($var)
         : /* no inputs */
         : /* no clobbers */

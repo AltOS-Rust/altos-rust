@@ -52,10 +52,8 @@ macro_rules! kprint {
 
 #[macro_export]
 macro_rules! kprintln {
-    ($fmt:expr) => (kprint!(concat!($fmt, "
-")));
-    ($fmt:expr, $($arg:tt)*) => (kprint!(concat!($fmt, "
-"), $($arg)*));
+    ($fmt:expr) => (kprint!(concat!($fmt, "\n")));
+    ($fmt:expr, $($arg:tt)*) => (kprint!(concat!($fmt, "\n"), $($arg)*));
 }
 
 #[cfg(all(not(test), not(feature="test"), feature="bump_allocator"))]

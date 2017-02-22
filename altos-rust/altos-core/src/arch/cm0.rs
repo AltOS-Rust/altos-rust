@@ -59,41 +59,21 @@ pub fn start_first_task() {
     #[cfg(target_arch="arm")]
     asm!(
       concat!(
-          "ldr r2, current_task_const_2
-", /* get location of current_task */
-          "ldr r3, [r2]
-",
-          "ldr r0, [r3]
-",
-
-          "adds r0, #32
-", /* discard everything up to r0 */
-          "msr psp, r0
-", /* this is the new top of stack to use for the task */
-
-          "movs r0, #2
-", /* switch to the psp stack */
-          "msr CONTROL, r0
-", /* we're using psp instead of msp now */
-
-          "isb
-", /* instruction barrier */
-
-          "pop {r0-r5}
-", /* pop the registers that are saved automatically */
-          "mov lr, r5
-", /* lr is now in r5, so put it back where it belongs */
-          "pop {r3}
-", /* pop return address (old pc) into r3 */
-          "pop {r2}
-", /* pop and discard xPSR */
-          "cpsie i
-", /* first task has its context, so interrupts can be enabled */
-          "bx r3
-", /* start executing user code */
-
-           ".align 4
-",
+          "ldr r2, current_task_const_2\n", /* get location of current_task */
+          "ldr r3, [r2]\n",
+          "ldr r0, [r3]\n",
+          "adds r0, #32\n", /* discard everything up to r0 */
+          "msr psp, r0\n", /* this is the new top of stack to use for the task */
+          "movs r0, #2\n", /* switch to the psp stack */
+          "msr CONTROL, r0\n", /* we're using psp instead of msp now */
+          "isb\n", /* instruction barrier */
+          "pop {r0-r5}\n", /* pop the registers that are saved automatically */
+          "mov lr, r5\n", /* lr is now in r5, so put it back where it belongs */
+          "pop {r3}\n", /* pop return address (old pc) into r3 */
+          "pop {r2}\n", /* pop and discard xPSR */
+          "cpsie i\n", /* first task has its context, so interrupts can be enabled */
+          "bx r3\n", /* start executing user code */
+           ".align 4\n",
           "current_task_const_2: .word CURRENT_TASK
 ")
       : /* no outputs */
@@ -109,8 +89,7 @@ pub fn in_kernel_mode() -> bool {
   unsafe {
     let stack_mask: usize;
     #[cfg(target_arch="arm")]
-    asm!("mrs $0, CONTROL
-" /* get the stack control mask */
+    asm!("mrs $0, CONTROL\n" /* get the stack control mask */
       : "=r"(stack_mask)
       : /* no inputs */
       : /* no clobbers */
@@ -129,10 +108,8 @@ pub fn begin_critical() -> usize {
     #[cfg(target_arch="arm")]
     asm!(
       concat!(
-        "mrs $0, PRIMASK
-",
-        "cpsid i
-")
+        "mrs $0, PRIMASK\n",
+        "cpsid i\n")
       : "=r"(primask)
       : /* no inputs */
       : /* no clobbers */
@@ -148,7 +125,8 @@ pub fn begin_critical() -> usize {
 pub fn end_critical(primask: usize) {
   unsafe {
     #[cfg(target_arch="arm")]
-    asm!("msr PRIMASK, $0"
+    asm!(
+      "msr PRIMASK, $0"
       : /* no outputs */
       : "r"(primask)
       : /* no clobbers */

@@ -131,30 +131,18 @@ fn init_data_segment() {
     unsafe {
         asm!(
             concat!(
-                "ldr r1, =_sidata
-", /* start of data in flash */
-                "ldr r2, =_sdata
-",  /* start of memory location in RAM */
-                "ldr r3, =_edata
-",  /* end of memory location in RAM */
-                "copy:
-",
-                "cmp r2, r3
-", /* check if we've reached the end of our segment */
-                "bpl d_done
-",
-                "ldr r0, [r1]
-", /* if not, keep copying */
-                "adds r1, #4
-",
-                "str r0, [r2]
-",
-                "adds r2, #4
-",
-                "b copy
-", /* repeat until done */
-                "d_done:
-")
+                "ldr r1, =_sidata\n", /* start of data in flash */
+                "ldr r2, =_sdata\n",  /* start of memory location in RAM */
+                "ldr r3, =_edata\n",  /* end of memory location in RAM */
+                "copy:\n",
+                "cmp r2, r3\n", /* check if we've reached the end of our segment */
+                "bpl d_done\n",
+                "ldr r0, [r1]\n", /* if not, keep copying */
+                "adds r1, #4\n",
+                "str r0, [r2]\n",
+                "adds r2, #4\n",
+                "b copy\n", /* repeat until done */
+                "d_done:\n")
             : /* no outputs */
             : /* no inputs */
             : "r0", "r1", "r2", "r3" /* clobbers */
@@ -168,26 +156,16 @@ fn init_bss_segment() {
     unsafe {
         asm!(
             concat!(
-                "movs r0, #0
-", /* store zero for later */
-                "ldr r1, =_sbss
-", /* start of bss in RAM */
-                "ldr r2, =_ebss
-", /* end of bss in RAM */
-                "loop:
-",
-                "cmp r1, r2
-", /* check if we've reached the end of our segment */
-                "bpl b_done
-",
-                "str r0, [r1]
-", /* if not, zero out memory at current location */
-                "adds r1, #4
-",
-                "b loop
-", /* repeat until done */
-                "b_done:
-")
+                "movs r0, #0\n", /* store zero for later */
+                "ldr r1, =_sbss\n", /* start of bss in RAM */
+                "ldr r2, =_ebss\n", /* end of bss in RAM */
+                "loop:\n",
+                "cmp r1, r2\n", /* check if we've reached the end of our segment */
+                "bpl b_done\n",
+                "str r0, [r1]\n", /* if not, zero out memory at current location */
+                "adds r1, #4\n",
+                "b loop\n", /* repeat until done */
+                "b_done:\n")
             : /* no outputs */
             : /* no inputs */
             : "r0", "r1", "r2" /* clobbers */
@@ -203,13 +181,9 @@ fn init_heap() {
         let heap_size: usize;
         asm!(
                 concat!(
-                    "ldr r0, =_heap_start
-",
-                    "ldr r1, =_heap_end
-",
-
-                    "subs r2, r1, r0
-")
+                    "ldr r0, =_heap_start\n",
+                    "ldr r1, =_heap_end\n",
+                    "subs r2, r1, r0\n")
                 : "={r0}"(heap_start), "={r2}"(heap_size)
                 : /* no inputs */
                 : "r0", "r1", "r2"

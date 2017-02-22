@@ -41,10 +41,10 @@
 ///   let heap_size: usize;
 ///   asm!(
 ///     concat!(
-///       "ldr r0, =_heap_start",
-///       "ldr r1, =_heap_end",
+///       "ldr r0, =_heap_start\n",
+///       "ldr r1, =_heap_end\n",
 ///
-///       "subs r2, r1, r0")
+///       "subs r2, r1, r0\n")
 ///     : "={r0}"(heap_start), "={r2}"(heap_size)
 ///     : /* no inputs */
 ///     : "r0", "r1", "r2"

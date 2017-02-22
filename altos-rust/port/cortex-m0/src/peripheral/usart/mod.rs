@@ -309,7 +309,5 @@ pub fn init() {
     usart2.enable_usart();
 
     let nvic = interrupt::nvic();
-    // TODO: The number 28 here should be replaced by an enum in the
-    // `interrupt` module
-    nvic.enable_interrupt(28);
+    nvic.enable_interrupt(interrupt::Hardware::USART2);
 }

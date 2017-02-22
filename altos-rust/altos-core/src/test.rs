@@ -51,16 +51,17 @@ pub fn current_task() -> Option<&'static mut TaskControl> {
     unsafe { CURRENT_TASK.as_mut().map(|task| &mut ***task) }
 }
 
-pub fn create_two_tasks() -> (TaskHandle, TaskHandle) {
-    let handle_1 = create_and_schedule_test_task(512, Priority::Normal, "test task 1");
-    let handle_2 = create_and_schedule_test_task(512, Priority::Normal, "test task 2");
-    (handle_1, handle_2)
-}
-
 //Set a task to be permanently blocked
 pub fn block_current_task(delay_type: Delay) {
     current_task().unwrap().state = State::Blocked;
     current_task().unwrap().delay_type = delay_type;
 }
+
+pub fn create_two_tasks() -> (TaskHandle, TaskHandle) {
+  let handle_1 = create_and_schedule_test_task(512, Priority::Normal, "test task 1");
+  let handle_2 = create_and_schedule_test_task(512, Priority::Normal, "test task 2");
+  (handle_1, handle_2)
+}
+
 
 fn test_task(_args: &mut Args) {}

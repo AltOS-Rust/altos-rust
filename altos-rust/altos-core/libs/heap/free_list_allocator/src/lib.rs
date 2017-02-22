@@ -161,11 +161,11 @@ mod tests {
     use core::mem::{size_of, align_of};
     use free_list::BlockHeader;
 
-    fn _get_test_fl_allocator_with_size(heap_size: usize) -> FreeListAllocator {
-        FreeListAllocator {
-            heap_list: test::get_free_list_with_size(heap_size),
-        }
-    }
+    // fn _get_test_fl_allocator_with_size(heap_size: usize) -> FreeListAllocator {
+    //     FreeListAllocator {
+    //         heap_list: test::get_free_list_with_size(heap_size),
+    //     }
+    // }
 
     // TODO: Implement more tests for this
 
@@ -179,31 +179,31 @@ mod tests {
     */
 
     // Free list allocator does not have enough memory for new allocation
-    #[test]
-    #[should_panic]
-    fn fl_allocator_not_enough_memory() {
-        let heap_size: usize = 2048;
-        let mut fl_allocator = _get_test_fl_allocator_with_size(heap_size);
-
-        assert!(!fl_allocator.allocate(512, 1).is_null());
-        assert!(!fl_allocator.allocate(512, 1).is_null());
-        assert!(!fl_allocator.allocate(512, 2).is_null());
-
-        // This should panic due to not enough remaining memory
-        fl_allocator.allocate(1024, 1);
-    }
+    // #[test]
+    // #[should_panic]
+    // fn fl_allocator_not_enough_memory() {
+    //     let heap_size: usize = 2048;
+    //     let mut fl_allocator = _get_test_fl_allocator_with_size(heap_size);
+    //
+    //     assert!(!fl_allocator.allocate(512, 1).is_null());
+    //     assert!(!fl_allocator.allocate(512, 1).is_null());
+    //     assert!(!fl_allocator.allocate(512, 2).is_null());
+    //
+    //     // This should panic due to not enough remaining memory
+    //     fl_allocator.allocate(1024, 1);
+    // }
 
     // Free list allocator runs out of memory completely
-    #[test]
-    #[should_panic]
-    fn fl_allocator_out_of_memory() {
-        let heap_size: usize = 512;
-        let mut fl_allocator = _get_test_fl_allocator_with_size(heap_size);
-
-        fl_allocator.allocate(256, 1);
-        fl_allocator.allocate(256, 1);
-
-        // This should panic due to 0 memory left
-        fl_allocator.allocate(256, 1);
-    }
+    // #[test]
+    // #[should_panic]
+    // fn fl_allocator_out_of_memory() {
+    //     let heap_size: usize = 512;
+    //     let mut fl_allocator = _get_test_fl_allocator_with_size(heap_size);
+    //
+    //     fl_allocator.allocate(256, 1);
+    //     fl_allocator.allocate(256, 1);
+    //
+    //     // This should panic due to 0 memory left
+    //     fl_allocator.allocate(256, 1);
+    // }
 }

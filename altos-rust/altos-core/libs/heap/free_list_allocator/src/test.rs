@@ -68,7 +68,7 @@ pub struct TestFreeList {
 impl TestFreeList {
     fn new(test_memory: TestMemory) -> TestFreeList {
         let mut free_list = free_list::FreeList::new();
-        free_list.init(test_memory.get_heap() as usize, test_memory.vector_length);
+        free_list.init(test_memory.get_heap() as usize, test_memory.get_memory_size());
         TestFreeList {
             free_list: free_list,
             test_memory: test_memory,

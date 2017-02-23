@@ -101,12 +101,11 @@ impl FreeList {
     // Allocate memory using first fit strategy
     // Returns pointer to allocated memory, or null if no memory is remaining
     pub fn allocate(&mut self, request_size: usize, request_align: usize) -> *mut u8 {
-        let mut alloc_location: *mut u8 = ptr::null_mut();
         let using_size = alignment::align_up(request_size, self.block_hdr_size);
         let using_align = alignment::use_align(request_align, self.block_hdr_size);
 
         // Will return true if current size is large enough to accomodate request
-        let acceptable_block = |previous: *mut BlockHeader, current: *mut BlockHeader| {
+        let acceptable_block = |_, current: *mut BlockHeader| {
             let alloc_start = alignment::align_up(current as usize, using_align);
             let align_diff = alloc_start - current as usize;
             let current_size = unsafe { (*current).block_size };
@@ -180,7 +179,7 @@ impl FreeList {
         }
 
         // Memory location to be added at head of the list
-        if alloc_block_ptr < self.head {
+        if self.head.is_null() || alloc_block_ptr < self.head {
             unsafe { (*alloc_block_ptr).next_block = self.head; }
             self.head = alloc_block_ptr;
             return;
@@ -225,6 +224,16 @@ mod tests {
         sum
     }
 
+    fn _count_free_blocks(free_list: &mut FreeList) -> usize {
+        let mut current = free_list.head;
+        let mut num_blocks = 0;
+        while !current.is_null() {
+            num_blocks += 1;
+            current = unsafe { (*current).next_block };
+        }
+        num_blocks
+    }
+
     fn _each_free_block_satisfies(
         free_list: &mut FreeList,
         condition: &Fn(*mut BlockHeader) -> bool
@@ -238,6 +247,150 @@ mod tests {
             current = unsafe { (*current).next_block };
         }
         true
+    }
+
+    // Deallocate: At start, at end, in middle
+    // Check each of the node merging cases
+    // Make sure tests hit every case in allocate
+
+    // Free list starts out with head set to null on creation
+    #[test]
+    fn new_free_list_is_empty() {
+        let free_list = FreeList::new();
+        assert!(free_list.head.is_null());
+    }
+
+    // List initialization creates single block with entire size
+    #[test]
+    fn free_list_init() {
+        let heap_size: usize = 2048;
+        let mut test_free_list = test::get_free_list_with_size(heap_size);
+        let heap_start = test_free_list.get_heap_start() as *mut BlockHeader;
+        let free_list = test_free_list.get_free_list();
+
+        assert!(!free_list.head.is_null());
+        assert_eq!(free_list.head, heap_start);
+        assert_eq!(free_list.get_block_hdr_size(), mem::size_of::<BlockHeader>());
+        unsafe {
+            assert_eq!((*free_list.head).block_size, heap_size);
+        }
+    }
+
+    // Initializing the free list adjusts first memory block so the adress and size
+    // are multiples of block header size.
+    #[test]
+    fn free_list_init_adjusts_to_block_header_size() {
+        let heap_size: usize = 2048 + 1;
+        let mut test_free_list = test::get_free_list_with_size(heap_size);
+        let free_list = test_free_list.get_free_list();
+
+        assert!(!free_list.head.is_null());
+        unsafe {
+            assert!((*free_list.head).block_size % free_list.get_block_hdr_size() == 0);
+        }
+    }
+
+    // Multiple allocations without deallocations
+    #[test]
+    fn free_list_multiple_allocations() {
+        let heap_size: usize = 2048;
+        let mut test_free_list = test::get_free_list_with_size(heap_size);
+        let mut free_list = test_free_list.get_free_list();
+
+        // Allocations we're using in these tests should be multiple of size_of::<BlockHeader>()
+        // This is to avoid having to account for alignment with this test
+        free_list.allocate(32, 1);
+        free_list.allocate(128, 1);
+        free_list.allocate(256, 1);
+        unsafe {
+            assert_eq!((*free_list.head).block_size, heap_size - (32 + 128 + 256));
+            assert!((*free_list.head).next_block.is_null());
+        }
+    }
+
+    // Does allocations which results in the elimination of a free block
+    #[test]
+    fn free_list_allocations_use_entire_free_block() {
+        let heap_size: usize = 1024;
+        let mut test_free_list = test::get_free_list_with_size(heap_size);
+        let mut free_list = test_free_list.get_free_list();
+
+        let alloc_ptr = free_list.allocate(256, 1);
+        free_list.allocate(256, 1);
+
+        free_list.deallocate(alloc_ptr, 256, 1);
+        unsafe {
+            assert_eq!((*free_list.head).block_size, 256);
+            assert!(!(*free_list.head).next_block.is_null());
+        }
+
+        // New allocation should claim the entire first block
+        free_list.allocate(256, 1);
+
+        unsafe {
+            assert_eq!((*free_list.head).block_size, heap_size - (256 + 256));
+            assert!((*free_list.head).next_block.is_null());
+        }
+    }
+
+    #[test]
+    fn deallocate_at_start() {
+        let heap_size: usize = 1024;
+        let mut test_free_list = test::get_free_list_with_size(heap_size);
+        let mut free_list = test_free_list.get_free_list();
+
+        let alloc_ptr = free_list.allocate(256, 1);
+        assert_eq!(unsafe { (*free_list.head).block_size }, 1024 - 256);
+        let new_head_ptr = free_list.head;
+
+        free_list.deallocate(alloc_ptr, 256, 1);
+
+        assert_eq!(_count_free_blocks(free_list), 2);
+        assert_eq!(_sum_free_list_blocks(free_list), heap_size);
+        assert_eq!(free_list.head, alloc_ptr as *mut BlockHeader);
+        assert_eq!(unsafe { (*free_list.head).next_block }, new_head_ptr);
+    }
+
+    #[test]
+    fn deallocate_at_end() {
+        let heap_size: usize = 1024;
+        let mut test_free_list = test::get_free_list_with_size(heap_size);
+        let mut free_list = test_free_list.get_free_list();
+
+        let alloc_ptr = free_list.allocate(512, 1);
+        let alloc_ptr2 = free_list.allocate(256, 1);
+        let alloc_ptr3 = free_list.allocate(256, 1);
+
+        free_list.deallocate(alloc_ptr, 512, 1);
+        // Both of these deallocations should create nodes at the end of the list
+        free_list.deallocate(alloc_ptr2, 256, 1);
+        free_list.deallocate(alloc_ptr3, 256, 1);
+
+        assert_eq!(_count_free_blocks(free_list), 3);
+        assert_eq!(_sum_free_list_blocks(free_list), heap_size);
+        assert_eq!(free_list.head, alloc_ptr as *mut BlockHeader);
+        assert_eq!(unsafe { (*free_list.head).next_block }, alloc_ptr2 as *mut BlockHeader);
+    }
+
+    #[test]
+    fn deallocate_in_middle() {
+        let heap_size: usize = 1024;
+        let mut test_free_list = test::get_free_list_with_size(heap_size);
+        let mut free_list = test_free_list.get_free_list();
+
+        let alloc_ptr = free_list.allocate(512, 1);
+        let alloc_ptr2 = free_list.allocate(256, 1);
+        let alloc_ptr3 = free_list.allocate(256, 1);
+        free_list.deallocate(alloc_ptr, 512, 1);
+        free_list.deallocate(alloc_ptr3, 256, 1);
+
+        // This should get put in between the nodes created from alloc_ptr and alloc_ptr3
+        free_list.deallocate(alloc_ptr2, 256, 1);
+
+        assert_eq!(_count_free_blocks(free_list), 3);
+        assert_eq!(_sum_free_list_blocks(free_list), heap_size);
+        assert_eq!(free_list.head, alloc_ptr as *mut BlockHeader);
+        assert_eq!(unsafe { (*free_list.head).next_block }, alloc_ptr2 as *mut BlockHeader);
     }
 
     #[test]
@@ -346,134 +499,23 @@ mod tests {
         );
     }
 
-    // TODO: Needs more test cases
-    // Deallocate: At start, at end, in middle
-    // Check each of the node merging cases
-    // Make sure tests hit every case in allocate
-
-    // Free list starts out with head set to null on creation
     #[test]
-    fn empty_free_list() {
-        let free_list = FreeList::new();
-        assert!(free_list.head.is_null());
-    }
-
-    // List initialization creates single block with entire size
-    #[test]
-    fn free_list_init() {
-        let heap_size: usize = 2048;
+    fn free_list_out_of_memory_returns_null() {
+        let heap_size: usize = 512;
         let mut test_free_list = test::get_free_list_with_size(heap_size);
-        let heap_start = test_free_list.get_heap_start() as *mut BlockHeader;
-        let mut free_list = test_free_list.get_free_list();
-
-        assert!(!free_list.head.is_null());
-        assert_eq!(free_list.head, heap_start);
-        assert_eq!(free_list.block_hdr_size, mem::size_of::<BlockHeader>());
-        unsafe {
-            assert_eq!((*free_list.head).block_size, heap_size);
-        }
-    }
-
-    // Initializing the free list adjusts first memory block so the adress and size
-    // are multiples of block header size.
-    #[test]
-    fn free_list_init_adjusts_to_block_header_size() {
-        let heap_size: usize = 2048 + 1;
-        let mut test_free_list = test::get_free_list_with_size(heap_size);
-        let mut free_list = test_free_list.get_free_list();
-
-        assert!(!free_list.head.is_null());
-        unsafe {
-            assert!((*free_list.head).block_size % free_list.block_hdr_size == 0);
-        }
-    }
-
-    // Multiple allocations without deallocations
-    #[test]
-    fn free_list_multiple_allocations() {
-        let heap_size: usize = 2048;
-        let mut test_free_list = test::get_free_list_with_size(heap_size);
-        let mut free_list = test_free_list.get_free_list();
-
-        // Allocations we're using in these tests should be multiple of size_of::<BlockHeader>()
-        // This is to avoid having to account for alignment with this test
-        free_list.allocate(32, 1);
-        free_list.allocate(128, 1);
-        free_list.allocate(256, 1);
-        unsafe {
-            assert_eq!((*free_list.head).block_size, heap_size - (32 + 128 + 256));
-            assert!((*free_list.head).next_block.is_null());
-        }
-    }
-
-    // Multiple allocations with a deallocation
-    #[test]
-    fn free_list_allocations_and_single_deallocation() {
-        let heap_size: usize = 2048;
-        let mut test_free_list = test::get_free_list_with_size(heap_size);
-        let mut free_list = test_free_list.get_free_list();
+        let free_list = test_free_list.get_free_list();
 
         free_list.allocate(512, 1);
-        let alloc_ptr = free_list.allocate(128, 1);
-        free_list.allocate(512, 1);
-        unsafe {
-            assert_eq!((*free_list.head).block_size, heap_size - (512 + 128 + 512));
-        }
-
-        free_list.deallocate(alloc_ptr, 128, 1);
-
-        unsafe {
-            assert_eq!((*free_list.head).block_size, 128);
-            assert!(!(*free_list.head).next_block.is_null());
-            assert_eq!((*(*free_list.head).next_block).block_size, heap_size - (512 + 128 + 512));
-        }
+        assert!(free_list.allocate(64, 1).is_null());
     }
 
-    // Does allocations and then several deallocations
     #[test]
-    fn free_list_allocations_and_multiple_deallocations() {
-        let heap_size: usize = 2048;
+    fn free_list_not_enough_memory_returns_null() {
+        let heap_size: usize = 512;
         let mut test_free_list = test::get_free_list_with_size(heap_size);
-        let mut free_list = test_free_list.get_free_list();
+        let free_list = test_free_list.get_free_list();
 
         free_list.allocate(256, 1);
-        let alloc_ptr = free_list.allocate(256, 1);
-        free_list.allocate(256, 1);
-        let alloc_ptr2 = free_list.allocate(256, 1);
-
-        free_list.deallocate(alloc_ptr, 256, 1);
-        free_list.deallocate(alloc_ptr2, 256, 1);
-
-        unsafe {
-            assert_eq!((*free_list.head).block_size, 256);
-            assert!(!(*free_list.head).next_block.is_null());
-            assert_eq!((*(*free_list.head).next_block).block_size, 256);
-            assert!(!(*(*free_list.head).next_block).next_block.is_null());
-        }
-    }
-
-    // Does allocations which results in the elimination of a free block
-    #[test]
-    fn free_list_allocations_use_entire_free_block() {
-        let heap_size: usize = 1024;
-        let mut test_free_list = test::get_free_list_with_size(heap_size);
-        let mut free_list = test_free_list.get_free_list();
-
-        let alloc_ptr = free_list.allocate(256, 1);
-        free_list.allocate(256, 1);
-
-        free_list.deallocate(alloc_ptr, 256, 1);
-        unsafe {
-            assert_eq!((*free_list.head).block_size, 256);
-            assert!(!(*free_list.head).next_block.is_null());
-        }
-
-        // New allocation should claim the entire first block
-        free_list.allocate(256, 1);
-
-        unsafe {
-            assert_eq!((*free_list.head).block_size, heap_size - (256 + 256));
-            assert!((*free_list.head).next_block.is_null());
-        }
+        assert!(free_list.allocate(512, 1).is_null());
     }
 }

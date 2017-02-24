@@ -80,7 +80,6 @@ impl FreeList {
         unsafe {
             ptr::write(&mut *start_position, BlockHeader::new(use_heap_size));
         }
-
         self.head = start_position;
     }
 
@@ -105,7 +104,7 @@ impl FreeList {
         (previous, current)
     }
 
-    // Allocate memory using first fit strategy
+    // Allocate memory using the first fit strategy
     // Returns pointer to allocated memory, or null if no memory can be found
     pub fn allocate(&mut self, request_size: usize, request_align: usize) -> *mut u8 {
         let using_size = alignment::align_up(request_size, self.block_hdr_size);
@@ -121,6 +120,7 @@ impl FreeList {
         };
 
         let (previous, current) = self.find_block(&acceptable_block);
+        // If current is null, that means no free block was found that's large enough.
         if current.is_null() {
             return current as *mut u8;
         }
@@ -177,6 +177,9 @@ impl FreeList {
     - Adjacent at both: Merge two with lead (add sizes, switch lead ptr)
     */
 
+    // Deallocates memory, placing it back in the free list for later use
+    // Adds a free block to the list based on alloc_ptr so that the list remains
+    // sorted based on memory position.
     pub fn deallocate(&mut self, alloc_ptr: *mut u8, size: usize, _align: usize) {
         // We can immediately add the block at the deallocated position
         let alloc_block_ptr = alloc_ptr as *mut BlockHeader;
@@ -185,7 +188,8 @@ impl FreeList {
             ptr::write(&mut *alloc_block_ptr, BlockHeader::new(used_memory));
         }
 
-        // Memory location to be added at head of the list
+        // Memory location to be added at head of the list if the list is empty
+        // or if it's position in memory comes before the current head.
         if self.head.is_null() || alloc_block_ptr < self.head {
             unsafe { (*alloc_block_ptr).next_block = self.head; }
             self.head = alloc_block_ptr;
@@ -193,6 +197,9 @@ impl FreeList {
         }
         let (mut previous, current) = {
             let free_mem_between = |previous, current| {
+                if alloc_block_ptr == current {
+                    panic!("attempt to free memory that's already free");
+                }
                 previous < alloc_block_ptr && alloc_block_ptr < current
             };
             self.find_block(&free_mem_between)
@@ -235,16 +242,12 @@ mod tests {
     use super::*;
     use test;
 
-    // Make sure tests hit every case in allocate
-
-    // Free list starts out with head set to null on creation
     #[test]
     fn new_free_list_is_empty() {
         let free_list = FreeList::new();
         assert!(free_list.head.is_null());
     }
 
-    // List initialization creates single block with entire size
     #[test]
     fn free_list_init() {
         let heap_size: usize = 2048;
@@ -255,6 +258,7 @@ mod tests {
         assert_eq!(tfl.free_list.head, heap_start);
         assert_eq!(tfl.free_list.get_block_hdr_size(), mem::size_of::<BlockHeader>());
         unsafe {
+            // List initialization creates single block with entire size
             assert_eq!((*tfl.free_list.head).block_size, heap_size);
         }
     }
@@ -272,9 +276,8 @@ mod tests {
         }
     }
 
-    // Multiple allocations without deallocations
     #[test]
-    fn free_list_multiple_allocations() {
+    fn multiple_allocations() {
         let heap_size: usize = 2048;
         let mut tfl = test::get_free_list_with_size(heap_size);
 
@@ -291,7 +294,7 @@ mod tests {
 
     // Does allocations which results in the elimination of a free block
     #[test]
-    fn free_list_allocations_use_entire_free_block() {
+    fn allocations_use_entire_free_block() {
         let heap_size: usize = 1024;
         let mut tfl = test::get_free_list_with_size(heap_size);
 
@@ -472,7 +475,7 @@ mod tests {
     }
 
     #[test]
-    fn free_list_out_of_memory_returns_null() {
+    fn out_of_memory_returns_null() {
         let heap_size: usize = 512;
         let mut tfl = test::get_free_list_with_size(heap_size);
 
@@ -481,7 +484,7 @@ mod tests {
     }
 
     #[test]
-    fn free_list_not_enough_memory_returns_null() {
+    fn not_enough_memory_returns_null() {
         let heap_size: usize = 512;
         let mut tfl = test::get_free_list_with_size(heap_size);
 

@@ -16,7 +16,6 @@
  */
 
 use std::vec::Vec;
-
 use free_list;
 
 // TestMemory is a helper type which represents a chunk of memory used in testing the allocator
@@ -60,6 +59,7 @@ impl Drop for TestMemory {
 }
 
 // TestFreeList is a helper type for free lists, which utilizes TestMemory
+// Provides some functions which help make it easier to check certain properties of the free list
 pub struct TestFreeList {
     pub free_list: free_list::FreeList,
     test_memory: TestMemory,
@@ -101,7 +101,7 @@ impl TestFreeList {
         num_blocks
     }
 
-    // Checks that every block in the list satisfies some condition
+    // Helper function to check that every block in the list satisfies some condition
     // Returns false if the condition returns false for any node
     pub fn each_free_block_satisfies(&self, condition: &Fn(*mut free_list::BlockHeader) -> bool)
         -> bool {

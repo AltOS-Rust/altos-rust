@@ -15,7 +15,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 //! Free List Allocator
 //!
 //! The free list allocator uses a linked list to keep track of blocks of free memory, allowing
@@ -47,7 +46,6 @@ mod test;
 
 static mut FL_ALLOCATOR : SpinMutex<FreeList> =
     SpinMutex::new(FreeList::new());
-
 
 /// Initializes the free list with the given heap memory starting position and size.
 /// Call this before doing any heap allocation. This must _not_ be called more than once.
@@ -99,7 +97,6 @@ pub extern fn __rust_reallocate(ptr: *mut u8, size: usize, new_size: usize, alig
     use core::{ptr, cmp};
 
     let new_ptr = __rust_allocate(new_size, align);
-    // I was having issues with ptr::copy earlier. Should we use that here?
     unsafe { ptr::copy(ptr, new_ptr, cmp::min(size, new_size)) };
     __rust_deallocate(ptr, size, align);
     new_ptr
@@ -114,16 +111,5 @@ mod tests {
     use core::mem::{size_of, align_of};
     use free_list::BlockHeader;
     use test;
-    */
-
-    // TODO: Implement more tests for this
-
-    /*
-    Test
-        __rust_allocate
-        __rust_deallocate
-        __rust_usable_size
-        __rust_reallocate_inplace
-        __rust_reallocate
     */
 }

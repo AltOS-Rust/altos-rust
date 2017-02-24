@@ -26,8 +26,8 @@ pub fn use_align(align: usize, block_hdr_align: usize) -> usize {
     if align > block_hdr_align { align } else { block_hdr_align }
 }
 
-/// Align downwards. Returns the greatest x with alignment `align` so that x <= addr.
-/// The alignment must be a power of 2.
+// Align downwards. Returns the greatest x with alignment `align` so that x <= addr.
+// The alignment must be a power of 2.
 pub fn align_down(addr: usize, align: usize) -> usize {
     if align.is_power_of_two() {
         addr & !(align - 1)
@@ -40,8 +40,8 @@ pub fn align_down(addr: usize, align: usize) -> usize {
     }
 }
 
-/// Align upwards. Returns the smallest x with alignment `align` so that x >= addr.
-/// The alignment must be a power of 2.
+// Align upwards. Returns the smallest x with alignment `align` so that x >= addr.
+// The alignment must be a power of 2.
 pub fn align_up(addr: usize, align: usize) -> usize {
     align_down(addr + (if align == 0 { 0 } else { align - 1 }), align)
 }

@@ -26,7 +26,6 @@ use volatile::Volatile;
 use task::args::Args;
 use alloc::boxed::Box;
 use sched;
-use core::fmt;
 
 extern "Rust" {
   fn __yield_cpu();
@@ -35,7 +34,6 @@ extern "Rust" {
   fn __in_kernel_mode() -> bool;
   fn __begin_critical() -> usize;
   fn __end_critical(mask: usize);
-  fn __debug_print(args: fmt::Arguments);
 }
 
 pub fn yield_cpu() {
@@ -60,8 +58,4 @@ pub fn begin_critical() -> usize {
 
 pub fn end_critical(mask: usize) {
   unsafe { __end_critical(mask) };
-}
-
-pub fn debug_print(args: fmt::Arguments) {
-  unsafe { __debug_fmt(args) };
 }

@@ -3,5 +3,8 @@ name = "bump_allocator"
 version = "0.1.0"
 authors = ["Daniel Seitz <dnseitz@gmail.com>"]
 
+[dependencies]
+altos-macros = { path = "../../altos-macros" }
+
 [target.thumbv6m-none-eabi.dependencies]
 cm0_atomic = { path = "../../cm0_atomic" }

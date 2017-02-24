@@ -30,6 +30,9 @@ extern crate std;
 #[cfg(all(target_arch="arm", not(target_has_atomic="ptr")))]
 extern crate cm0_atomic as atomic;
 
+#[macro_use]
+extern crate altos_macros;
+
 #[cfg(target_has_atomic="ptr")]
 use core::sync::atomic as atomic;
 use atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
@@ -67,6 +70,7 @@ impl BumpAllocator {
   /// Allocates a block of memory with the given size and alignment.
   #[inline(never)]
   pub fn allocate(&self, size: usize, align: usize) -> Option<*mut u8> {
+    kprintln!("Allocating {} bytes", size);
     loop {
       let old_next = self.next.load(Ordering::SeqCst);
       let alloc_start = align_up(old_next, align);

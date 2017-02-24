@@ -24,12 +24,6 @@ use volatile::Volatile;
 use task::args::Args;
 use alloc::boxed::Box;
 use syscall;
-use core::fmt;
-
-#[allow(improper_ctypes)]
-extern "Rust" {
-  fn debug_fmt(args: fmt::Arguments);
-}
 
 pub fn yield_cpu() {
   const ICSR_ADDR: usize = 0xE000_ED04;
@@ -130,11 +124,6 @@ pub fn end_critical(primask: usize) {
       : /* no clobbers */
       : "volatile");
   }
-}
-
-#[doc(hidden)]
-pub fn debug_print(args: fmt::Arguments) {
-  unsafe { debug_fmt(args) };
 }
 
 fn exit_error() -> ! {

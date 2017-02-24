@@ -44,43 +44,35 @@ mod alignment;
 #[cfg(test)]
 mod test;
 
-static mut FL_ALLOCATOR : SpinMutex<FreeList> =
+static FL_ALLOCATOR : SpinMutex<FreeList> =
     SpinMutex::new(FreeList::new());
 
 /// Initializes the free list with the given heap memory starting position and size.
 /// Call this before doing any heap allocation. This must _not_ be called more than once.
 pub fn init_heap(heap_start: usize, heap_size: usize) {
-    unsafe {
-        let mut guard = FL_ALLOCATOR.lock();
-        guard.init(heap_start, heap_size);
-    }
+    let mut guard = FL_ALLOCATOR.lock();
+    guard.init(heap_start, heap_size);
 }
 
 #[no_mangle]
 #[cfg(not(test))]
 pub extern fn __rust_allocate(size: usize, align: usize) -> *mut u8 {
-    unsafe {
-        let mut guard = FL_ALLOCATOR.lock();
-        guard.allocate(size, align)
-    }
+    let mut guard = FL_ALLOCATOR.lock();
+    guard.allocate(size, align)
 }
 
 #[no_mangle]
 #[cfg(not(test))]
 pub extern fn __rust_deallocate(_ptr: *mut u8, _size: usize, _align: usize) {
-    unsafe {
-        let mut guard = FL_ALLOCATOR.lock();
-        guard.deallocate(_ptr, _size, _align)
-    }
+    let mut guard = FL_ALLOCATOR.lock();
+    guard.deallocate(_ptr, _size, _align);
 }
 
 #[no_mangle]
 #[cfg(not(test))]
 pub extern fn __rust_usable_size(size: usize, _align: usize) -> usize {
-    unsafe {
-        let guard = FL_ALLOCATOR.lock();
-        alignment::align_up(size, guard.get_block_hdr_size())
-    }
+    let guard = FL_ALLOCATOR.lock();
+    alignment::align_up(size, guard.get_block_hdr_size())
 }
 
 #[no_mangle]
@@ -100,16 +92,4 @@ pub extern fn __rust_reallocate(ptr: *mut u8, size: usize, new_size: usize, alig
     unsafe { ptr::copy(ptr, new_ptr, cmp::min(size, new_size)) };
     __rust_deallocate(ptr, size, align);
     new_ptr
-}
-
-#[cfg(test)]
-mod tests {
-    /*
-    use super::*;
-    use std::sync::Arc;
-    use std::vec::Vec;
-    use core::mem::{size_of, align_of};
-    use free_list::BlockHeader;
-    use test;
-    */
 }

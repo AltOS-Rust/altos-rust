@@ -1,3 +1,20 @@
+/* 
+ * Copyright (C) 2017 AltOS-Rust Team
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 // arch/unknown.rs
 // AltOS Rust
 //
@@ -9,6 +26,7 @@ use volatile::Volatile;
 use task::args::Args;
 use alloc::boxed::Box;
 use sched;
+use core::fmt;
 
 extern "Rust" {
   fn __yield_cpu();
@@ -17,6 +35,7 @@ extern "Rust" {
   fn __in_kernel_mode() -> bool;
   fn __begin_critical() -> usize;
   fn __end_critical(mask: usize);
+  fn __debug_print(args: fmt::Arguments);
 }
 
 pub fn yield_cpu() {
@@ -41,4 +60,8 @@ pub fn begin_critical() -> usize {
 
 pub fn end_critical(mask: usize) {
   unsafe { __end_critical(mask) };
+}
+
+pub fn debug_print(args: fmt::Arguments) {
+  unsafe { __debug_fmt(args) };
 }

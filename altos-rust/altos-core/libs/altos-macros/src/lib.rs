@@ -15,41 +15,34 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-// arch/test.rs
-// AltOS Rust
-//
-// Created by Daniel Seitz on 1/7/17
+#![no_std]
 
-//! This module is used to provide stubs for the architecture layer for testing.
+use core::fmt;
 
-use volatile::Volatile;
-use task::args::Args;
-use alloc::boxed::Box;
-use sched;
-
-pub fn yield_cpu() {
-  // no-op
-  sched::switch_context();
+#[macro_export]
+macro_rules! kprint {
+    ($($arg:tt)*) => ({
+        $crate::debug_print(format_args!($($arg)*));
+    });
 }
 
-pub fn initialize_stack(stack_ptr: Volatile<usize>, _code: fn(&mut Args), _args: &Box<Args>) -> usize {
-  // no-op
-  stack_ptr.as_ptr() as usize
+#[macro_export]
+macro_rules! kprintln {
+    ($fmt:expr) => (kprint!(concat!($fmt, "\n")));
+    ($fmt:expr, $($arg:tt)*) => (kprint!(concat!($fmt, "\n"), $($arg)*));
 }
 
-pub fn start_first_task() {
-  // no-op
-}
-pub fn in_kernel_mode() -> bool {
-  // no-op
-  true
+#[allow(improper_ctypes)]
+extern "Rust" {
+  fn debug_fmt(args: fmt::Arguments);
 }
 
-pub fn begin_critical() -> usize {
-  // no-op
-  0
-}
-
-pub fn end_critical(_mask: usize) {
-  // no-op
+#[doc(hidden)]
+pub fn debug_print(args: fmt::Arguments) {
+    #[cfg(not(test))]
+    unsafe {
+        debug_fmt(args);
+    }
+    #[cfg(test)]
+    print!(args);
 }

@@ -34,8 +34,9 @@
 #[macro_use]
 extern crate std;
 
-#[macro_use]
 extern crate altos_core;
+#[macro_use]
+extern crate altos_macros;
 
 pub extern crate arm;
 //pub extern crate compiler_builtins; // See above comment
@@ -43,7 +44,6 @@ pub extern crate arm;
 #[cfg(test)]
 mod test;
 
-#[macro_use]
 pub mod io;
 mod exceptions;
 mod interrupt;

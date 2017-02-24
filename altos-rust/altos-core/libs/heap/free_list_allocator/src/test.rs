@@ -79,6 +79,7 @@ impl TestFreeList {
         self.test_memory.get_heap()
     }
 
+    // Helper function which returns the sum of the block_sizes for every BlockHeader in the list
     pub fn sum_free_block_memory(&self) -> usize {
         let mut current = self.free_list.head;
         let mut sum: usize = 0;
@@ -89,6 +90,7 @@ impl TestFreeList {
         sum
     }
 
+    // Helper function to get the number of BlockHeader nodes in the list
     pub fn count_free_blocks(&self) -> usize {
         let mut current = self.free_list.head;
         let mut num_blocks = 0;
@@ -99,6 +101,8 @@ impl TestFreeList {
         num_blocks
     }
 
+    // Checks that every block in the list satisfies some condition
+    // Returns false if the condition returns false for any node
     pub fn each_free_block_satisfies(&self, condition: &Fn(*mut free_list::BlockHeader) -> bool)
         -> bool {
 

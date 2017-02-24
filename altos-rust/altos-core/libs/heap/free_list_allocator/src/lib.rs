@@ -15,11 +15,13 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- * The free list allocator uses a linked list to keep track of blocks of free memory, allowing
- * for more efficient use of memory than the bump allocator. This allocator reclaims memory
- * on deallocations and allocates memory using the first fit strategy.
- */
+
+//! Free List Allocator
+//!
+//! The free list allocator uses a linked list to keep track of blocks of free memory, allowing
+//! for more effective use of memory than the bump allocator. This allocator reclaims memory
+//! on deallocations and allocates memory using the first fit strategy.
+//!
 
 #![feature(allocator)]
 #![feature(const_fn)]
@@ -47,8 +49,8 @@ static mut FL_ALLOCATOR : SpinMutex<FreeList> =
     SpinMutex::new(FreeList::new());
 
 
-/// Initializes the free list with the given heap memory starting position and size
-/// Call this before doing any heap allocation. This MUST only be called once
+/// Initializes the free list with the given heap memory starting position and size.
+/// Call this before doing any heap allocation. This must _not_ be called more than once.
 pub fn init_heap(heap_start: usize, heap_size: usize) {
     unsafe {
         let mut guard = FL_ALLOCATOR.lock();
@@ -68,8 +70,6 @@ pub extern fn __rust_allocate(size: usize, align: usize) -> *mut u8 {
 #[no_mangle]
 #[cfg(not(test))]
 pub extern fn __rust_deallocate(_ptr: *mut u8, _size: usize, _align: usize) {
-    // This ignores align currently
-    // TODO: Deal with align
     unsafe {
         let mut guard = FL_ALLOCATOR.lock();
         guard.deallocate(_ptr, _size, _align)
@@ -79,8 +79,6 @@ pub extern fn __rust_deallocate(_ptr: *mut u8, _size: usize, _align: usize) {
 #[no_mangle]
 #[cfg(not(test))]
 pub extern fn __rust_usable_size(size: usize, _align: usize) -> usize {
-    // TODO: This actually needs to return result from minimum block alignment or value of _align
-    // So if minimal block size is 16, align is 32, and size is 5, usable size is 32
     unsafe {
         let guard = FL_ALLOCATOR.lock();
         alignment::align_up(size, guard.get_block_hdr_size())

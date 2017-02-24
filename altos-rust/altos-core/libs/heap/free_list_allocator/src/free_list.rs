@@ -15,10 +15,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- * Linked list code for memory allocator
- * This is intended for use by the free_list_allocator functionality
- */
+//! Linked list code for the the memory allocator
+//! This is intended for use by the free_list_allocator
+//!
 
 use core::{mem, ptr};
 
@@ -49,8 +48,7 @@ pub struct FreeList {
     head: *mut BlockHeader,
 }
 
-// These are (trivially) implemented so FreeList objects can be passed
-// between threads.
+// These are (trivially) implemented so FreeList objects can be passed between threads.
 unsafe impl Send for FreeList {}
 unsafe impl Sync for FreeList {}
 
@@ -69,9 +67,16 @@ impl FreeList {
         if !self.block_hdr_size.is_power_of_two() {
             panic!("block header size is not power of two");
         }
+        // We adjust the heap starting position and size so that it will initially have
+        // a starting position and size aligned to the block header size.
+        // This potentially leaks a few bytes but it might cause errors if we didn't do it.
+        let use_heap_start = alignment::align_up(heap_start, self.block_hdr_size);
+        let align_diff = use_heap_start - heap_start;
+        // Adjust the heap size down based on alignment change to starting position
+        // and then adjust it down again if it's not aligned to block header size.
+        let use_heap_size = alignment::align_down(heap_size - align_diff, self.block_hdr_size);
 
-        let start_position = heap_start as *mut BlockHeader;
-        let use_heap_size = alignment::align_down(heap_size, self.block_hdr_size);
+        let start_position = use_heap_start as *mut BlockHeader;
         unsafe {
             ptr::write(&mut *start_position, BlockHeader::new(use_heap_size));
         }
@@ -101,7 +106,7 @@ impl FreeList {
     }
 
     // Allocate memory using first fit strategy
-    // Returns pointer to allocated memory, or null if no memory is remaining
+    // Returns pointer to allocated memory, or null if no memory can be found
     pub fn allocate(&mut self, request_size: usize, request_align: usize) -> *mut u8 {
         let using_size = alignment::align_up(request_size, self.block_hdr_size);
         let using_align = alignment::use_align(request_align, self.block_hdr_size);
@@ -230,7 +235,6 @@ mod tests {
     use super::*;
     use test;
 
-    // Check each of the node merging cases
     // Make sure tests hit every case in allocate
 
     // Free list starts out with head set to null on creation
@@ -255,7 +259,7 @@ mod tests {
         }
     }
 
-    // Initializing the free list adjusts first memory block so the adress and size
+    // Initializing the free list adjusts first memory block so the address and size
     // are multiples of block header size.
     #[test]
     fn free_list_init_adjusts_to_block_header_size() {

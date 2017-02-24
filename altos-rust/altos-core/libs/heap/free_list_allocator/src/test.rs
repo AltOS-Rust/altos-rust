@@ -79,8 +79,37 @@ impl TestFreeList {
         self.test_memory.get_heap()
     }
 
-    pub fn get_free_list(&mut self) -> &mut free_list::FreeList {
-        &mut self.free_list
+    pub fn sum_free_block_memory(&self) -> usize {
+        let mut current = self.free_list.head;
+        let mut sum: usize = 0;
+        while !current.is_null() {
+            sum += unsafe { (*current).block_size };
+            current = unsafe { (*current).next_block };
+        }
+        sum
+    }
+
+    pub fn count_free_blocks(&self) -> usize {
+        let mut current = self.free_list.head;
+        let mut num_blocks = 0;
+        while !current.is_null() {
+            num_blocks += 1;
+            current = unsafe { (*current).next_block };
+        }
+        num_blocks
+    }
+
+    pub fn each_free_block_satisfies(&self, condition: &Fn(*mut free_list::BlockHeader) -> bool)
+        -> bool {
+
+        let mut current = self.free_list.head;
+        while !current.is_null() {
+            if !condition(current) {
+                return false;
+            }
+            current = unsafe { (*current).next_block };
+        }
+        true
     }
 }
 

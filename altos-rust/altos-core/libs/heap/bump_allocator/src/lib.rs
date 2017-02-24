@@ -29,6 +29,9 @@ extern crate std;
 #[cfg(all(target_arch="arm", not(target_has_atomic="ptr")))]
 extern crate cm0_atomic as atomic;
 
+#[macro_use]
+extern crate altos_macros;
+
 #[cfg(target_has_atomic="ptr")]
 use core::sync::atomic as atomic;
 use atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};

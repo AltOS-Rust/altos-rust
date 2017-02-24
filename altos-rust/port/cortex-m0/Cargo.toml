@@ -21,6 +21,7 @@ features = ["test"]
 [dependencies]
 #compiler_builtins = { git = "https://github.com/rust-lang-nursery/compiler-builtins" }
 arm = { path = "libs/arm" }
+altos-macros = { path = "../../altos-core/libs/altos-macros" }
 
 [dependencies.altos_core]
 path = "../../altos-core"

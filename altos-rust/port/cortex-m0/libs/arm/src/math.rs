@@ -1,24 +1,19 @@
-/* 
+/*
  * Copyright (C) 2017 AltOS-Rust Team
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
-// math.rs
-// AltOSRust
-//
-// Created by Daniel Seitz on 11/30/16
 
 // NOTE: A lot of these functions are taken from other sources, one very useful resource is
 // https://github.com/rust-lang-nursery/compiler-builtins
@@ -52,7 +47,7 @@ pub extern "C" fn __aeabi_lmul(a: u64, b: u64) -> u64 {
 
 #[no_mangle]
 pub extern "C" fn __aeabi_uidiv(num: u32, den: u32) -> u32 {
-  __aeabi_uidivbase(num, den, false) 
+  __aeabi_uidivbase(num, den, false)
 }
 
 #[no_mangle]
@@ -102,12 +97,12 @@ mod tests {
   fn mod_even() {
     assert_eq!(0, __aeabi_uidivmod(100, 10));
   }
-  
+
   #[test]
   fn mod_uneven() {
     assert_eq!(5, __aeabi_uidivmod(105, 10));
   }
-  
+
   #[test]
   fn mod_denominator_bigger() {
     assert_eq!(5, __aeabi_uidivmod(5, 10));

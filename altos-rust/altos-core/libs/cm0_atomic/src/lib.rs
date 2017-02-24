@@ -1,24 +1,19 @@
-/* 
+/*
  * Copyright (C) 2017 AltOS-Rust Team
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
-// lib.rs
-// AltOSRust
-//
-// Created by Daniel Seitz on 11/30/16
 
 #![feature(asm)]
 #![feature(const_fn)]
@@ -128,10 +123,10 @@ impl<T> AtomicPtr<T> {
     }
   }
 
-  pub fn compare_exchange(&self, 
-                           current: *mut T, 
-                           new: *mut T, 
-                           _success: Ordering, 
+  pub fn compare_exchange(&self,
+                           current: *mut T,
+                           new: *mut T,
+                           _success: Ordering,
                            _fail: Ordering)
                            -> Result<*mut T, *mut T> {
     atomic! {
@@ -227,11 +222,11 @@ impl<T: Copy + PartialOrd> Atomic<T> {
     }
   }
 
-  pub fn compare_exchange(&self, 
-                           current: T, 
-                           new: T, 
-                           _success: Ordering, 
-                           _fail: Ordering) 
+  pub fn compare_exchange(&self,
+                           current: T,
+                           new: T,
+                           _success: Ordering,
+                           _fail: Ordering)
                            -> Result<T, T> {
     atomic! {
       unsafe {
@@ -246,11 +241,11 @@ impl<T: Copy + PartialOrd> Atomic<T> {
     }
   }
 
-  pub fn compare_exchange_weak(&self, 
-                                current: T, 
-                                new: T, 
-                                success: Ordering, 
-                                fail: Ordering) 
+  pub fn compare_exchange_weak(&self,
+                                current: T,
+                                new: T,
+                                success: Ordering,
+                                fail: Ordering)
                                 -> Result<T, T> {
     self.compare_exchange(current, new, success, fail)
   }
@@ -320,7 +315,7 @@ impl<T: Copy + BitXor<Output=T>> Atomic<T> {
 
 #[cfg(test)]
 mod tests {
-  // As a side note, these operations are not actually atomic when compiled 
+  // As a side note, these operations are not actually atomic when compiled
   // for anything other than single CPU ARM
   use super::{Atomic, Ordering};
 

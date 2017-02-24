@@ -1,24 +1,19 @@
-/* 
+/*
  * Copyright (C) 2017 AltOS-Rust Team
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
-// peripheral/gpio/moder.rs
-// AltOSRust
-//
-// Created by Daniel Seitz on 11/30/16
 
 use super::super::{Register, Field};
 
@@ -83,20 +78,20 @@ impl MODER {
 
     unsafe {
       let mut reg = self.addr();
-      
+
       // Zero the field first
       *reg &= !(0b11 << (port * 2));
       *reg |= mask << (port * 2);
     }
   }
-  
+
   /// Get the current mode for the specified port, port must be a value between [0..15] or the kernel
   /// will panic.
   pub fn get_mode(&self, port: u8) -> Mode {
     if port > 15 {
       panic!("MODER::get_mode - specified port must be a value between [0..15]!");
     }
-    
+
     let mask = unsafe {
       let reg = self.addr();
 

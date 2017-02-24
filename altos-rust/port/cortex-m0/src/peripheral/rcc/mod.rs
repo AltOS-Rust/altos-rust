@@ -1,24 +1,19 @@
-/* 
+/*
  * Copyright (C) 2017 AltOS-Rust Team
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
-// peripheral/rcc/mod.rs
-// AltOSRust
-//
-// Created by Daniel Seitz on 11/30/16
 
 //! This module controls the RCC (Reset and Clock Controller), it handles enabling and disabling
 //! clocks, setting clock configurations and the reset flags that are set on a reset.
@@ -111,8 +106,8 @@ impl RCC {
     self.cfgr.set_pll_source(clock);
   }
 
-  
-  /// Get the current multiplier for the PLL, the multiplier is in a range of [2..16]. 
+
+  /// Get the current multiplier for the PLL, the multiplier is in a range of [2..16].
   pub fn get_pll_multiplier(&self) -> u8 {
     self.cfgr.get_pll_multiplier()
   }

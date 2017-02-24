@@ -1,24 +1,19 @@
-/* 
+/*
  * Copyright (C) 2017 AltOS-Rust Team
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
-// queue/sorted_list.rs
-// AltOSRust
-//
-// Created by Daniel Seitz on 12/4/16
 
 //! Sorted collections
 //!
@@ -154,7 +149,7 @@ impl<T: PartialOrd> SortedList<T> {
     *self = not_matching;
     matching
   }
-  
+
   /// Inserts all the elements of `list` into `self` in the correct location.
   ///
   /// O(n) algorithmic time
@@ -164,10 +159,10 @@ impl<T: PartialOrd> SortedList<T> {
   /// ```rust,no_run
   /// use altos_core::queue::{Node, SortedList};
   /// use altos_core::alloc::boxed::Box;
-  /// 
+  ///
   /// let mut list1 = SortedList::new();
   /// let mut list2 = SortedList::new();
-  /// 
+  ///
   /// list1.insert(Box::new(Node::new(0)));
   /// list2.insert(Box::new(Node::new(1)));
   ///
@@ -204,7 +199,7 @@ impl<T: PartialOrd> SortedList<T> {
   /// use altos_core::alloc::boxed::Box;
   ///
   /// let mut list = SortedList::new();
-  /// 
+  ///
   /// list.insert(Box::new(Node::new(0)));
   /// list.insert(Box::new(Node::new(1)));
   ///

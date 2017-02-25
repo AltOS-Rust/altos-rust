@@ -35,6 +35,9 @@ extern crate std;
 
 extern crate cm0_sync as sync;
 
+#[macro_use]
+extern crate altos_macros;
+
 use sync::spin::SpinMutex;
 use free_list::FreeList;
 
@@ -44,8 +47,7 @@ mod alignment;
 #[cfg(test)]
 mod test;
 
-static FL_ALLOCATOR : SpinMutex<FreeList> =
-    SpinMutex::new(FreeList::new());
+static FL_ALLOCATOR : SpinMutex<FreeList> = SpinMutex::new(FreeList::new());
 
 /// Initializes the free list with the given heap memory starting position and size.
 /// Call this before doing any heap allocation. This must _not_ be called more than once.

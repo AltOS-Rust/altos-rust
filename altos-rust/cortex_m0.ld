@@ -35,6 +35,7 @@ SECTIONS
     *(.ARM.extab*)
   } > FLASH
 
+  . = ALIGN(4);
   /* Used by startup to initialize data */
   _sidata = .;
 

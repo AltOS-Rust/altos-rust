@@ -1,24 +1,19 @@
-/* 
+/*
  * Copyright (C) 2017 AltOS-Rust Team
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
-// time.rs
-// AltOS Rust
-//
-// Created by Daniel Seitz on 1/7/17
 
 use altos_core::sync::Mutex;
 use altos_core::syscall;
@@ -89,7 +84,7 @@ pub fn system_tick() {
 pub struct Time {
   /// Number of seconds that have passed.
   pub sec: usize,
-  
+
   /// Number of milliseconds that have passed.
   pub msec: usize,
 }

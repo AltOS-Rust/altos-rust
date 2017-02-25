@@ -15,11 +15,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-// lib.rs
-// AltOSRust
-//
-// Created by Daniel Seitz on 11/30/16
-
 #![feature(const_fn)]
 #![no_std]
 #![allow(dead_code)]

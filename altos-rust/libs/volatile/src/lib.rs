@@ -1,24 +1,19 @@
-/* 
+/*
  * Copyright (C) 2017 AltOS-Rust Team
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
-// lib.rs
-// Volatile
-//
-// Created by Daniel Seitz on 1/7/17
 
 #![no_std]
 #![feature(core_intrinsics)]
@@ -49,7 +44,7 @@ use core::mem::size_of;
 ///
 /// ```rust,no_run
 /// use volatile::Volatile;
-/// 
+///
 /// let value: i32 = 0;
 /// unsafe {
 ///   let mut ptr = Volatile::new(&value);
@@ -178,7 +173,7 @@ impl<T: Mul<Output=T> + Copy> MulAssign<T> for RawVolatile<T> {
 
 impl<T: Div<Output=T> + Copy> Div<T> for RawVolatile<T> {
   type Output = T;
-  
+
   fn div(self, rhs: T) -> Self::Output {
     unsafe {
       volatile_load(self.0) / rhs

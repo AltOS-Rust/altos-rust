@@ -1,24 +1,19 @@
-/* 
+/*
  * Copyright (C) 2017 AltOS-Rust Team
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
-// peripheral/rcc/config.rs
-// AltOSRust
-//
-// Created by Daniel Seitz on 11/30/16
 
 //! This module handles the CFGR register which deals with clock configuration
 
@@ -61,7 +56,7 @@ impl ConfigControl {
     self.cfgr.set_pll_source(clock);
   }
 
-  /// Get the current multiplier for the PLL, the multiplier is in a range of [2..16]. 
+  /// Get the current multiplier for the PLL, the multiplier is in a range of [2..16].
   pub fn get_pll_multiplier(&self) -> u8 {
     self.cfgr.get_pll_multiplier()
   }
@@ -175,10 +170,10 @@ impl CFGR {
       let reg = self.addr();
       (*reg & (0b1111 << 18)) >> 18
     };
-    
+
     // Just the way the multiplier is set up...
     let mut mul = set_bits + 2;
-    if mul > 16 { 
+    if mul > 16 {
       mul = 16
     }
     mul as u8
@@ -225,7 +220,7 @@ impl CFGR2 {
       let reg = self.addr();
       *reg & 0b1111
     };
-    
+
     // Division factor is 1 greater than the value of the bits set
     (set_bits + 1) as u8
   }

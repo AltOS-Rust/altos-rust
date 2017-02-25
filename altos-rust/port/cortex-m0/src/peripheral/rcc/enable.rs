@@ -1,24 +1,19 @@
-/* 
+/*
  * Copyright (C) 2017 AltOS-Rust Team
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
-// peripheral/rcc/enable.rs
-// AltOSRust
-//
-// Created by Daniel Seitz on 11/30/16
 
 //! This module is used to control the AHBENR (AHB peripheral enable register) which controls the
 //! clock to the peripherals controled by the AHB clock.
@@ -237,9 +232,9 @@ impl AHBENR {
 
   fn serves_peripheral(&self, peripheral: Peripheral) -> bool {
     match peripheral {
-      Peripheral::TouchSenseController | Peripheral::GPIOA | 
-      Peripheral::GPIOB | Peripheral::GPIOC | Peripheral::GPIOF | 
-      Peripheral::CRC | Peripheral::FLITF | Peripheral::SRAMInterface | 
+      Peripheral::TouchSenseController | Peripheral::GPIOA |
+      Peripheral::GPIOB | Peripheral::GPIOC | Peripheral::GPIOF |
+      Peripheral::CRC | Peripheral::FLITF | Peripheral::SRAMInterface |
       Peripheral::DMA | Peripheral::DMA2 => true,
       _ => false,
     }
@@ -296,13 +291,13 @@ impl APBENR1 {
     }
   }
 
-  fn serves_peripheral(&self, peripheral: Peripheral) -> bool {  
+  fn serves_peripheral(&self, peripheral: Peripheral) -> bool {
     match peripheral {
-      Peripheral::CEC | Peripheral::DAC | Peripheral::PowerInterface | 
-      Peripheral::ClockRecoverySystem | Peripheral::CAN | Peripheral::USB | 
-      Peripheral::I2C1 | Peripheral::I2C2 | Peripheral::USART2 | 
-      Peripheral::USART3 | Peripheral::USART4 | Peripheral::USART5 | 
-      Peripheral::SPI2 | Peripheral::WindowWatchdog | Peripheral::TIM2 | 
+      Peripheral::CEC | Peripheral::DAC | Peripheral::PowerInterface |
+      Peripheral::ClockRecoverySystem | Peripheral::CAN | Peripheral::USB |
+      Peripheral::I2C1 | Peripheral::I2C2 | Peripheral::USART2 |
+      Peripheral::USART3 | Peripheral::USART4 | Peripheral::USART5 |
+      Peripheral::SPI2 | Peripheral::WindowWatchdog | Peripheral::TIM2 |
       Peripheral::TIM3 | Peripheral::TIM6 | Peripheral::TIM7 | Peripheral::TIM14 => true,
       _ => false,
     }
@@ -358,12 +353,12 @@ impl APBENR2 {
       }
     }
   }
-  
+
   fn serves_peripheral(&self, peripheral: Peripheral) -> bool {
     match peripheral {
-      Peripheral::MCUDebug | Peripheral::TIM1 | Peripheral::TIM15 | 
-      Peripheral::TIM16 | Peripheral::TIM17 | Peripheral::USART1 | 
-      Peripheral::USART6 | Peripheral::USART7 | Peripheral::USART8 | 
+      Peripheral::MCUDebug | Peripheral::TIM1 | Peripheral::TIM15 |
+      Peripheral::TIM16 | Peripheral::TIM17 | Peripheral::USART1 |
+      Peripheral::USART6 | Peripheral::USART7 | Peripheral::USART8 |
       Peripheral::SPI1 | Peripheral::ADC | Peripheral::SysCfgComp => true,
       _ => false,
     }

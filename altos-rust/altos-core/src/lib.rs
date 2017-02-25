@@ -15,11 +15,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-// altos-core/lib.rs
-// AltOSRust
-//
-// Created by Daniel Seitz on 12/8/16
-
 // TODO: Add more description for the AltOSRust operation system
 //! AltOSRust microkernel for embedded devices.
 //!

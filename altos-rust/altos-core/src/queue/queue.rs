@@ -1,24 +1,19 @@
-/* 
+/*
  * Copyright (C) 2017 AltOS-Rust Team
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
-// queue/queue.rs
-// AltOSRust
-//
-// Created by Daniel Seitz on 12/2/16
 
 //! A collection of items that can be accessed through a FIFO interface.
 
@@ -42,7 +37,7 @@ impl<T> Queue<T> {
   /// let queue = Queue::<usize>::new();
   /// ```
   pub const fn new() -> Self {
-    Queue { 
+    Queue {
       head: None,
       tail: ::core::ptr::null_mut(),
     }
@@ -109,7 +104,7 @@ impl<T> Queue<T> {
       head
     })
   }
-  
+
   /// Removes all elements matching `predicate` and returns them in a new queue
   ///
   /// O(n) algorithmic time
@@ -147,7 +142,7 @@ impl<T> Queue<T> {
     *self = not_matching;
     matching
   }
-  
+
   /// Appends all the elements of `queue` onto `self`.
   ///
   /// O(1) algorithmic time
@@ -163,7 +158,7 @@ impl<T> Queue<T> {
   ///
   /// queue1.enqueue(Box::new(Node::new(0)));
   /// queue2.enqueue(Box::new(Node::new(1)));
-  /// 
+  ///
   /// queue1.append(queue2);
   ///
   /// assert!(!queue1.is_empty());
@@ -178,7 +173,7 @@ impl<T> Queue<T> {
     else {
       self.head = queue.head.take();
     }
-    
+
     if !queue.tail.is_null() {
       self.tail = queue.tail;
     }
@@ -198,7 +193,7 @@ impl<T> Queue<T> {
   ///
   /// queue.enqueue(Box::new(Node::new(0)));
   /// queue.enqueue(Box::new(Node::new(1)));
-  /// 
+  ///
   /// queue.modify_all(|n| *n = *n + 1);
   /// ```
   #[deprecated(since="0.1.0", note="Use `iter_mut()` instead")]
@@ -224,7 +219,7 @@ impl<T> Queue<T> {
   ///
   /// queue.enqueue(Box::new(Node::new(0)));
   /// queue.enqueue(Box::new(Node::new(1)));
-  /// 
+  ///
   /// let removed = queue.remove_all();
   ///
   /// assert!(queue.is_empty());

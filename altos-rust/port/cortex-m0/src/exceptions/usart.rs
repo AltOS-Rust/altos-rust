@@ -37,3 +37,12 @@ pub fn usart_tx(mut usart: Usart) {
         usart.clear_tc_flag();
     }
 }
+
+/// Handles receiving any bytes when an interrupt is generated
+pub fn usart_rx(mut usart: Usart) {
+    if usart.is_rx_reg_full() {
+        kprintln!("Reg Full...Loading Byte\n");
+        let a = usart.load_byte();
+        kprintln!("A: {}", a);
+    }
+}

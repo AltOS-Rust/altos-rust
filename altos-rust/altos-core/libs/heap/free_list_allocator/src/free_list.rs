@@ -23,6 +23,10 @@ use core::{mem, ptr};
 
 use alignment;
 
+/// A link pointing to a BlockHeader
+///
+/// This type is used to provide a safe interface for getting links in our
+/// FreeList
 #[derive(Copy, Clone)]
 pub struct Link(*const BlockHeader);
 

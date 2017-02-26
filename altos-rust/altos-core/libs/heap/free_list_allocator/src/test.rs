@@ -28,8 +28,8 @@ pub struct TestMemory {
 
 impl TestMemory {
     pub fn new(heap_size: usize) -> TestMemory {
-        let mut heap: Vec<u8> = Vec::with_capacity(heap_size);
-        let heap_start = heap.as_mut_ptr();
+        let heap: Vec<u8> = Vec::with_capacity(heap_size);
+        let heap_start = heap.as_ptr();
         ::core::mem::forget(heap);
         TestMemory {
             heap: heap_start,

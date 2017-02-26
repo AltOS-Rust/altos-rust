@@ -181,14 +181,12 @@ impl FreeList {
             self.head = alloc_block_ptr;
             return;
         }
-        let (mut previous, current) = {
-            self.find_block(|previous, current| {
-                if alloc_block_ptr == current {
-                    panic!("deallocate - attempt to free memory that's already free");
-                }
-                previous < alloc_block_ptr && alloc_block_ptr < current
-            })
-        };
+        let (mut previous, current) = self.find_block(|previous, current| {
+            if alloc_block_ptr == current {
+                panic!("deallocate - attempt to free memory that's already free");
+            }
+            previous < alloc_block_ptr && alloc_block_ptr < current
+        });
         unsafe {
             (*previous).next_block = alloc_block_ptr;
             (*alloc_block_ptr).next_block = current;

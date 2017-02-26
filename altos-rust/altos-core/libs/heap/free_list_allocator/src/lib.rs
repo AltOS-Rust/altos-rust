@@ -91,7 +91,9 @@ pub extern fn __rust_reallocate(ptr: *mut u8, size: usize, new_size: usize, alig
     use core::{ptr, cmp};
 
     let new_ptr = __rust_allocate(new_size, align);
-    unsafe { ptr::copy(ptr, new_ptr, cmp::min(size, new_size)) };
+    if !new_ptr.is_null() {
+        unsafe { ptr::copy_nonoverlapping(ptr, new_ptr, cmp::min(size, new_size)) };
+    }
     __rust_deallocate(ptr, size, align);
     new_ptr
 }

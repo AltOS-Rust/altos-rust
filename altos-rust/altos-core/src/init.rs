@@ -17,7 +17,7 @@
 
 // FIXME: Try to see if there's a better way to handle this for testing
 // We do this cfg for testing purposes, this allows doctests to run without any compilation errors.
-#![cfg(all(not(test), not(feature="test"), feature="free_list_allocator"))]
+#![cfg(all(not(test), not(feature="test"), any(feature="free_list_allocator", feature="bump_allocator")))]
 
 //! Contains functions used for initialization of the kernel
 
@@ -49,5 +49,5 @@
 ///   }
 /// ```
 pub fn init_heap(heap_start: usize, heap_size: usize) {
-  ::allocator::init_heap(heap_start, heap_size);
+    ::allocator::init_heap(heap_start, heap_size);
 }

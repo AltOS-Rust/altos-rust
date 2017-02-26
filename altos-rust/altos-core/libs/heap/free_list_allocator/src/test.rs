@@ -16,35 +16,33 @@
  */
 
 use std::vec::Vec;
+use std::ops::{Deref, DerefMut};
 use free_list;
 
 // TestMemory is a helper type which represents a chunk of memory used in testing the allocator
 // It uses a vector to create the necessary memory and manages deallocation of the vector
 pub struct TestMemory {
-    heap: *mut u8,
-    vector_length: usize,
+    heap: *const u8,
     vector_capacity: usize,
 }
 
 impl TestMemory {
     pub fn new(heap_size: usize) -> TestMemory {
-        let mut heap: Vec<u8> = vec![0; heap_size];
-        let heap_start = &mut heap[0] as *mut u8;
-        let heap_capacity = heap.capacity();
+        let mut heap: Vec<u8> = Vec::with_capacity(heap_size);
+        let heap_start = heap.as_mut_ptr();
         ::core::mem::forget(heap);
         TestMemory {
             heap: heap_start,
-            vector_length: heap_size,
-            vector_capacity: heap_capacity,
+            vector_capacity: heap_size,
         }
     }
 
-    pub fn get_heap(&self) -> *mut u8 {
+    pub fn get_heap(&self) -> *const u8 {
         self.heap
     }
 
     fn get_memory_size(&self) -> usize {
-        self.vector_length
+        self.vector_capacity
     }
 }
 
@@ -52,7 +50,9 @@ impl Drop for TestMemory {
     fn drop(&mut self) {
         unsafe {
             // Reform the vector from component parts in order to make sure it's deallocated
-            let heap = Vec::from_raw_parts(self.heap, self.vector_length, self.vector_capacity);
+            let heap = Vec::from_raw_parts(
+                self.heap as *mut u8, self.vector_capacity, self.vector_capacity
+            );
             drop(heap);
         }
     }
@@ -65,8 +65,23 @@ pub struct TestFreeList {
     test_memory: TestMemory,
 }
 
+impl Deref for TestFreeList {
+    type Target = free_list::FreeList;
+
+    fn deref(&self) -> &free_list::FreeList {
+        &self.free_list
+    }
+}
+
+impl DerefMut for TestFreeList {
+    fn deref_mut(&mut self) -> &mut free_list::FreeList {
+        &mut self.free_list
+    }
+}
+
 impl TestFreeList {
-    fn new(test_memory: TestMemory) -> TestFreeList {
+    fn new(heap_size: usize) -> TestFreeList {
+        let test_memory = TestMemory::new(heap_size);
         let mut free_list = free_list::FreeList::new();
         free_list.init(test_memory.get_heap() as usize, test_memory.get_memory_size());
         TestFreeList {
@@ -75,7 +90,7 @@ impl TestFreeList {
         }
     }
 
-    pub fn get_heap_start(&self) -> *mut u8 {
+    pub fn get_heap_start(&self) -> *const u8 {
         self.test_memory.get_heap()
     }
 
@@ -103,8 +118,8 @@ impl TestFreeList {
 
     // Helper function to check that every block in the list satisfies some condition
     // Returns false if the condition returns false for any node
-    pub fn each_free_block_satisfies(&self, condition: &Fn(*mut free_list::BlockHeader) -> bool)
-        -> bool {
+    pub fn each_free_block_satisfies<F: Fn(*mut free_list::BlockHeader) -> bool>
+        (&self, condition: F) -> bool {
 
         let mut current = self.free_list.head;
         while !current.is_null() {
@@ -117,13 +132,7 @@ impl TestFreeList {
     }
 }
 
-// Returns a TestMemory with the given size
-pub fn get_memory(heap_size: usize) -> TestMemory {
-    TestMemory::new(heap_size)
-}
-
 // Gets an initialized free list with the requested memory for testing purposes
 pub fn get_free_list_with_size(heap_size: usize) -> TestFreeList {
-    let heap = get_memory(heap_size);
-    TestFreeList::new(heap)
+    TestFreeList::new(heap_size)
 }

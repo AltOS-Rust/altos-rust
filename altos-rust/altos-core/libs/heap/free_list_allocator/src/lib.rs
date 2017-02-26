@@ -73,8 +73,8 @@ pub extern fn __rust_deallocate(_ptr: *mut u8, _size: usize, _align: usize) {
 #[no_mangle]
 #[cfg(not(test))]
 pub extern fn __rust_usable_size(size: usize, _align: usize) -> usize {
-    let guard = FL_ALLOCATOR.lock();
-    alignment::align_up(size, guard.get_block_hdr_size())
+    use core::mem;
+    alignment::align_up(size, mem::size_of::<free_list::BlockHeader>())
 }
 
 #[no_mangle]

@@ -15,19 +15,21 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- * This file contains some functions for dealing with alignment for memory allocation
- */
+//! This file contains some functions for dealing with alignment for memory allocation.
+//!
+//! These functions are mainly intended to be used for adjusting the alignment of addresses,
+//! but they can also be used to adjust the size of the heap and memory allocations.
+//!
 
 // TODO: This file should probably be moved so that it can be utilized by both allocators
 
-// Returns whichever alignment is larger, BlockHeader's or the requested one.
+/// Returns whichever alignment is larger, BlockHeader's or the requested one.
 pub fn use_align(align: usize, block_hdr_align: usize) -> usize {
     if align > block_hdr_align { align } else { block_hdr_align }
 }
 
-// Align downwards. Returns the greatest x with alignment `align` so that x <= addr.
-// The alignment must be a power of 2.
+/// Align downwards. Returns the greatest x with alignment `align` so that x <= addr.
+/// The alignment must be a power of 2.
 pub fn align_down(addr: usize, align: usize) -> usize {
     if align.is_power_of_two() {
         addr & !(align - 1)
@@ -40,10 +42,15 @@ pub fn align_down(addr: usize, align: usize) -> usize {
     }
 }
 
-// Align upwards. Returns the smallest x with alignment `align` so that x >= addr.
-// The alignment must be a power of 2.
+/// Align upwards. Returns the smallest x with alignment `align` so that x >= addr.
+/// The alignment must be a power of 2.
 pub fn align_up(addr: usize, align: usize) -> usize {
-    align_down(addr + (if align == 0 { 0 } else { align - 1 }), align)
+    if align == 0 {
+        addr
+    }
+    else {
+        align_down(addr + align - 1, align)
+    }
 }
 
 #[cfg(test)]
@@ -58,51 +65,41 @@ mod tests {
     }
 
     #[test]
-    fn align_up_aligns_correctly() {
+    fn align_up_zero_alignment() {
         assert_eq!(align_up(8, 0), 8);
+        assert_eq!(align_up(12, 0), 12);
+    }
+
+    #[test]
+    fn align_up_already_correctly_aligned() {
         assert_eq!(align_up(8, 1), 8);
-        assert_eq!(align_up(2, 8), 8);
         assert_eq!(align_up(8, 8), 8);
+    }
+
+    #[test]
+    fn align_up_changes_misaligned_address() {
+        assert_eq!(align_up(2, 8), 8);
         assert_eq!(align_up(4, 16), 16);
         assert_eq!(align_up(12, 16), 16);
     }
 
     #[test]
-    fn align_down_aligns_correctly() {
+    fn align_down_zero_alignment() {
         assert_eq!(align_down(8, 0), 8);
+        assert_eq!(align_down(11, 0), 11);
+    }
+
+    #[test]
+    fn align_down_already_correctly_aligned() {
         assert_eq!(align_down(8, 1), 8);
+        assert_eq!(align_down(11, 1), 11);
+        assert_eq!(align_down(16, 8), 16);
+    }
+
+    #[test]
+    fn align_down_changes_misaligned_address() {
         assert_eq!(align_down(12, 8), 8);
         assert_eq!(align_down(8, 16), 0);
         assert_eq!(align_down(17, 16), 16);
-    }
-
-    #[test]
-    fn use_align_returns_common_multiple_of_request_size_and_block_header_size() {
-        let block_hdr_align = 8;
-        let mut alloc_align = use_align(1, block_hdr_align);
-
-        assert!(alloc_align.is_power_of_two());
-        assert_eq!(alloc_align, 8);
-
-        alloc_align = use_align(16, block_hdr_align);
-
-        assert!(alloc_align.is_power_of_two());
-        assert_eq!(alloc_align, 16);
-    }
-
-    #[test]
-    fn align_up_returns_multiple_of_block_header_size() {
-        let block_hdr_size: usize = 8;
-        let mut request_size: usize = 11;
-        let mut alloc_size = align_up(request_size, block_hdr_size);
-
-        assert!(request_size % block_hdr_size != 0);
-        assert!(alloc_size % block_hdr_size == 0);
-
-        request_size = block_hdr_size + 1;
-        alloc_size = align_up(request_size, block_hdr_size);
-
-        assert!(request_size % block_hdr_size != 0);
-        assert!(alloc_size == 2 * block_hdr_size);
     }
 }

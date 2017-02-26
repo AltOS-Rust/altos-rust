@@ -6,7 +6,6 @@ authors = ["Patrick Douglas <pcdouglas94@gmail.com>"]
 # needed for build
 [target.thumbv6m-none-eabi.dependencies]
 cm0_atomic = { path = "../../cm0_atomic" }
-cm0_sync = { path = "../../cm0_sync" }
 
 # needed for testing
 [dependencies]

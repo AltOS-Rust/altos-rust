@@ -23,25 +23,94 @@ use core::{mem, ptr};
 
 use alignment;
 
+#[derive(Copy, Clone)]
+pub struct Link(*const BlockHeader);
+
+impl Link {
+    unsafe fn new(ptr: *const BlockHeader) -> Self {
+        Link(ptr)
+    }
+
+    const fn null() -> Self {
+        Link(ptr::null())
+    }
+
+    pub fn get_ref_mut(&mut self) -> Option<&'static mut BlockHeader> {
+        if self.0.is_null() {
+            None
+        }
+        else {
+            unsafe { Some(&mut *(self.0 as *mut _)) }
+        }
+    }
+
+    pub fn get_ref(&self) -> Option<&'static BlockHeader> {
+        if self.0.is_null() {
+            None
+        }
+        else {
+            unsafe { Some(&*self.0) }
+        }
+    }
+
+    fn as_ptr(&self) -> *const BlockHeader {
+        self.0
+    }
+}
+
+impl<'a> From<&'a BlockHeader> for Link {
+    fn from(block: &'a BlockHeader) -> Self {
+        unsafe { Link::new(block) }
+    }
+}
+
+impl<'a> From<&'a mut BlockHeader> for Link {
+    fn from(block: &'a mut BlockHeader) -> Self {
+        unsafe { Link::new(block) }
+    }
+}
+
+impl<'a> From<Option<&'a BlockHeader>> for Link {
+    fn from(block: Option<&'a BlockHeader>) -> Self {
+        match block {
+            Some(block) => Link::from(block),
+            None => Link::null(),
+        }
+    }
+}
+
+impl<'a> From<Option<&'a mut BlockHeader>> for Link {
+    fn from(block: Option<&'a mut BlockHeader>) -> Self {
+        match block {
+            Some(block) => Link::from(block),
+            None => Link::null(),
+        }
+    }
+}
+
 /// BlockHeader nodes keep track of a free block of memory.
 pub struct BlockHeader {
     pub block_size: usize,
-    pub next_block: *mut BlockHeader,
+    pub next_block: Link,
 }
 
 impl BlockHeader {
     const fn new(size: usize) -> Self {
         BlockHeader {
             block_size: size,
-            next_block: ptr::null_mut(),
+            next_block: Link::null(),
         }
+    }
+
+    fn as_ptr(&self) -> *const Self {
+        self as *const _
     }
 }
 
 /// FreeList is a linked list which keeps track of free blocks of memory
 /// Free blocks are embedded in the free memory itself
 pub struct FreeList {
-    pub head: *mut BlockHeader,
+    pub head: Link,
 }
 
 // These are (trivially) implemented so FreeList objects can be passed between threads.
@@ -51,7 +120,7 @@ unsafe impl Sync for FreeList {}
 impl FreeList {
     pub const fn new() -> Self {
         FreeList {
-            head: ptr::null_mut(),
+            head: Link::null(),
         }
     }
 
@@ -59,32 +128,35 @@ impl FreeList {
         // We adjust the heap starting position and size so that it will initially have
         // a starting position and size aligned to the block header size.
         // This potentially leaks a few bytes but it might cause errors if we didn't do it.
-        let use_heap_start = alignment::align_up(heap_start, mem::size_of::<BlockHeader>());
-        let align_diff = use_heap_start - heap_start;
+        let mut heap = unsafe { Link::new(alignment::align_up(heap_start, mem::size_of::<BlockHeader>()) as *const BlockHeader) };
+        let align_diff = heap.as_ptr() as usize - heap_start;
 
         // Adjust the heap size down based on alignment change to starting position
         // and then adjust it down again if it's not aligned to block header size.
         let use_heap_size = alignment::align_down(heap_size - align_diff, mem::size_of::<BlockHeader>());
 
-        let start_position = use_heap_start as *mut BlockHeader;
-        unsafe { *start_position = BlockHeader::new(use_heap_size); }
-        self.head = start_position;
+        match heap.get_ref_mut() {
+            Some(start) => *start = BlockHeader::new(use_heap_size),
+            None => unreachable!(),
+        }
+        self.head = heap;
     }
 
     // Traverses the free list, looking for two sequential nodes which return true
     // when passed into match_condition.
-    fn find_block<F: Fn(*mut BlockHeader, *mut BlockHeader) -> bool>(&mut self, match_condition: F)
-        -> (*mut BlockHeader, *mut BlockHeader) {
+    fn find_block<F: Fn(Option<&BlockHeader>, &BlockHeader) -> bool>(&mut self, match_condition: F)
+        -> (Option<&'static mut BlockHeader>, Option<&'static mut BlockHeader>) {
 
-        let (mut previous, mut current) = (ptr::null_mut(), self.head);
-        while !current.is_null() {
-            if match_condition(previous, current) {
+        let mut previous: Link = Link::null();
+        let mut current = self.head;
+        while let Some(curr) = current.get_ref().take() {
+            if match_condition(previous.get_ref(), curr) {
                 break;
             }
             previous = current;
-            current = unsafe { (*current).next_block };
+            current = curr.next_block;
         }
-        (previous, current)
+        (previous.get_ref_mut(), current.get_ref_mut())
     }
 
     // Allocate memory using the first fit strategy
@@ -99,62 +171,57 @@ impl FreeList {
 
         // Will find a block with enough size to accomodate request
         let (previous, current) = self.find_block(|_, current| {
-            let alloc_start = alignment::align_up(current as usize, using_align);
-            let align_diff = alloc_start - current as usize;
-            let current_size = unsafe { (*current).block_size };
+            let current_addr = current.as_ptr() as usize;
+            let alloc_start = alignment::align_up(current_addr, using_align);
+            let align_diff = alloc_start - current_addr;
+            let current_size = current.block_size;
 
-            if current_size - align_diff < using_size { false } else { true }
+            !(current_size - align_diff < using_size)
         });
 
         // If current is null, that means no free block was found that's large enough.
-        if current.is_null() {
-            return ptr::null_mut();
-        }
+        match current {
+            Some(current) => {
+                let current_addr = current.as_ptr() as usize;
+                let alloc_start = alignment::align_up(current_addr, using_align) as *mut u8;
+                let align_diff = alloc_start as usize - current_addr;
+                let current_size = current.block_size;
 
-        let alloc_start = alignment::align_up(current as usize, using_align);
-        let align_diff = alloc_start - current as usize;
-        let current_size = unsafe { (*current).block_size };
+                assert!(align_diff == 0 || align_diff >= mem::size_of::<BlockHeader>());
 
-        assert!(align_diff == 0 || align_diff >= mem::size_of::<BlockHeader>());
-
-        // Block is correct size and alignment.
-        if current_size == using_size && align_diff == 0 {
-            // If at head, there is no previous to adjust
-            if self.head == current {
-                self.head = unsafe { (*self.head).next_block };
-            }
-            else {
-                unsafe { (*previous).next_block = (*current).next_block; }
-            }
-        }
-        // Current block is larger than required and has the correct alignment
-        else if current_size > using_size && align_diff == 0 {
-            unsafe { (*current).block_size -= using_size; }
-            if self.head == current {
-                self.head = self.shift_block_forward(current, using_size);
-            }
-            else {
-                unsafe {
-                    (*previous).next_block = self.shift_block_forward(current, using_size);
+                // Block is correct size and alignment.
+                if current_size == using_size && align_diff == 0 {
+                    // If at head, there is no previous to adjust
+                    match previous {
+                        Some(previous) => previous.next_block = current.next_block,
+                        None => self.head = current.next_block,
+                    }
                 }
-            }
+                // Current block is larger than required and has the correct alignment
+                else if current_size > using_size && align_diff == 0 {
+                    current.block_size -= using_size;
+                    match previous {
+                        Some(previous) => previous.next_block = self.shift_block_forward(current, using_size),
+                        None => self.head = self.shift_block_forward(current, using_size),
+                    }
+                }
+                // Current block is larger than required but has exactly the right size to
+                // accomodate the alignment and size requirements.
+                else if current_size == using_size + align_diff {
+                    current.block_size = align_diff;
+                }
+                // Current block is larger than required and because of alignment, the allocation
+                // divides it in two.
+                else {
+                    current.block_size = current_size - using_size - align_diff;
+                    let upper_block = self.shift_block_forward(current, using_size + align_diff);
+                    current.block_size = align_diff;
+                    current.next_block = upper_block;
+                }
+                alloc_start
+            },
+            None => ptr::null_mut(),
         }
-        // Current block is larger than required but has exactly the right size to
-        // accomodate the alignment and size requirements.
-        else if current_size == using_size + align_diff {
-            unsafe { (*current).block_size = align_diff; }
-        }
-        // Current block is larger than required and because of alignment, the allocation
-        // divides it in two.
-        else {
-            unsafe {
-                (*current).block_size = current_size - using_size - align_diff;
-                let upper_block = self.shift_block_forward(current, using_size + align_diff);
-                (*current).block_size = align_diff;
-                (*current).next_block = upper_block;
-            }
-        }
-        alloc_start as *mut u8
     }
 
     /*
@@ -170,37 +237,44 @@ impl FreeList {
     // sorted based on memory position.
     pub fn deallocate(&mut self, alloc_ptr: *mut u8, size: usize, _align: usize) {
         // We can immediately add the block at the deallocated position
-        let alloc_block_ptr = alloc_ptr as *mut BlockHeader;
+        let mut alloc_block = unsafe { Link::new(alloc_ptr as *const BlockHeader) };
         let used_memory = alignment::align_up(size, mem::size_of::<BlockHeader>());
-        unsafe { *alloc_block_ptr = BlockHeader::new(used_memory); }
+        match alloc_block.get_ref_mut() {
+            Some(block) => *block = BlockHeader::new(used_memory),
+            None => panic!("Tried to deallocate a null pointer!"),
+        }
 
         // Memory location to be added at head of the list if the list is empty
         // or if it's position in memory comes before the current head.
-        if self.head.is_null() || alloc_block_ptr < self.head {
-            unsafe { (*alloc_block_ptr).next_block = self.head; }
-            self.head = alloc_block_ptr;
-            return;
-        }
-        let (mut previous, current) = self.find_block(|previous, current| {
-            if alloc_block_ptr == current {
+        let (previous, current) = self.find_block(|previous, current| {
+            if alloc_block.as_ptr() == current.as_ptr() {
                 panic!("deallocate - attempt to free memory that's already free");
             }
-            previous < alloc_block_ptr && alloc_block_ptr < current
+            match previous {
+                None => alloc_block.as_ptr() < current.as_ptr(),
+                Some(previous) => previous.as_ptr() < alloc_block.as_ptr() && alloc_block.as_ptr() < current.as_ptr(),
+            }
         });
-        unsafe {
-            (*previous).next_block = alloc_block_ptr;
-            (*alloc_block_ptr).next_block = current;
+        match previous {
+            Some(previous) => {
+                previous.next_block = alloc_block;
+                alloc_block.get_ref_mut().unwrap().next_block = Link::from(current);
+            },
+            None => {
+                alloc_block.get_ref_mut().unwrap().next_block = self.head;
+                self.head = alloc_block;
+            }
         }
     }
 
     // This relocates BlockHeaders in memory, used when we do allocations.
-    fn shift_block_forward(&self, current_pos: *mut BlockHeader, offset_val: usize) -> *mut BlockHeader {
+    fn shift_block_forward(&self, current_pos: &BlockHeader, offset_val: usize) -> Link {
         // If we don't convert this, offset does not work correctly
-        let current_ptr = current_pos as *mut u8;
+        let current_ptr = current_pos.as_ptr() as *mut u8;
         unsafe {
             let new_pos = current_ptr.offset(offset_val as isize) as *mut BlockHeader;
             *new_pos = ptr::read(current_pos);
-            new_pos
+            Link::new(new_pos)
         }
     }
 }
@@ -213,7 +287,7 @@ mod tests {
     #[test]
     fn new_free_list_is_empty() {
         let free_list = FreeList::new();
-        assert!(free_list.head.is_null());
+        assert!(free_list.head.get_ref().is_none());
     }
 
     #[test]
@@ -222,14 +296,12 @@ mod tests {
         let tfl = test::get_free_list_with_size(heap_size);
         let heap_start = tfl.get_heap_start() as *mut BlockHeader;
 
-        assert!(!tfl.head.is_null());
-        assert_eq!(tfl.head, heap_start);
+        assert!(!tfl.head.get_ref().is_none());
+        assert_eq!(tfl.head.as_ptr(), heap_start);
         // The size of BlockHeader should always be a power of 2 to avoid potential memory issues.
         assert!(mem::size_of::<BlockHeader>().is_power_of_two());
-        unsafe {
-            // List initialization creates single block with entire size
-            assert_eq!((*tfl.head).block_size, heap_size);
-        }
+        // List initialization creates single block with entire size
+        assert_eq!(tfl.head.block_size, heap_size);
     }
 
     // Initializing the free list adjusts first memory block so the address and size
@@ -239,10 +311,8 @@ mod tests {
         let heap_size: usize = 2048 + 1;
         let tfl = test::get_free_list_with_size(heap_size);
 
-        assert!(!tfl.head.is_null());
-        unsafe {
-            assert!((*tfl.head).block_size % mem::size_of::<BlockHeader>() == 0);
-        }
+        assert!(!tfl.head.get_ref().is_none());
+        assert!(tfl.head.block_size % mem::size_of::<BlockHeader>() == 0);
     }
 
     #[test]
@@ -255,10 +325,8 @@ mod tests {
         tfl.allocate(32, 1);
         tfl.allocate(128, 1);
         tfl.allocate(256, 1);
-        unsafe {
-            assert_eq!((*tfl.head).block_size, heap_size - (32 + 128 + 256));
-            assert!((*tfl.head).next_block.is_null());
-        }
+        assert_eq!(tfl.head.block_size, heap_size - (32 + 128 + 256));
+        assert!(tfl.head.next_block.get_ref().is_none());
     }
 
     // Does allocations which results in the elimination of a free block
@@ -271,18 +339,14 @@ mod tests {
         tfl.allocate(256, 1);
 
         tfl.deallocate(alloc_ptr, 256, 1);
-        unsafe {
-            assert_eq!((*tfl.head).block_size, 256);
-            assert!(!(*tfl.head).next_block.is_null());
-        }
+        assert_eq!(tfl.head.block_size, 256);
+        assert!(!tfl.head.next_block.get_ref().is_none());
 
         // New allocation should claim the entire first block
         tfl.allocate(256, 1);
 
-        unsafe {
-            assert_eq!((*tfl.head).block_size, heap_size - (256 + 256));
-            assert!((*tfl.head).next_block.is_null());
-        }
+        assert_eq!(tfl.head.block_size, heap_size - (256 + 256));
+        assert!(tfl.head.next_block.get_ref().is_none());
     }
 
     #[test]
@@ -291,15 +355,15 @@ mod tests {
         let mut tfl = test::get_free_list_with_size(heap_size);
 
         let alloc_ptr = tfl.allocate(256, 1);
-        assert_eq!(unsafe { (*tfl.head).block_size }, 1024 - 256);
-        let new_head_ptr = tfl.head;
+        assert_eq!(tfl.head.block_size, 1024 - 256);
+        let new_head_ptr = tfl.head.as_ptr();
 
         tfl.deallocate(alloc_ptr, 256, 1);
 
         assert_eq!(tfl.count_free_blocks(), 2);
         assert_eq!(tfl.sum_free_block_memory(), heap_size);
-        assert_eq!(tfl.head, alloc_ptr as *mut BlockHeader);
-        assert_eq!(unsafe { (*tfl.head).next_block }, new_head_ptr);
+        assert_eq!(tfl.head.as_ptr(), alloc_ptr as *mut BlockHeader);
+        assert_eq!(tfl.head.next_block.as_ptr(), new_head_ptr);
     }
 
     #[test]
@@ -318,8 +382,8 @@ mod tests {
 
         assert_eq!(tfl.count_free_blocks(), 3);
         assert_eq!(tfl.sum_free_block_memory(), heap_size);
-        assert_eq!(tfl.head, alloc_ptr as *mut BlockHeader);
-        assert_eq!(unsafe { (*tfl.head).next_block }, alloc_ptr2 as *mut BlockHeader);
+        assert_eq!(tfl.head.as_ptr(), alloc_ptr as *mut BlockHeader);
+        assert_eq!(tfl.head.next_block.as_ptr(), alloc_ptr2 as *mut BlockHeader);
     }
 
     #[test]
@@ -338,8 +402,8 @@ mod tests {
 
         assert_eq!(tfl.count_free_blocks(), 3);
         assert_eq!(tfl.sum_free_block_memory(), heap_size);
-        assert_eq!(tfl.head, alloc_ptr as *mut BlockHeader);
-        assert_eq!(unsafe { (*tfl.head).next_block }, alloc_ptr2 as *mut BlockHeader);
+        assert_eq!(tfl.head.as_ptr(), alloc_ptr as *mut BlockHeader);
+        assert_eq!(tfl.head.next_block.as_ptr(), alloc_ptr2 as *mut BlockHeader);
     }
 
     #[test]
@@ -406,9 +470,7 @@ mod tests {
 
         assert_eq!(tfl.sum_free_block_memory(), aligned_heap_size);
         assert!(
-            tfl.each_free_block_satisfies(
-                |current| unsafe { (*current).block_size % block_hdr_size == 0 }
-            )
+            tfl.each_free_block_satisfies(|current| current.block_size % block_hdr_size == 0)
         );
     }
 
@@ -437,9 +499,7 @@ mod tests {
 
         assert_eq!(tfl.sum_free_block_memory(), aligned_heap_size);
         assert!(
-            tfl.each_free_block_satisfies(
-                |current| unsafe { (*current).block_size % block_hdr_size == 0 }
-            )
+            tfl.each_free_block_satisfies(|current| current.block_size % block_hdr_size == 0)
         );
     }
 

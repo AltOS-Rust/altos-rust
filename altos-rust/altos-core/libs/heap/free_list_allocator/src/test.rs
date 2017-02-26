@@ -19,6 +19,19 @@ use std::vec::Vec;
 use std::ops::{Deref, DerefMut};
 use free_list;
 
+impl Deref for free_list::Link {
+    type Target = free_list::BlockHeader;
+    fn deref(&self) -> &Self::Target {
+        self.get_ref().expect("Dereferencing null BlockHeader Link!")
+    }
+}
+
+impl DerefMut for free_list::Link {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.get_ref_mut().expect("Dereferencing null BlockHeader Link!")
+    }
+}
+
 // TestMemory is a helper type which represents a chunk of memory used in testing the allocator
 // It uses a vector to create the necessary memory and manages deallocation of the vector
 pub struct TestMemory {
@@ -98,9 +111,9 @@ impl TestFreeList {
     pub fn sum_free_block_memory(&self) -> usize {
         let mut current = self.free_list.head;
         let mut sum: usize = 0;
-        while !current.is_null() {
-            sum += unsafe { (*current).block_size };
-            current = unsafe { (*current).next_block };
+        while let Some(curr) = current.get_ref() {
+            sum += curr.block_size;
+            current = curr.next_block;
         }
         sum
     }
@@ -109,24 +122,24 @@ impl TestFreeList {
     pub fn count_free_blocks(&self) -> usize {
         let mut current = self.free_list.head;
         let mut num_blocks = 0;
-        while !current.is_null() {
+        while let Some(curr) = current.get_ref() {
             num_blocks += 1;
-            current = unsafe { (*current).next_block };
+            current = curr.next_block;
         }
         num_blocks
     }
 
     // Helper function to check that every block in the list satisfies some condition
     // Returns false if the condition returns false for any node
-    pub fn each_free_block_satisfies<F: Fn(*mut free_list::BlockHeader) -> bool>
+    pub fn each_free_block_satisfies<F: Fn(&free_list::BlockHeader) -> bool>
         (&self, condition: F) -> bool {
 
         let mut current = self.free_list.head;
-        while !current.is_null() {
-            if !condition(current) {
+        while let Some(curr) = current.get_ref() {
+            if !condition(curr) {
                 return false;
             }
-            current = unsafe { (*current).next_block };
+            current = curr.next_block;
         }
         true
     }

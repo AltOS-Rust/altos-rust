@@ -26,10 +26,12 @@ cargo_args = --target $(target)
 
 ### TEST ###
 test_dependencies = altos_core \
-										arm \
-										volatile \
-										cm0_atomic \
-										cortex_m0 \
+					arm \
+					volatile \
+					cm0_atomic \
+					cortex_m0 \
+					bump_allocator \
+					free_list_allocator \
 
 # --lib flag only runs the unit test suite, doc tests are currently an issue for cross-compiled
 #  platforms. See: https://github.com/rust-lang/cargo/issues/1789

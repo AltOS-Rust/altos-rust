@@ -44,6 +44,9 @@ extern crate altos_macros;
 #[cfg(all(not(test), not(feature="test"), feature="bump_allocator"))]
 extern crate bump_allocator as allocator;
 
+#[cfg(all(not(test), not(feature="test"), feature="free_list_allocator"))]
+extern crate free_list_allocator as allocator;
+
 pub extern crate alloc;
 pub extern crate collections;
 #[cfg(not(target_has_atomic="ptr"))]

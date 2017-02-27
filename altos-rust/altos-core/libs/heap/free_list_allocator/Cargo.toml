@@ -1,0 +1,13 @@
+[package]
+name = "free_list_allocator"
+version = "0.1.0"
+authors = ["Patrick Douglas <pcdouglas94@gmail.com>"]
+
+# needed for build
+[target.thumbv6m-none-eabi.dependencies]
+cm0_atomic = { path = "../../cm0_atomic" }
+
+# needed for testing
+[dependencies]
+cm0_sync = { path = "../../cm0_sync" }
+altos-macros = { path = "../../altos-macros" }

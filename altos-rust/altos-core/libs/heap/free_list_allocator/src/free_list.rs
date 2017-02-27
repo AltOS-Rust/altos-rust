@@ -132,7 +132,10 @@ impl FreeList {
         // We adjust the heap starting position and size so that it will initially have
         // a starting position and size aligned to the block header size.
         // This potentially leaks a few bytes but it might cause errors if we didn't do it.
-        let mut heap = unsafe { Link::new(alignment::align_up(heap_start, mem::size_of::<BlockHeader>()) as *const BlockHeader) };
+        let mut heap = unsafe {
+            let start = alignment::align_up(heap_start, mem::size_of::<BlockHeader>());
+            Link::new(start as *const BlockHeader)
+        };
         let align_diff = heap.as_ptr() as usize - heap_start;
 
         // Adjust the heap size down based on alignment change to starting position
@@ -256,7 +259,10 @@ impl FreeList {
             }
             match previous {
                 None => alloc_block.as_ptr() < current.as_ptr(),
-                Some(previous) => previous.as_ptr() < alloc_block.as_ptr() && alloc_block.as_ptr() < current.as_ptr(),
+                Some(previous) => {
+                    previous.as_ptr() < alloc_block.as_ptr()
+                    && alloc_block.as_ptr() < current.as_ptr()
+                },
             }
         });
         match previous {

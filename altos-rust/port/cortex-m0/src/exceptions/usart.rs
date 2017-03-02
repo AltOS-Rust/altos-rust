@@ -14,6 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+extern crate arm;
 
 use peripheral::usart::{Usart, USART2_TX_BUFFER_FULL_CHAN, USART2_TC_CHAN};
 use altos_core::syscall;
@@ -41,8 +42,7 @@ pub fn usart_tx(mut usart: Usart) {
 /// Handles receiving any bytes when an interrupt is generated
 pub fn usart_rx(mut usart: Usart) {
     if usart.is_rx_reg_full() {
-        kprintln!("Reg Full...Loading Byte\n");
-        let a = usart.load_byte();
-        kprintln!("A: {}", a);
+        unsafe { arm::asm::bkpt(); }
+        usart.load_byte();
     }
 }

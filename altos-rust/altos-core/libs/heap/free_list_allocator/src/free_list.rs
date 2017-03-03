@@ -111,6 +111,13 @@ impl BlockHeader {
     }
 }
 
+enum Merge {
+    Left,
+    Right,
+    LeftAndRight,
+    Neither
+}
+
 /// FreeList is a linked list which keeps track of free blocks of memory
 /// Free blocks are embedded in the free memory itself
 pub struct FreeList {
@@ -165,6 +172,7 @@ impl FreeList {
         }
         (previous.get_ref_mut(), current.get_ref_mut())
     }
+
 
     // Allocate memory using the first fit strategy
     // Returns pointer to allocated memory, or null if no memory can be found
@@ -239,13 +247,16 @@ impl FreeList {
     - Adjacent at both: Merge two with lead (add sizes, switch lead ptr)
     */
 
+
     // Deallocates memory, placing it back in the free list for later use
     // Adds a free block to the list based on alloc_ptr so that the list remains
     // sorted based on memory position.
     pub fn deallocate(&mut self, alloc_ptr: *mut u8, size: usize, _align: usize) {
+
         // We can immediately add the block at the deallocated position
         let mut alloc_block = unsafe { Link::new(alloc_ptr as *const BlockHeader) };
         let used_memory = alignment::align_up(size, mem::size_of::<BlockHeader>());
+
         match alloc_block.get_ref_mut() {
             Some(block) => *block = BlockHeader::new(used_memory),
             None => panic!("Tried to deallocate a null pointer!"),
@@ -265,16 +276,70 @@ impl FreeList {
                 },
             }
         });
-        match previous {
-            Some(previous) => {
-                previous.next_block = alloc_block;
-                alloc_block.get_ref_mut().unwrap().next_block = Link::from(current);
+
+
+        // Determine if the deallocated block is adjacent to the leading free block.
+        let merge_lead = match previous {
+            Some(ref previous) => {
+              previous.as_ptr() as usize + previous.block_size == alloc_block.as_ptr() as usize
             },
-            None => {
+            None => false
+        };
+
+        // Determine if the deallocated block is adjadent to the following(tail) free block.
+        let merge_tail = match current {
+            Some(ref current) => {
+                alloc_block.as_ptr() as usize + alloc_block.get_ref().unwrap().block_size
+                    == current.as_ptr() as usize
+            },
+            None => false
+        };
+
+        // Merge with leading or trailing free block or both.
+        // Block with the lowest address (leading block) becomes super block.
+        match (previous, current) {
+            (Some(previous), Some(current)) => {
+                if merge_tail && merge_lead {
+                    previous.block_size +=
+                        alloc_block.get_ref().unwrap().block_size + current.block_size;
+                    previous.next_block = current.next_block;
+                }
+                else if merge_lead {
+                   previous.block_size += alloc_block.get_ref().unwrap().block_size;
+                }
+                else if merge_tail {
+                    alloc_block.get_ref_mut().unwrap().block_size += current.block_size;
+                }
+                else {
+                    previous.next_block = alloc_block;
+                    alloc_block.get_ref_mut().unwrap().next_block = Link::from(current);
+                }
+            }
+            (Some(previous), None) => {
+                if merge_lead {
+                    previous.block_size += alloc_block.get_ref().unwrap().block_size;
+                }
+                else {
+                    previous.next_block = alloc_block;
+                    unsafe {
+                       alloc_block.get_ref_mut().unwrap().next_block = Link::new(ptr::null());
+                    }
+                }
+            }
+            (None, Some(current)) => {
+                alloc_block.get_ref_mut().unwrap().next_block = self.head;
+                self.head = alloc_block;
+                if merge_tail {
+                    alloc_block.get_ref_mut().unwrap().block_size += current.block_size;
+                }
+            }
+            (None, None) => {
                 alloc_block.get_ref_mut().unwrap().next_block = self.head;
                 self.head = alloc_block;
             }
         }
+
+
     }
 
     // This relocates BlockHeaders in memory, used when we do allocations.
@@ -287,6 +352,7 @@ impl FreeList {
             Link::new(new_pos)
         }
     }
+
 }
 
 #[cfg(test)]

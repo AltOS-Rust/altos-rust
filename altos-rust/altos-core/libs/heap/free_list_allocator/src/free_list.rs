@@ -256,10 +256,10 @@ impl FreeList {
 
         // We can immediately add the block at the deallocated position
         let mut alloc_block = unsafe { Link::new(alloc_ptr as *const BlockHeader) };
-        // let used_memory = alignment::align_up(size, mem::size_of::<BlockHeader>());
+        let used_memory = alignment::align_up(size, mem::size_of::<BlockHeader>());
 
         match alloc_block.get_ref_mut() {
-            Some(block) => *block = BlockHeader::new(size),
+            Some(block) => *block = BlockHeader::new(used_memory),
             None => panic!("Tried to deallocate a null pointer!"),
         }
 
@@ -565,17 +565,31 @@ mod tests {
         let alloc1 = tfl.allocate(60, 1);
         let alloc2 = tfl.allocate(122, 1);
         let alloc3 = tfl.allocate(54, 1);
-        tfl.deallocate(alloc1, 60, 1);
-        tfl.deallocate(alloc2, 122, 1);
-        tfl.deallocate(alloc3, 54, 1);
 
-        assert_eq!(tfl.sum_free_block_memory(), aligned_heap_size);
         assert!(
             tfl.each_free_block_satisfies(|current| current.block_size % block_hdr_size == 0)
         );
+
+        tfl.deallocate(alloc1, 60, 1);
+        assert!(
+            tfl.each_free_block_satisfies(|current| current.block_size % block_hdr_size == 0)
+        );
+
+        tfl.deallocate(alloc2, 122, 1);
+        assert!(
+            tfl.each_free_block_satisfies(|current| current.block_size % block_hdr_size == 0)
+        );
+
+        tfl.deallocate(alloc3, 54, 1);
+        assert!(
+            tfl.each_free_block_satisfies(|current| current.block_size % block_hdr_size == 0)
+        );
+
+        assert_eq!(tfl.sum_free_block_memory(), aligned_heap_size);
     }
 
     #[test]
+    //#[ignore]
     fn many_allocations_and_deallocations_do_not_leak_memory() {
         // Should get aligned down based on block header size
         // Should be 328 if block header size is 8, 320 if it's 16

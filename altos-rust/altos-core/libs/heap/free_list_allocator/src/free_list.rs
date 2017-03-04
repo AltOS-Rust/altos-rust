@@ -110,14 +110,6 @@ impl BlockHeader {
         self as *const _
     }
 }
-/*
-enum Merge {
-    Left,
-    Right,
-    LeftAndRight,
-    Neither
-}
-*/
 
 /// FreeList is a linked list which keeps track of free blocks of memory
 /// Free blocks are embedded in the free memory itself
@@ -325,7 +317,7 @@ impl FreeList {
                 else {
                     previous.next_block = alloc_block;
                     unsafe {
-                       alloc_block.get_ref_mut().unwrap().next_block = Link::new(ptr::null());
+                       alloc_block.get_ref_mut().unwrap().next_block = Link::null();
                     }
                 }
             }
@@ -584,12 +576,11 @@ mod tests {
         assert!(
             tfl.each_free_block_satisfies(|current| current.block_size % block_hdr_size == 0)
         );
-
+        assert_eq!(tfl.count_free_blocks(), 1);
         assert_eq!(tfl.sum_free_block_memory(), aligned_heap_size);
     }
 
     #[test]
-    //#[ignore]
     fn many_allocations_and_deallocations_do_not_leak_memory() {
         // Should get aligned down based on block header size
         // Should be 328 if block header size is 8, 320 if it's 16
@@ -602,20 +593,36 @@ mod tests {
         let alloc1 = tfl.allocate(60, 1);
         let alloc2 = tfl.allocate(122, 1);
         tfl.deallocate(alloc1, 60, 1);
+
+        assert!(
+            tfl.each_free_block_satisfies(|current| current.block_size % block_hdr_size == 0)
+        );
+
         let alloc3 = tfl.allocate(54, 4);
         tfl.deallocate(alloc2, 122, 1);
+
+        assert!(
+            tfl.each_free_block_satisfies(|current| current.block_size % block_hdr_size == 0)
+        );
+
         let alloc4 = tfl.allocate(36, 8);
         tfl.deallocate(alloc3, 54, 4);
         tfl.deallocate(alloc4, 36, 8);
+
+        assert!(
+            tfl.each_free_block_satisfies(|current| current.block_size % block_hdr_size == 0)
+        );
+
         let alloc5 = tfl.allocate(8, 32);
         let alloc6 = tfl.allocate(4, 1);
         tfl.deallocate(alloc5, 8, 32);
         tfl.deallocate(alloc6, 4, 1);
 
-        assert_eq!(tfl.sum_free_block_memory(), aligned_heap_size);
         assert!(
             tfl.each_free_block_satisfies(|current| current.block_size % block_hdr_size == 0)
         );
+
+        assert_eq!(tfl.sum_free_block_memory(), aligned_heap_size);
     }
 
     #[test]

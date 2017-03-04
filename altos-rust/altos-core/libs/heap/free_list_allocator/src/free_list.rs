@@ -110,13 +110,14 @@ impl BlockHeader {
         self as *const _
     }
 }
-
+/*
 enum Merge {
     Left,
     Right,
     LeftAndRight,
     Neither
 }
+*/
 
 /// FreeList is a linked list which keeps track of free blocks of memory
 /// Free blocks are embedded in the free memory itself
@@ -255,10 +256,10 @@ impl FreeList {
 
         // We can immediately add the block at the deallocated position
         let mut alloc_block = unsafe { Link::new(alloc_ptr as *const BlockHeader) };
-        let used_memory = alignment::align_up(size, mem::size_of::<BlockHeader>());
+        // let used_memory = alignment::align_up(size, mem::size_of::<BlockHeader>());
 
         match alloc_block.get_ref_mut() {
-            Some(block) => *block = BlockHeader::new(used_memory),
+            Some(block) => *block = BlockHeader::new(size),
             None => panic!("Tried to deallocate a null pointer!"),
         }
 
@@ -279,7 +280,7 @@ impl FreeList {
 
 
         // Determine if the deallocated block is adjacent to the leading free block.
-        let merge_lead = match previous {
+        let merge_with_previous = match previous {
             Some(ref previous) => {
               previous.as_ptr() as usize + previous.block_size == alloc_block.as_ptr() as usize
             },
@@ -287,7 +288,7 @@ impl FreeList {
         };
 
         // Determine if the deallocated block is adjadent to the following(tail) free block.
-        let merge_tail = match current {
+        let merge_with_current = match current {
             Some(ref current) => {
                 alloc_block.as_ptr() as usize + alloc_block.get_ref().unwrap().block_size
                     == current.as_ptr() as usize
@@ -298,16 +299,17 @@ impl FreeList {
         // Merge with leading or trailing free block or both.
         // Block with the lowest address (leading block) becomes super block.
         match (previous, current) {
+            // Deallocation is between two free blocks
             (Some(previous), Some(current)) => {
-                if merge_tail && merge_lead {
+                if merge_with_previous && merge_with_current {
                     previous.block_size +=
                         alloc_block.get_ref().unwrap().block_size + current.block_size;
                     previous.next_block = current.next_block;
                 }
-                else if merge_lead {
+                else if merge_with_previous {
                    previous.block_size += alloc_block.get_ref().unwrap().block_size;
                 }
-                else if merge_tail {
+                else if merge_with_current {
                     alloc_block.get_ref_mut().unwrap().block_size += current.block_size;
                 }
                 else {
@@ -315,8 +317,9 @@ impl FreeList {
                     alloc_block.get_ref_mut().unwrap().next_block = Link::from(current);
                 }
             }
+            // Deallocation is at the end of the free list
             (Some(previous), None) => {
-                if merge_lead {
+                if merge_with_previous {
                     previous.block_size += alloc_block.get_ref().unwrap().block_size;
                 }
                 else {
@@ -326,20 +329,22 @@ impl FreeList {
                     }
                 }
             }
+            // Deallocation is at the head of the free list
             (None, Some(current)) => {
-                alloc_block.get_ref_mut().unwrap().next_block = self.head;
-                self.head = alloc_block;
-                if merge_tail {
+                if merge_with_current {
                     alloc_block.get_ref_mut().unwrap().block_size += current.block_size;
+                    alloc_block.get_ref_mut().unwrap().next_block = current.next_block;
+                } else {
+                    alloc_block.get_ref_mut().unwrap().next_block = Link::from(current);
                 }
+                self.head = alloc_block;
             }
+            // Free list is empty so deallocation becomes the only block
             (None, None) => {
                 alloc_block.get_ref_mut().unwrap().next_block = self.head;
                 self.head = alloc_block;
             }
         }
-
-
     }
 
     // This relocates BlockHeaders in memory, used when we do allocations.
@@ -432,14 +437,17 @@ mod tests {
 
         let alloc_ptr = tfl.allocate(256, 1);
         assert_eq!(tfl.head.block_size, 1024 - 256);
-        let new_head_ptr = tfl.head.as_ptr();
+        assert_eq!(tfl.head.next_block.as_ptr(), ptr::null());
+        //let new_head_ptr = tfl.head.as_ptr();
+        // Allocation produces single block which becomes head
 
         tfl.deallocate(alloc_ptr, 256, 1);
 
-        assert_eq!(tfl.count_free_blocks(), 2);
+        // Deallocation merges with following block
+        assert_eq!(tfl.count_free_blocks(), 1);
         assert_eq!(tfl.sum_free_block_memory(), heap_size);
         assert_eq!(tfl.head.as_ptr(), alloc_ptr as *mut BlockHeader);
-        assert_eq!(tfl.head.next_block.as_ptr(), new_head_ptr);
+
     }
 
     #[test]
@@ -451,15 +459,21 @@ mod tests {
         let alloc_ptr2 = tfl.allocate(256, 1);
         let alloc_ptr3 = tfl.allocate(256, 1);
 
-        tfl.deallocate(alloc_ptr, 512, 1);
-        // Both of these deallocations should create nodes at the end of the list
-        tfl.deallocate(alloc_ptr2, 256, 1);
+        // Deallocation starting from high addresses moving to lower addresses.
+        // Blocks always merge to one and list head moves down with each deallocation.
         tfl.deallocate(alloc_ptr3, 256, 1);
+        assert_eq!(tfl.count_free_blocks(), 1);
+        assert_eq!(tfl.head.as_ptr(), alloc_ptr3 as *mut BlockHeader);
 
-        assert_eq!(tfl.count_free_blocks(), 3);
-        assert_eq!(tfl.sum_free_block_memory(), heap_size);
+        tfl.deallocate(alloc_ptr2, 256, 1);
+        assert_eq!(tfl.count_free_blocks(), 1);
+        assert_eq!(tfl.head.as_ptr(), alloc_ptr2 as *mut BlockHeader);
+
+        tfl.deallocate(alloc_ptr, 512, 1);
+        assert_eq!(tfl.count_free_blocks(), 1);
         assert_eq!(tfl.head.as_ptr(), alloc_ptr as *mut BlockHeader);
-        assert_eq!(tfl.head.next_block.as_ptr(), alloc_ptr2 as *mut BlockHeader);
+
+        assert_eq!(tfl.sum_free_block_memory(), heap_size);
     }
 
     #[test]
@@ -470,16 +484,27 @@ mod tests {
         let alloc_ptr = tfl.allocate(512, 1);
         let alloc_ptr2 = tfl.allocate(256, 1);
         let alloc_ptr3 = tfl.allocate(256, 1);
-        tfl.deallocate(alloc_ptr, 512, 1);
+
+        // Everything's been allocated so no blocks are free.
+        assert_eq!(tfl.count_free_blocks(), 0);
+
+        // Last allocation becomes the first deallocation and the head of the free list
         tfl.deallocate(alloc_ptr3, 256, 1);
+        assert_eq!(tfl.count_free_blocks(), 1);
+        assert_eq!(tfl.head.as_ptr(), alloc_ptr3 as *mut BlockHeader);
 
-        // This should get put in between the nodes created from alloc_ptr and alloc_ptr3
-        tfl.deallocate(alloc_ptr2, 256, 1);
-
-        assert_eq!(tfl.count_free_blocks(), 3);
-        assert_eq!(tfl.sum_free_block_memory(), heap_size);
+        tfl.deallocate(alloc_ptr, 512, 1);
+        assert_eq!(tfl.count_free_blocks(), 2);
         assert_eq!(tfl.head.as_ptr(), alloc_ptr as *mut BlockHeader);
-        assert_eq!(tfl.head.next_block.as_ptr(), alloc_ptr2 as *mut BlockHeader);
+
+        // This should get put in between the blocks created from alloc_ptr and alloc_ptr3
+        // and merge them all into 1 block
+        tfl.deallocate(alloc_ptr2, 256, 1);
+        assert_eq!(tfl.count_free_blocks(), 1);
+        assert_eq!(tfl.head.as_ptr(), alloc_ptr as *mut BlockHeader);
+
+        assert_eq!(tfl.sum_free_block_memory(), heap_size);
+        assert_eq!(tfl.head.next_block.as_ptr(), ptr::null());
     }
 
     #[test]

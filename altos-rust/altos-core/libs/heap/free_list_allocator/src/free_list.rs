@@ -232,15 +232,6 @@ impl FreeList {
         }
     }
 
-    /*
-    TODO: We can still implement merging to deal with fragmentation
-    - Nothing adjacent: Make new block, connect to closest blocks
-    - Adjacent at tail: Merge with tail block, move block, switch leading ptr
-    - Adjacent at lead: Merge with lead, no additional changes
-    - Adjacent at both: Merge two with lead (add sizes, switch lead ptr)
-    */
-
-
     // Deallocates memory, placing it back in the free list for later use
     // Adds a free block to the list based on alloc_ptr so that the list remains
     // sorted based on memory position.
@@ -276,16 +267,16 @@ impl FreeList {
             Some(ref previous) => {
               previous.as_ptr() as usize + previous.block_size == alloc_block.as_ptr() as usize
             },
-            None => false
+            None => false,
         };
 
-        // Determine if the deallocated block is adjadent to the following(tail) free block.
+        // Determine if the deallocated block is adjacent to the following(tail) free block.
         let merge_with_current = match current {
             Some(ref current) => {
-                alloc_block.as_ptr() as usize + alloc_block.get_ref().unwrap().block_size
+                alloc_block.as_ptr() as usize + used_memory
                     == current.as_ptr() as usize
             },
-            None => false
+            None => false,
         };
 
         // Merge with leading or trailing free block or both.
@@ -295,11 +286,11 @@ impl FreeList {
             (Some(previous), Some(current)) => {
                 if merge_with_previous && merge_with_current {
                     previous.block_size +=
-                        alloc_block.get_ref().unwrap().block_size + current.block_size;
+                        used_memory + current.block_size;
                     previous.next_block = current.next_block;
                 }
                 else if merge_with_previous {
-                   previous.block_size += alloc_block.get_ref().unwrap().block_size;
+                   previous.block_size += used_memory;
                 }
                 else if merge_with_current {
                     alloc_block.get_ref_mut().unwrap().block_size += current.block_size;
@@ -308,19 +299,17 @@ impl FreeList {
                     previous.next_block = alloc_block;
                     alloc_block.get_ref_mut().unwrap().next_block = Link::from(current);
                 }
-            }
+            },
             // Deallocation is at the end of the free list
             (Some(previous), None) => {
                 if merge_with_previous {
-                    previous.block_size += alloc_block.get_ref().unwrap().block_size;
+                    previous.block_size += used_memory;
                 }
                 else {
                     previous.next_block = alloc_block;
-                    unsafe {
-                       alloc_block.get_ref_mut().unwrap().next_block = Link::null();
-                    }
+                    alloc_block.get_ref_mut().unwrap().next_block = Link::null();
                 }
-            }
+            },
             // Deallocation is at the head of the free list
             (None, Some(current)) => {
                 if merge_with_current {
@@ -335,7 +324,7 @@ impl FreeList {
             (None, None) => {
                 alloc_block.get_ref_mut().unwrap().next_block = self.head;
                 self.head = alloc_block;
-            }
+            },
         }
     }
 
@@ -430,8 +419,6 @@ mod tests {
         let alloc_ptr = tfl.allocate(256, 1);
         assert_eq!(tfl.head.block_size, 1024 - 256);
         assert_eq!(tfl.head.next_block.as_ptr(), ptr::null());
-        //let new_head_ptr = tfl.head.as_ptr();
-        // Allocation produces single block which becomes head
 
         tfl.deallocate(alloc_ptr, 256, 1);
 

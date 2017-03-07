@@ -149,7 +149,7 @@ impl FreeList {
         self.head = heap;
     }
 
-    // Traverses the free list, looking for two sequential nodes which return true
+    // Traverses the free list, looking for two sequential free blocks which return true
     // when passed into match_condition.
     fn find_block<F: Fn(Option<&BlockHeader>, &BlockHeader) -> bool>(&mut self, match_condition: F)
         -> (Option<&'static mut BlockHeader>, Option<&'static mut BlockHeader>) {
@@ -166,6 +166,90 @@ impl FreeList {
         (previous.get_ref_mut(), current.get_ref_mut())
     }
 
+    // Adds deallocated memory to the free list as a new free block and merges it with adjacent
+    // free blocks when they are present.
+    fn add_and_merge_block(&mut self,
+        used_memory: usize,
+        dealloc_block: &mut Link,
+        previous: Option<&'static mut BlockHeader>,
+        current: Option<&'static mut BlockHeader>) {
+
+        // Determine if the deallocated block is adjacent to the previous (leading) free block.
+        let merge_with_previous = match previous {
+            Some(ref previous) => {
+              previous.as_ptr() as usize + previous.block_size == dealloc_block.as_ptr() as usize
+            },
+            None => false,
+        };
+
+        // Determine if the deallocated block is adjacent to the current (following) free block.
+        let merge_with_current = match current {
+            Some(ref current) => {
+                dealloc_block.as_ptr() as usize + used_memory
+                    == current.as_ptr() as usize
+            },
+            None => false,
+        };
+
+        // Merge with previous (leading) or current (following) free block or both.
+        // Block with the lowest address (previous block) becomes super block.
+        match (previous, current) {
+            // Deallocation is between two free blocks
+            (Some(previous), Some(current)) => {
+                if merge_with_previous && merge_with_current {
+                    previous.block_size +=
+                        used_memory + current.block_size;
+                    previous.next_block = current.next_block;
+                }
+                else if merge_with_previous {
+                   previous.block_size += used_memory;
+                }
+                else if merge_with_current {
+                    dealloc_block.get_ref_mut().unwrap().block_size += current.block_size;
+                }
+                else {
+                    previous.next_block = *dealloc_block;
+                    dealloc_block.get_ref_mut().unwrap().next_block = Link::from(current);
+                }
+            },
+            // Deallocation is at the end of the free list
+            (Some(previous), None) => {
+                if merge_with_previous {
+                    previous.block_size += used_memory;
+                }
+                else {
+                    previous.next_block = *dealloc_block;
+                    dealloc_block.get_ref_mut().unwrap().next_block = Link::null();
+                }
+            },
+            // Deallocation is at the head of the free list
+            (None, Some(current)) => {
+                if merge_with_current {
+                    dealloc_block.get_ref_mut().unwrap().block_size += current.block_size;
+                    dealloc_block.get_ref_mut().unwrap().next_block = current.next_block;
+                } else {
+                    dealloc_block.get_ref_mut().unwrap().next_block = Link::from(current);
+                }
+                self.head = *dealloc_block;
+            }
+            // Free list is empty, so the deallocation becomes the only block
+            (None, None) => {
+                dealloc_block.get_ref_mut().unwrap().next_block = self.head;
+                self.head = *dealloc_block;
+            },
+        }
+    }
+
+    // This relocates BlockHeaders in memory, used when we do allocations.
+    fn shift_block_forward(&self, current_pos: &BlockHeader, offset_val: usize) -> Link {
+        // If we don't convert this, offset does not work correctly
+        let current_ptr = current_pos.as_ptr() as *mut u8;
+        unsafe {
+            let new_pos = current_ptr.offset(offset_val as isize) as *mut BlockHeader;
+            *new_pos = ptr::read(current_pos);
+            Link::new(new_pos)
+        }
+    }
 
     // Allocate memory using the first fit strategy
     // Returns pointer to allocated memory, or null if no memory can be found
@@ -232,113 +316,40 @@ impl FreeList {
         }
     }
 
-    // Deallocates memory, placing it back in the free list for later use
+    // Deallocates memory, placing it back in the free list as a free block for later use.
     // Adds a free block to the list based on alloc_ptr so that the list remains
-    // sorted based on memory position.
+    // sorted based on memory position. Merges adjacent free blocks with the deallocated block.
     pub fn deallocate(&mut self, alloc_ptr: *mut u8, size: usize, _align: usize) {
 
-        // We can immediately add the block at the deallocated position
-        let mut alloc_block = unsafe { Link::new(alloc_ptr as *const BlockHeader) };
+        // Creates a free block, dealloc_block, with size adjusted to multiples of BlockHeader
+        // size
+        let mut dealloc_block = unsafe { Link::new(alloc_ptr as *const BlockHeader) };
         let used_memory = alignment::align_up(size, mem::size_of::<BlockHeader>());
 
-        match alloc_block.get_ref_mut() {
+        match dealloc_block.get_ref_mut() {
             Some(block) => *block = BlockHeader::new(used_memory),
             None => panic!("Tried to deallocate a null pointer!"),
         }
 
-        // Memory location to be added at head of the list if the list is empty
-        // or if it's position in memory comes before the current head.
+       // Traverses the free list, locating neighborin blocks to dealloc_block based on alloc_ptr
         let (previous, current) = self.find_block(|previous, current| {
-            if alloc_block.as_ptr() == current.as_ptr() {
+            if dealloc_block.as_ptr() == current.as_ptr() {
                 panic!("deallocate - attempt to free memory that's already free");
             }
             match previous {
-                None => alloc_block.as_ptr() < current.as_ptr(),
+                None => dealloc_block.as_ptr() < current.as_ptr(),
                 Some(previous) => {
-                    previous.as_ptr() < alloc_block.as_ptr()
-                    && alloc_block.as_ptr() < current.as_ptr()
+                    previous.as_ptr() < dealloc_block.as_ptr()
+                    && dealloc_block.as_ptr() < current.as_ptr()
                 },
             }
+
         });
 
-
-        // Determine if the deallocated block is adjacent to the leading free block.
-        let merge_with_previous = match previous {
-            Some(ref previous) => {
-              previous.as_ptr() as usize + previous.block_size == alloc_block.as_ptr() as usize
-            },
-            None => false,
-        };
-
-        // Determine if the deallocated block is adjacent to the following(tail) free block.
-        let merge_with_current = match current {
-            Some(ref current) => {
-                alloc_block.as_ptr() as usize + used_memory
-                    == current.as_ptr() as usize
-            },
-            None => false,
-        };
-
-        // Merge with leading or trailing free block or both.
-        // Block with the lowest address (leading block) becomes super block.
-        match (previous, current) {
-            // Deallocation is between two free blocks
-            (Some(previous), Some(current)) => {
-                if merge_with_previous && merge_with_current {
-                    previous.block_size +=
-                        used_memory + current.block_size;
-                    previous.next_block = current.next_block;
-                }
-                else if merge_with_previous {
-                   previous.block_size += used_memory;
-                }
-                else if merge_with_current {
-                    alloc_block.get_ref_mut().unwrap().block_size += current.block_size;
-                }
-                else {
-                    previous.next_block = alloc_block;
-                    alloc_block.get_ref_mut().unwrap().next_block = Link::from(current);
-                }
-            },
-            // Deallocation is at the end of the free list
-            (Some(previous), None) => {
-                if merge_with_previous {
-                    previous.block_size += used_memory;
-                }
-                else {
-                    previous.next_block = alloc_block;
-                    alloc_block.get_ref_mut().unwrap().next_block = Link::null();
-                }
-            },
-            // Deallocation is at the head of the free list
-            (None, Some(current)) => {
-                if merge_with_current {
-                    alloc_block.get_ref_mut().unwrap().block_size += current.block_size;
-                    alloc_block.get_ref_mut().unwrap().next_block = current.next_block;
-                } else {
-                    alloc_block.get_ref_mut().unwrap().next_block = Link::from(current);
-                }
-                self.head = alloc_block;
-            }
-            // Free list is empty so deallocation becomes the only block
-            (None, None) => {
-                alloc_block.get_ref_mut().unwrap().next_block = self.head;
-                self.head = alloc_block;
-            },
-        }
+        // Adds the memory of dealloc_block to the free list. If either neighboring blocks are
+        // adjacent to dealloc_block in memory, they are merged into the appropriate super block.
+        self.add_and_merge_block(used_memory, &mut dealloc_block, previous, current);
     }
-
-    // This relocates BlockHeaders in memory, used when we do allocations.
-    fn shift_block_forward(&self, current_pos: &BlockHeader, offset_val: usize) -> Link {
-        // If we don't convert this, offset does not work correctly
-        let current_ptr = current_pos.as_ptr() as *mut u8;
-        unsafe {
-            let new_pos = current_ptr.offset(offset_val as isize) as *mut BlockHeader;
-            *new_pos = ptr::read(current_pos);
-            Link::new(new_pos)
-        }
-    }
-
 }
 
 #[cfg(test)]
@@ -426,7 +437,6 @@ mod tests {
         assert_eq!(tfl.count_free_blocks(), 1);
         assert_eq!(tfl.sum_free_block_memory(), heap_size);
         assert_eq!(tfl.head.as_ptr(), alloc_ptr as *mut BlockHeader);
-
     }
 
     #[test]

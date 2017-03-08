@@ -18,11 +18,11 @@ SECTIONS
   {
     /* Vector Table */
     LONG(_stack_start);
-    LONG(_reset + 1);
+    LONG(_entry + 1);
     KEEP(*(.rodata._EXCEPTIONS));
 
     /* Reset Handler */
-    _reset = .;
+    _entry = .;
     *(.text._reset);
 
     *(.text*);

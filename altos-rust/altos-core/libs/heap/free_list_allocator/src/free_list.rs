@@ -166,80 +166,6 @@ impl FreeList {
         (previous.get_ref_mut(), current.get_ref_mut())
     }
 
-    // Adds deallocated memory to the free list as a new free block and merges it with adjacent
-    // free blocks when they are present.
-    fn add_and_merge_block(&mut self,
-        used_memory: usize,
-        dealloc_block: &mut Link,
-        previous: Option<&'static mut BlockHeader>,
-        current: Option<&'static mut BlockHeader>) {
-
-        // Determine if the deallocated block is adjacent to the previous (leading) free block.
-        let merge_with_previous = match previous {
-            Some(ref previous) => {
-              previous.as_ptr() as usize + previous.block_size == dealloc_block.as_ptr() as usize
-            },
-            None => false,
-        };
-
-        // Determine if the deallocated block is adjacent to the current (following) free block.
-        let merge_with_current = match current {
-            Some(ref current) => {
-                dealloc_block.as_ptr() as usize + used_memory
-                    == current.as_ptr() as usize
-            },
-            None => false,
-        };
-
-        // Merge with previous (leading) or current (following) free block or both.
-        // Block with the lowest address (previous block) becomes super block.
-        match (previous, current) {
-            // Deallocation is between two free blocks
-            (Some(previous), Some(current)) => {
-                if merge_with_previous && merge_with_current {
-                    previous.block_size +=
-                        used_memory + current.block_size;
-                    previous.next_block = current.next_block;
-                }
-                else if merge_with_previous {
-                   previous.block_size += used_memory;
-                }
-                else if merge_with_current {
-                    dealloc_block.get_ref_mut().unwrap().block_size += current.block_size;
-                }
-                else {
-                    previous.next_block = *dealloc_block;
-                    dealloc_block.get_ref_mut().unwrap().next_block = Link::from(current);
-                }
-            },
-            // Deallocation is at the end of the free list
-            (Some(previous), None) => {
-                if merge_with_previous {
-                    previous.block_size += used_memory;
-                }
-                else {
-                    previous.next_block = *dealloc_block;
-                    dealloc_block.get_ref_mut().unwrap().next_block = Link::null();
-                }
-            },
-            // Deallocation is at the head of the free list
-            (None, Some(current)) => {
-                if merge_with_current {
-                    dealloc_block.get_ref_mut().unwrap().block_size += current.block_size;
-                    dealloc_block.get_ref_mut().unwrap().next_block = current.next_block;
-                } else {
-                    dealloc_block.get_ref_mut().unwrap().next_block = Link::from(current);
-                }
-                self.head = *dealloc_block;
-            }
-            // Free list is empty, so the deallocation becomes the only block
-            (None, None) => {
-                dealloc_block.get_ref_mut().unwrap().next_block = self.head;
-                self.head = *dealloc_block;
-            },
-        }
-    }
-
     // This relocates BlockHeaders in memory, used when we do allocations.
     fn shift_block_forward(&self, current_pos: &BlockHeader, offset_val: usize) -> Link {
         // If we don't convert this, offset does not work correctly
@@ -346,9 +272,70 @@ impl FreeList {
 
         });
 
-        // Adds the memory of dealloc_block to the free list. If either neighboring blocks are
-        // adjacent to dealloc_block in memory, they are merged into the appropriate super block.
-        self.add_and_merge_block(used_memory, &mut dealloc_block, previous, current);
+        // Determine if the deallocated block is adjacent to the previous (leading) free block.
+        let merge_with_previous = match previous {
+            Some(ref previous) => {
+              previous.as_ptr() as usize + previous.block_size == dealloc_block.as_ptr() as usize
+            },
+            None => false,
+        };
+
+        // Determine if the deallocated block is adjacent to the current (following) free block.
+        let merge_with_current = match current {
+            Some(ref current) => {
+                dealloc_block.as_ptr() as usize + used_memory
+                    == current.as_ptr() as usize
+            },
+            None => false,
+        };
+
+        // Merge with previous (leading) or current (following) free block or both.
+        // Block with the lowest address (previous block) becomes super block.
+        match (previous, current) {
+            // Deallocation is between two free blocks
+            (Some(previous), Some(current)) => {
+                if merge_with_previous && merge_with_current {
+                    previous.block_size +=
+                        used_memory + current.block_size;
+                    previous.next_block = current.next_block;
+                }
+                else if merge_with_previous {
+                   previous.block_size += used_memory;
+                }
+                else if merge_with_current {
+                    dealloc_block.get_ref_mut().unwrap().block_size += current.block_size;
+                }
+                else {
+                    previous.next_block = dealloc_block;
+                    dealloc_block.get_ref_mut().unwrap().next_block = Link::from(current);
+                }
+            },
+            // Deallocation is at the end of the free list
+            (Some(previous), None) => {
+                if merge_with_previous {
+                    previous.block_size += used_memory;
+                }
+                else {
+                    previous.next_block = dealloc_block;
+                    dealloc_block.get_ref_mut().unwrap().next_block = Link::null();
+                }
+            },
+            // Deallocation is at the head of the free list
+            (None, Some(current)) => {
+                if merge_with_current {
+                    dealloc_block.get_ref_mut().unwrap().block_size += current.block_size;
+                    dealloc_block.get_ref_mut().unwrap().next_block = current.next_block;
+                } else {
+                    dealloc_block.get_ref_mut().unwrap().next_block = Link::from(current);
+                }
+                self.head = dealloc_block;
+            }
+            // Free list is empty, so the deallocation becomes the only block
+            (None, None) => {
+                dealloc_block.get_ref_mut().unwrap().next_block = self.head;
+                self.head = dealloc_block;
+            },
+        }
     }
 }
 
@@ -420,6 +407,138 @@ mod tests {
 
         assert_eq!(tfl.head.block_size, heap_size - (256 + 256));
         assert!(tfl.head.next_block.get_ref().is_none());
+    }
+
+    #[test]
+    fn deallocation_merge_none() {
+        let heap_size: usize = 1024;
+        let mut tfl = test::get_free_list_with_size(heap_size);
+
+        let alloc_ptr1 = tfl.allocate(64, 1);
+        tfl.allocate(64, 1);
+        let alloc_ptr3 = tfl.allocate(64, 1);
+        tfl.allocate(64, 1);
+
+        assert_eq!(tfl.count_free_blocks(), 1);
+
+        tfl.deallocate(alloc_ptr1, 64, 1);
+        assert_eq!(tfl.count_free_blocks(), 2);
+
+        tfl.deallocate(alloc_ptr3, 64, 1);
+        assert_eq!(tfl.count_free_blocks(),  3);
+    }
+
+    // The following functions test the different deallocation and free block merging scenarios.
+    #[test]
+    fn deallocate_merge_both_sides() {
+        let heap_size: usize = 1024;
+        let mut tfl = test::get_free_list_with_size(heap_size);
+
+        let alloc_ptr1 = tfl.allocate(64, 1);
+        let alloc_ptr2 = tfl.allocate(64, 1);
+
+        assert_eq!(tfl.count_free_blocks(), 1);
+
+        tfl.deallocate(alloc_ptr1, 64, 1);
+        assert_eq!(tfl.count_free_blocks(), 2);
+
+        tfl.deallocate(alloc_ptr2, 64, 1);
+        assert_eq!(tfl.count_free_blocks(), 1);
+    }
+
+    #[test]
+    fn deallocate_merge_with_previous() {
+        let heap_size: usize = 1024;
+        let mut tfl = test::get_free_list_with_size(heap_size);
+
+        let alloc_ptr1 = tfl.allocate(64, 1);
+        let alloc_ptr2 = tfl.allocate(64, 1);
+        tfl.allocate(64, 1);
+
+        assert_eq!(tfl.count_free_blocks(), 1);
+
+        tfl.deallocate(alloc_ptr1, 64, 1);
+        assert_eq!(tfl.count_free_blocks(), 2);
+
+        tfl.deallocate(alloc_ptr2, 64, 1);
+        assert_eq!(tfl.count_free_blocks(), 2);
+    }
+
+    #[test]
+    fn deallocate_merge_with_following() {
+        let heap_size: usize = 1024;
+        let mut tfl = test::get_free_list_with_size(heap_size);
+
+        tfl.allocate(64, 1);
+        let alloc_ptr = tfl.allocate(64, 1);
+
+        assert_eq!(tfl.count_free_blocks(), 1);
+
+        tfl.deallocate(alloc_ptr, 64, 1);
+        assert_eq!(tfl.count_free_blocks(), 1);
+    }
+
+    #[test]
+    fn deallocate_at_end_no_merge() {
+        let heap_size: usize = 1024;
+        let mut tfl = test::get_free_list_with_size(heap_size);
+
+        let alloc_ptr = tfl.allocate(512, 1);
+        tfl.allocate(256, 1);
+        let alloc_ptr3 = tfl.allocate(256, 1);
+
+        assert_eq!(tfl.count_free_blocks(), 0);
+        tfl.deallocate(alloc_ptr, 512, 1);
+        tfl.deallocate(alloc_ptr3, 256, 1);
+
+        assert_eq!(tfl.count_free_blocks(), 2);
+    }
+
+    #[test]
+    fn deallocate_at_end_merge_previous() {
+        let heap_size: usize = 1024;
+        let mut tfl = test::get_free_list_with_size(heap_size);
+
+        let alloc_ptr = tfl.allocate(512, 1);
+        let alloc_ptr2 = tfl.allocate(256, 1);
+        let alloc_ptr3 = tfl.allocate(256, 1);
+
+        assert_eq!(tfl.count_free_blocks(), 0);
+
+        tfl.deallocate(alloc_ptr2, 256, 1);
+        assert_eq!(tfl.count_free_blocks(), 1);
+
+        tfl.deallocate(alloc_ptr3, 256, 1);
+        assert_eq!(tfl.count_free_blocks(), 1);
+    }
+
+    #[test]
+    fn deallocate_at_head_no_merge() {
+        let heap_size: usize = 1024;
+        let mut tfl = test::get_free_list_with_size(heap_size);
+
+        tfl.allocate(64, 1);
+        let alloc_ptr = tfl.allocate(64, 1);
+        tfl.allocate(64, 1);
+
+        assert_eq!(tfl.count_free_blocks(), 1);
+
+        tfl.deallocate(alloc_ptr, 64, 1);
+        assert_eq!(tfl.count_free_blocks(), 2);
+    }
+
+    #[test]
+    fn deallocate_at_head_merge_following() {
+        let heap_size: usize = 1024;
+        let mut tfl = test::get_free_list_with_size(heap_size);
+
+        tfl.allocate(64, 1);
+        let alloc_ptr = tfl.allocate(64, 1);
+
+        assert_eq!(tfl.count_free_blocks(), 1);
+
+        tfl.deallocate(alloc_ptr, 64, 1);
+        assert_eq!(tfl.count_free_blocks(), 1);
     }
 
     #[test]

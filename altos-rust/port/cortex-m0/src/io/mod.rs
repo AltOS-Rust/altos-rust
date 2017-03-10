@@ -38,19 +38,23 @@ mod imp {
 #[cfg(feature="serial")]
 mod imp {
     use altos_core::syscall::sleep;
-    use altos_core::sync::Mutex;
+    use altos_core::sync::{Mutex, CriticalSection};
     use altos_core::queue::RingBuffer;
     use core::fmt::{self, Write, Arguments};
-    use peripheral::usart::{UsartX, Usart, USART2_TX_BUFFER_FULL_CHAN, USART2_TC_CHAN};
+    use peripheral::usart::{UsartX, Usart, USART2_TX_CHAN, USART2_RX_CHAN};
+
+    pub type Result<T> = ::core::result::Result<T, ()>;
 
     /// Buffer for transmitting bytes
     pub static mut TX_BUFFER: RingBuffer = RingBuffer::new();
 
     /// Buffer for receiving bytes
+    #[no_mangle]
     pub static mut RX_BUFFER: RingBuffer = RingBuffer::new();
 
     // Mutex to ensure transmitted data is not jumbled.
     static WRITE_LOCK: Mutex<()> = Mutex::new(());
+    static READ_LOCK: Mutex<()> = Mutex::new(());
 
     /// Print a formatted string to the serial port. This macro is intended for
     /// user code and should not be used to print within the kernel code.
@@ -85,11 +89,39 @@ mod imp {
             unsafe {
                 while !TX_BUFFER.insert(byte) {
                     // FIXME?: Might need to put this in a critical section?
-                    //let _g = CriticalSection::begin();
+                    let _g = CriticalSection::begin();
                     self.usart.enable_transmit_interrupt();
-                    sleep(USART2_TX_BUFFER_FULL_CHAN);
+                    sleep(USART2_TX_CHAN);
                 }
             }
+        }
+
+        #[inline(never)]
+        fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+            // UNSAFE: Accessing mutable static
+            while unsafe {
+                let _g = CriticalSection::begin();
+                RX_BUFFER.is_empty()
+            } {
+                sleep(USART2_RX_CHAN);
+            }
+            let mut read = 0;
+            while read < buf.len() {
+                //let g = CriticalSection::begin();
+                //kprintln!("Getting byte from ringbuffer");
+                // UNSAFE: Accessing mutable static
+                let byte = unsafe { RX_BUFFER.remove() };
+                //kprintln!("Byte received: {:?}", byte);
+                //drop(g);
+                match byte {
+                    Some(byte) => {
+                        buf[read] = byte;
+                        read += 1;
+                    },
+                    None => break,
+                }
+            }
+            Ok(read)
         }
     }
 
@@ -99,11 +131,19 @@ mod imp {
                 if *byte == b'\n' {
                     self.buffer_byte(b'\r');
                 }
+                #[cfg(feature="minicom")]
+                {
+                    if *byte == b'\r' {
+                        self.buffer_byte(b'\n');
+                    }
+                }
                 self.buffer_byte(*byte);
             }
-            self.usart.enable_transmit_complete_interrupt();
+            let g = CriticalSection::begin();
+            //self.usart.enable_transmit_complete_interrupt();
             self.usart.enable_transmit_interrupt();
-            sleep(USART2_TC_CHAN);
+            sleep(USART2_TX_CHAN);
+            drop(g);
             Ok(())
         }
     }
@@ -173,5 +213,21 @@ mod imp {
         let mut serial = DebugSerial::new(usart2);
 
         serial.write_str(s).ok();
+    }
+
+    #[doc(hidden)]
+    #[inline(never)]
+    pub fn poll_char() -> Option<u8> {
+        let usart2 = Usart::new(UsartX::Usart2);
+        let mut serial = Serial::new(usart2);
+        let mut buf: [u8; 1] = [0];
+        //let _g = READ_LOCK.lock();
+        let ret = match serial.read(&mut buf) {
+            Ok(0) => None,
+            Ok(_) => Some(buf[0]),
+            Err(_) => unreachable!(),
+        };
+        //kprintln!("Recieved {:?} from poll_char", ret);
+        ret
     }
 }

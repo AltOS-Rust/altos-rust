@@ -22,6 +22,8 @@
 // So... I guess we can make multiple types each with a different size, like RingBuffer8,
 // RingBuffer16, etc. If we need larger buffers.
 
+use core::intrinsics::volatile_load;
+
 /// The size of any ring buffers
 const RING_BUFFER_SIZE: usize = 8;
 
@@ -85,7 +87,10 @@ impl RingBuffer {
 
     /// Check if the buffer is empty
     pub fn is_empty(&self) -> bool {
-        self.start == self.end && !self.full
+        // TODO: Make it better
+        unsafe {
+            volatile_load(&self.start) == volatile_load(&self.end) && !volatile_load(&self.full)
+        }
     }
 }
 

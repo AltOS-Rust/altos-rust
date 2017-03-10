@@ -53,9 +53,11 @@ pub use self::control::{WordLength, Mode, Parity, StopLength, HardwareFlowContro
 pub use self::baudr::BaudRate;
 
 /// Defines the wake/sleep channel for the TX buffer when full.
-pub const USART2_TX_BUFFER_FULL_CHAN: usize = 43;
-/// Defines the wake/sleep channel for when transmission complete flag is set.
-pub const USART2_TC_CHAN: usize = 43 * 2;
+pub const USART2_TX_CHAN: usize = 43;
+///// Defines the wake/sleep channel for when transmission complete flag is set.
+//pub const USART2_TC_CHAN: usize = 43 * 2;
+/// Defines the wake/sleep channel for when bytes are available in the receive buffer
+pub const USART2_RX_CHAN: usize = 43 * 3;
 
 /// STM32F0 has two Usart registers available.
 #[derive(Copy, Clone, Debug)]
@@ -281,7 +283,7 @@ pub fn init() {
 
     gpio::GPIO::enable(gpio::Group::A);
     let mut pa2 = gpio::Port::new(2, gpio::Group::A);
-    let mut pa15 = gpio::Port::new(3, gpio::Group::A);
+    let mut pa15 = gpio::Port::new(15, gpio::Group::A);
     pa2.set_function(gpio::AlternateFunction::One);
     pa15.set_function(gpio::AlternateFunction::One);
     pa2.set_speed(gpio::Speed::High);

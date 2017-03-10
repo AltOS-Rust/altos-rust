@@ -30,6 +30,7 @@ use cortex_m0::kernel::task::Priority;
 use cortex_m0::kernel::task::args::Args;
 use cortex_m0::kernel::sync::Mutex;
 use cortex_m0::peripheral::gpio::{self, Port};
+use cortex_m0::io;
 
 
 #[no_mangle]
@@ -37,7 +38,25 @@ pub fn application_entry() -> ! {
     // -----------------
     // Tasks go between the lines.
     // ----------------
+    kernel::syscall::new_task(echo, Args::empty(), 1024, Priority::Normal, "echo");
     kernel::task::start_scheduler();
 
     loop { unsafe { arm::asm::bkpt() }; }
+}
+
+fn echo(_args: &mut Args) {
+    loop {
+        //println!("Waiting for char:");
+        if let Some(byte) = io::poll_char() {
+            print!("{}", byte as char);
+            /*
+            if byte == b'\r' {
+                println!("Carriage return received");
+            }
+            if byte == b'\n' {
+                println!("Newline received");
+            }
+            */
+        }
+    }
 }

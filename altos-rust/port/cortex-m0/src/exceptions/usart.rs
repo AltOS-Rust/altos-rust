@@ -33,7 +33,6 @@ pub fn usart_tx(mut usart: Usart) {
     }
 
     if usart.is_transmission_complete() {
-        //kprintln!("Transmission is complete");
         usart.disable_transmit_complete_interrupt();
         syscall::wake(USART2_TX_CHAN);
         usart.clear_tc_flag();
@@ -44,7 +43,6 @@ pub fn usart_tx(mut usart: Usart) {
 pub fn usart_rx(mut usart: Usart) {
     usart.clear_ore_flag();
     if usart.is_rx_reg_full() {
-        //kprintln!("RX Reg is full, loading byte...");
         let byte = usart.load_byte();
         unsafe { RX_BUFFER.insert(byte) };
         syscall::wake(USART2_RX_CHAN);

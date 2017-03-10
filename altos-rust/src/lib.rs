@@ -46,17 +46,8 @@ pub fn application_entry() -> ! {
 
 fn echo(_args: &mut Args) {
     loop {
-        //println!("Waiting for char:");
         if let Some(byte) = io::poll_char() {
             print!("{}", byte as char);
-            /*
-            if byte == b'\r' {
-                println!("Carriage return received");
-            }
-            if byte == b'\n' {
-                println!("Newline received");
-            }
-            */
         }
     }
 }

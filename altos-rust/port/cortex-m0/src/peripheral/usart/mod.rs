@@ -54,8 +54,6 @@ pub use self::baudr::BaudRate;
 
 /// Defines the wake/sleep channel for the TX buffer when full.
 pub const USART2_TX_CHAN: usize = 43;
-///// Defines the wake/sleep channel for when transmission complete flag is set.
-//pub const USART2_TC_CHAN: usize = 43 * 2;
 /// Defines the wake/sleep channel for when bytes are available in the receive buffer
 pub const USART2_RX_CHAN: usize = 43 * 3;
 

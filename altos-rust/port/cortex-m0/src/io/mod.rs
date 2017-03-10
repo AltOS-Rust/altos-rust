@@ -37,6 +37,7 @@ mod imp {
 
 #[cfg(feature="serial")]
 mod imp {
+    use altos_core::volatile::Volatile;
     use altos_core::syscall::sleep;
     use altos_core::sync::{Mutex, CriticalSection};
     use altos_core::queue::RingBuffer;
@@ -49,7 +50,6 @@ mod imp {
     pub static mut TX_BUFFER: RingBuffer = RingBuffer::new();
 
     /// Buffer for receiving bytes
-    #[no_mangle]
     pub static mut RX_BUFFER: RingBuffer = RingBuffer::new();
 
     // Mutex to ensure transmitted data is not jumbled.
@@ -88,7 +88,6 @@ mod imp {
         fn buffer_byte(&mut self, byte: u8) {
             unsafe {
                 while !TX_BUFFER.insert(byte) {
-                    // FIXME?: Might need to put this in a critical section?
                     let _g = CriticalSection::begin();
                     self.usart.enable_transmit_interrupt();
                     sleep(USART2_TX_CHAN);
@@ -96,23 +95,20 @@ mod imp {
             }
         }
 
-        #[inline(never)]
         fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
             // UNSAFE: Accessing mutable static
             while unsafe {
                 let _g = CriticalSection::begin();
-                RX_BUFFER.is_empty()
+                Volatile::new(&RX_BUFFER).is_empty()
             } {
                 sleep(USART2_RX_CHAN);
             }
             let mut read = 0;
             while read < buf.len() {
-                //let g = CriticalSection::begin();
-                //kprintln!("Getting byte from ringbuffer");
+                let g = CriticalSection::begin();
                 // UNSAFE: Accessing mutable static
                 let byte = unsafe { RX_BUFFER.remove() };
-                //kprintln!("Byte received: {:?}", byte);
-                //drop(g);
+                drop(g);
                 match byte {
                     Some(byte) => {
                         buf[read] = byte;
@@ -140,7 +136,6 @@ mod imp {
                 self.buffer_byte(*byte);
             }
             let g = CriticalSection::begin();
-            //self.usart.enable_transmit_complete_interrupt();
             self.usart.enable_transmit_interrupt();
             sleep(USART2_TX_CHAN);
             drop(g);
@@ -216,18 +211,15 @@ mod imp {
     }
 
     #[doc(hidden)]
-    #[inline(never)]
     pub fn poll_char() -> Option<u8> {
         let usart2 = Usart::new(UsartX::Usart2);
         let mut serial = Serial::new(usart2);
         let mut buf: [u8; 1] = [0];
-        //let _g = READ_LOCK.lock();
-        let ret = match serial.read(&mut buf) {
+        let _g = READ_LOCK.lock();
+        match serial.read(&mut buf) {
             Ok(0) => None,
             Ok(_) => Some(buf[0]),
             Err(_) => unreachable!(),
-        };
-        //kprintln!("Recieved {:?} from poll_char", ret);
-        ret
+        }
     }
 }

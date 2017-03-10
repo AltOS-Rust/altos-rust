@@ -233,12 +233,12 @@ pub enum State {
 #[doc(hidden)]
 #[derive(Debug)]
 pub struct TaskControl {
-    stack: Stack, /*** stack MUST be the first field of the struct ***/ // 0 - 12
-    args: Box<Args>, // 16
-    tid: usize, // 20
-    name: &'static str, // 24
-    valid: usize, // 28
-    pub wchan: usize, // 32
+    stack: Stack, /*** stack MUST be the first field of the struct ***/
+    args: Box<Args>,
+    tid: usize,
+    name: &'static str,
+    valid: usize,
+    pub wchan: usize,
     pub delay: usize,
     pub delay_type: Delay,
     pub destroy: bool,

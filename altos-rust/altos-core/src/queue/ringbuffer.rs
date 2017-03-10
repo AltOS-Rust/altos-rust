@@ -15,14 +15,12 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-// TODO: Make variable sized ring buffers? On further research, this doesn't seem to be possible at
+// NOTE: Make variable sized ring buffers? On further research, this doesn't seem to be possible at
 // this time. From the documentation on the array primitive type:
 // "...Rust does not yet support code that is generic over the size of an array type."
 //
 // So... I guess we can make multiple types each with a different size, like RingBuffer8,
 // RingBuffer16, etc. If we need larger buffers.
-
-use core::intrinsics::volatile_load;
 
 /// The size of any ring buffers
 const RING_BUFFER_SIZE: usize = 8;
@@ -30,7 +28,6 @@ const RING_BUFFER_SIZE: usize = 8;
 /// A queue to store bytes of data.
 pub struct RingBuffer {
     data: [u8; RING_BUFFER_SIZE],
-    // TODO: u8?
     start: usize,
     end: usize,
     full: bool,
@@ -87,10 +84,7 @@ impl RingBuffer {
 
     /// Check if the buffer is empty
     pub fn is_empty(&self) -> bool {
-        // TODO: Make it better
-        unsafe {
-            volatile_load(&self.start) == volatile_load(&self.end) && !volatile_load(&self.full)
-        }
+        self.start == self.end && !self.full
     }
 }
 

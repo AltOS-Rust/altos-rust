@@ -30,7 +30,6 @@
 #![feature(cfg_target_has_atomic)]
 #![feature(heap_api)]
 #![feature(oom)]
-#![feature(core_intrinsics)]
 #![warn(missing_docs)]
 #![deny(trivial_numeric_casts)]
 #![no_std]

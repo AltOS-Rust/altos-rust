@@ -34,18 +34,14 @@ use arch;
 #[no_mangle]
 #[doc(hidden)]
 pub static mut CURRENT_TASK: Option<Box<Node<TaskControl>>> = None;
-#[no_mangle]
 pub static PRIORITY_QUEUES: [SyncQueue<TaskControl>; NUM_PRIORITIES] = [
     SyncQueue::new(),
     SyncQueue::new(),
     SyncQueue::new(),
     SyncQueue::new()
     ];
-#[no_mangle]
 pub static SLEEP_QUEUE: SyncQueue<TaskControl> = SyncQueue::new();
-#[no_mangle]
 pub static DELAY_QUEUE: SyncQueue<TaskControl> = SyncQueue::new();
-#[no_mangle]
 pub static OVERFLOW_DELAY_QUEUE: SyncQueue<TaskControl> = SyncQueue::new();
 pub static NORMAL_TASK_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
 const NORMAL_TASK_MAX: usize = 10;

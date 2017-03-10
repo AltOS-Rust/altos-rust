@@ -23,6 +23,11 @@
 #![cfg_attr(not(test), allocator)]
 #![no_std]
 
+/*
+ * Code adapted from:
+ * https://github.com/phil-opp/blog_os/blob/master/libs/bump_allocator/src/lib.rs
+ */
+
 #[cfg(test)]
 extern crate std;
 

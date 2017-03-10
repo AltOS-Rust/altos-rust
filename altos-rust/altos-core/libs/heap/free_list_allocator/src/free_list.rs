@@ -15,7 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-//! Linked list code for the the memory allocator
+//! Linked list code for the memory allocator
 //! This is intended for use by the free_list_allocator
 //!
 
@@ -140,7 +140,8 @@ impl FreeList {
 
         // Adjust the heap size down based on alignment change to starting position
         // and then adjust it down again if it's not aligned to block header size.
-        let use_heap_size = alignment::align_down(heap_size - align_diff, mem::size_of::<BlockHeader>());
+        let use_heap_size =
+            alignment::align_down(heap_size - align_diff, mem::size_of::<BlockHeader>());
 
         match heap.get_ref_mut() {
             Some(start) => *start = BlockHeader::new(use_heap_size),
@@ -246,8 +247,7 @@ impl FreeList {
     // Adds a free block to the list based on alloc_ptr so that the list remains
     // sorted based on memory position. Merges adjacent free blocks with the deallocated block.
     pub fn deallocate(&mut self, alloc_ptr: *mut u8, size: usize, _align: usize) {
-        // Creates a free block, dealloc_block, with size adjusted to multiples of BlockHeader
-        // size
+        // Creates a free block, dealloc_block, with size adjusted to multiples of BlockHeader size
         let mut dealloc_block = unsafe { Link::new(alloc_ptr as *const BlockHeader) };
         let used_memory = alignment::align_up(size, mem::size_of::<BlockHeader>());
 
@@ -470,13 +470,15 @@ mod tests {
         let heap_size: usize = 1024;
         let mut tfl = test::get_free_list_with_size(heap_size);
 
-        tfl.allocate(64, 1);
         let alloc_ptr = tfl.allocate(64, 1);
+        tfl.allocate(64, 1);
+        let alloc_ptr2 = tfl.allocate(64, 1);
 
         assert_eq!(tfl.count_free_blocks(), 1);
 
         tfl.deallocate(alloc_ptr, 64, 1);
-        assert_eq!(tfl.count_free_blocks(), 1);
+        tfl.deallocate(alloc_ptr2, 64, 1);
+        assert_eq!(tfl.count_free_blocks(), 2);
         assert_eq!(tfl.sum_free_block_memory(), heap_size - 64);
     }
 

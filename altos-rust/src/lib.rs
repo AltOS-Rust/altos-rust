@@ -38,16 +38,7 @@ pub fn application_entry() -> ! {
     // -----------------
     // Tasks go between the lines.
     // ----------------
-    kernel::syscall::new_task(echo, Args::empty(), 1024, Priority::Normal, "echo");
     kernel::task::start_scheduler();
 
     loop { unsafe { arm::asm::bkpt() }; }
-}
-
-fn echo(_args: &mut Args) {
-    loop {
-        if let Some(byte) = io::poll_char() {
-            print!("{}", byte as char);
-        }
-    }
 }

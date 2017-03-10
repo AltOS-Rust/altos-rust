@@ -30,6 +30,7 @@ use cortex_m0::kernel::task::Priority;
 use cortex_m0::kernel::task::args::Args;
 use cortex_m0::kernel::sync::Mutex;
 use cortex_m0::peripheral::gpio::{self, Port};
+use cortex_m0::io;
 
 
 #[no_mangle]

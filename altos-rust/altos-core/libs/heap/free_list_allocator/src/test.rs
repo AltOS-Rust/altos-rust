@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2017  AltOS-Rust Team
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2017  AltOS-Rust Team
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
 use std::vec::Vec;
 use std::ops::{Deref, DerefMut};
@@ -131,9 +131,9 @@ impl TestFreeList {
 
     // Helper function to check that every block in the list satisfies some condition
     // Returns false if the condition returns false for any node
-    pub fn each_free_block_satisfies<F: Fn(&free_list::BlockHeader) -> bool>
-        (&self, condition: F) -> bool {
-
+    pub fn each_free_block_satisfies<F>(&self, condition: F) -> bool
+        where F: Fn(&free_list::BlockHeader) -> bool
+    {
         let mut current = self.free_list.head;
         while let Some(curr) = current.get_ref() {
             if !condition(curr) {

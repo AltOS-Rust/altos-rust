@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2017  AltOS-Rust Team
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2017  AltOS-Rust Team
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #![feature(allocator)]
 #![feature(const_fn)]
@@ -24,9 +24,9 @@
 #![no_std]
 
 /*
- * Code adapted from:
- * https://github.com/phil-opp/blog_os/blob/master/libs/bump_allocator/src/lib.rs
- */
+* Code adapted from:
+* https://github.com/phil-opp/blog_os/blob/master/libs/bump_allocator/src/lib.rs
+*/
 
 #[cfg(test)]
 extern crate std;
@@ -65,6 +65,7 @@ impl BumpAllocator {
         }
     }
 
+    /// Initialize the heap with a start and end address.
     pub fn init(&mut self, heap_start: usize, heap_size: usize) {
         self.heap_start = heap_start;
         self.heap_size = heap_size;
@@ -185,7 +186,7 @@ mod tests {
     }
 
     #[test]
-    fn test_oom() {
+    fn test_out_of_memory() {
         let mut allocator = BumpAllocator::new();
         allocator.init(0, 1024);
         assert!(allocator.allocate(1024, 1).is_some());

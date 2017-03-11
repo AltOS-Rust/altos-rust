@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2017  AltOS-Rust Team
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2017  AltOS-Rust Team
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
 //! Linked list code for the memory allocator
 //! This is intended for use by the free_list_allocator
@@ -94,7 +94,9 @@ impl<'a> From<Option<&'a mut BlockHeader>> for Link {
 
 /// BlockHeader nodes keep track of a free block of memory.
 pub struct BlockHeader {
+    /// Size of block in bytes
     pub block_size: usize,
+    /// Next block in the list
     pub next_block: Link,
 }
 
@@ -141,7 +143,7 @@ impl FreeList {
         // Adjust the heap size down based on alignment change to starting position
         // and then adjust it down again if it's not aligned to block header size.
         let use_heap_size =
-            alignment::align_down(heap_size - align_diff, mem::size_of::<BlockHeader>());
+        alignment::align_down(heap_size - align_diff, mem::size_of::<BlockHeader>());
 
         match heap.get_ref_mut() {
             Some(start) => *start = BlockHeader::new(use_heap_size),
@@ -153,7 +155,7 @@ impl FreeList {
     // Traverses the free list, looking for two sequential free blocks which return true
     // when passed into match_condition.
     fn find_block<F: Fn(Option<&BlockHeader>, &BlockHeader) -> bool>(&mut self, match_condition: F)
-        -> (Option<&'static mut BlockHeader>, Option<&'static mut BlockHeader>) {
+    -> (Option<&'static mut BlockHeader>, Option<&'static mut BlockHeader>) {
 
         let mut previous: Link = Link::null();
         let mut current = self.head;

@@ -24,6 +24,9 @@ pub mod systick;
 #[cfg(feature="serial")]
 pub mod usart;
 
+// ADC testing... (Should have feature flag)
+pub mod adc;
+
 use volatile::Volatile;
 
 pub trait Control {

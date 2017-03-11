@@ -12,6 +12,7 @@ default = []
 doc = []
 serial = []
 minicom = []
+adc = []
 
 [dev-dependencies.altos_core]
 path = "../../altos-core"

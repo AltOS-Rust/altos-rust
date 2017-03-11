@@ -73,6 +73,7 @@ pub extern "C" fn __udivmodsi4(mut num: u32, mut den: u32, rem_p: Option<&mut u3
     return quot;
 }
 
+#[cfg(target_arch="arm")]
 #[no_mangle]
 #[naked]
 pub unsafe fn __aeabi_uidivmod() {
@@ -111,42 +112,48 @@ mod tests {
     use super::*;
 
     #[test]
-    fn divide_even() {
+    fn test_divide_even() {
         assert_eq!(10, __aeabi_uidiv(100, 10));
     }
 
     #[test]
-    fn divide_uneven() {
+    fn test_divide_uneven() {
         assert_eq!(10, __aeabi_uidiv(105, 10));
     }
 
     #[test]
-    fn divide_denominator_bigger() {
+    fn test_divide_denominator_bigger() {
         assert_eq!(0, __aeabi_uidiv(5, 10));
     }
 
     #[test]
-    fn mod_even() {
-        assert_eq!(0, __aeabi_uidivmod(100, 10));
+    fn test_mod_even() {
+        let mut rem: u32 = !0;
+        assert_eq!(10, __udivmodsi4(100, 10, Some(&mut rem)));
+        assert_eq!(0, rem);
     }
 
     #[test]
-    fn mod_uneven() {
-        assert_eq!(5, __aeabi_uidivmod(105, 10));
+    fn test_mod_uneven() {
+        let mut rem: u32 = !0;
+        assert_eq!(10, __udivmodsi4(105, 10, Some(&mut rem)));
+        assert_eq!(5, rem);
     }
 
     #[test]
-    fn mod_denominator_bigger() {
-        assert_eq!(5, __aeabi_uidivmod(5, 10));
+    fn test_mod_denominator_bigger() {
+        let mut rem: u32 = !0;
+        assert_eq!(0, __udivmodsi4(5, 10, Some(&mut rem)));
+        assert_eq!(5, rem);
     }
 
     #[test]
-    fn multiply_bigger_first() {
+    fn test_multiply_bigger_first() {
         assert_eq!(100, __aeabi_lmul(20, 5));
     }
 
     #[test]
-    fn multiply_bigger_second() {
+    fn test_multiply_bigger_second() {
         assert_eq!(100, __aeabi_lmul(5, 20));
     }
 }

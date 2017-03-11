@@ -21,16 +21,57 @@ use cortex_m0::time::delay_ms;
 use kernel::task::{TaskHandle, Priority};
 use kernel::task::args::{ArgsBuilder, Args};
 use kernel::collections::{Vec, String};
+use kernel::alloc::Box;
 
-const HELP: &'static str = r#"Available Commands:
+const HELP: &'static str = "Available Commands:
     echo
     clear
+    eval
     blink
     stop
-    help
-"#;
+    quit
+    help";
 
 const CLEAR: &'static str = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
+
+enum Expr {
+    Op(Box<Expr>, Operator, Box<Expr>),
+    Val(isize),
+    Invalid,
+}
+
+impl Expr {
+    fn eval(&self) -> ::core::result::Result<isize, &'static str> {
+        match *self {
+            Expr::Op(ref lhs, ref op, ref rhs) => {
+                match (lhs.eval(), rhs.eval()) {
+                    (Ok(lhs), Ok(rhs)) => Ok(op.apply(lhs, rhs)),
+                    _ => Err("Invalid expression"),
+                }
+            },
+            Expr::Val(x) => Ok(x),
+            Expr::Invalid => Err("Invalid expression"),
+        }
+    }
+}
+
+enum Operator {
+    Add,
+    Sub,
+    Mul,
+    Div,
+}
+
+impl Operator {
+    fn apply(&self, lhs: isize, rhs: isize) -> isize {
+        match *self {
+            Operator::Add => lhs + rhs,
+            Operator::Sub => lhs - rhs,
+            Operator::Mul => lhs * rhs,
+            Operator::Div => lhs / rhs,
+        }
+    }
+}
 
 pub fn shell(_args: &mut Args) {
 	let mut blink_handle: Option<TaskHandle> = None;
@@ -50,6 +91,29 @@ pub fn shell(_args: &mut Args) {
 					println!("{}", CLEAR);
 					println!("{}", CLEAR);
 				},
+                "eval" => {
+                    if words.len() > 2 {
+                        let expr = match (words[0].parse::<isize>(), words[2].parse::<isize>()) {
+                            (Ok(x), Ok(y)) => {
+                                match words[1] {
+                                    "+" => Expr::Op(Box::new(Expr::Val(x)), Operator::Add, Box::new(Expr::Val(y))),
+                                    "-" => Expr::Op(Box::new(Expr::Val(x)), Operator::Sub, Box::new(Expr::Val(y))),
+                                    "*" => Expr::Op(Box::new(Expr::Val(x)), Operator::Mul, Box::new(Expr::Val(y))),
+                                    "/" => Expr::Op(Box::new(Expr::Val(x)), Operator::Div, Box::new(Expr::Val(y))),
+                                    _ => Expr::Invalid,
+                                }
+                            },
+                            _ => Expr::Invalid,
+                        };
+                        match expr.eval() {
+                            Ok(result) => println!("{} {} {} = {}", words[0], words[1], words[2], result),
+                            Err(msg) => println!("{}", msg),
+                        }
+                    }
+                    else {
+                        println!("USAGE: eval <lhs> <op> <rhs>");
+                    }
+                },
 				"blink" => {
                     let rate: usize = if words.len() > 0 {
                         words[0].parse::<usize>().unwrap_or(100)
@@ -72,7 +136,9 @@ pub fn shell(_args: &mut Args) {
 						turn_off_led();
 					}
 				},
-				"help" => print!("{}", HELP),
+                "quit" => kernel::syscall::exit(),
+				"help" => println!("{}", HELP),
+                "" => {},
 				command_word => println!("Unknown command: '{}'", command_word),
 			}
 		}
@@ -92,8 +158,6 @@ fn turn_off_led() {
 }
 
 fn blink(args: &mut Args) {
-	use cortex_m0::peripheral::gpio::{self, Port};
-
 	let rate = args.pop_num();
 	loop {
 		turn_on_led();

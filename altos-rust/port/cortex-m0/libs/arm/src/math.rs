@@ -36,6 +36,28 @@ pub extern "C" fn __aeabi_lmul(a: u64, b: u64) -> u64 {
 }
 
 #[no_mangle]
+pub extern "aapcs" fn __aeabi_idiv(mut num: i32, mut den: i32) -> i32 {
+	let mut minus = 0;
+	let mut v;
+
+	if num < 0 {
+		num = -num;
+		minus = 1;
+	}
+	if den < 0 {
+		den = -den;
+		minus ^= 1;
+	}
+
+    v = __aeabi_uidiv(num as u32, den as u32) as i32;
+	if minus != 0 {
+		v = -v;
+    }
+
+	return v;
+}
+
+#[no_mangle]
 pub extern "C" fn __aeabi_uidiv(num: u32, den: u32) -> u32 {
   __aeabi_uidivbase(num, den, false)
 }

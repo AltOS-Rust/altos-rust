@@ -42,35 +42,35 @@ pub extern "C" fn __aeabi_uidiv(num: u32, den: u32) -> u32 {
 
 #[no_mangle]
 pub extern "C" fn __udivmodsi4(mut num: u32, mut den: u32, rem_p: Option<&mut u32>) -> u32 {
-	let mut quot = 0;
-	let mut qbit = 1;
+    let mut quot = 0;
+    let mut qbit = 1;
 
-	if den == 0 {
-		return 0;
-	}
-
-	/*
-	 * left-justify denominator and count shift
-	 */
-	while den as i32 >= 0 {
-		den <<= 1;
-		qbit <<= 1;
-	}
-
-	while qbit != 0 {
-		if den <= num {
-			num -= den;
-			quot += qbit;
-		}
-		den >>= 1;
-		qbit >>= 1;
-	}
-
-	if let Some(rem) = rem_p {
-		*rem = num;
+    if den == 0 {
+        return 0;
     }
 
-	return quot;
+    /*
+     * left-justify denominator and count shift
+     */
+    while den as i32 >= 0 {
+        den <<= 1;
+        qbit <<= 1;
+    }
+
+    while qbit != 0 {
+        if den <= num {
+            num -= den;
+            quot += qbit;
+        }
+        den >>= 1;
+        qbit >>= 1;
+    }
+
+    if let Some(rem) = rem_p {
+        *rem = num;
+    }
+
+    return quot;
 }
 
 #[no_mangle]
@@ -82,7 +82,8 @@ pub unsafe fn __aeabi_uidivmod() {
           bl __udivmodsi4
           ldr r1, [sp]
           add sp, sp, #4
-          pop {pc}");
+          pop {pc}"
+    );
     ::core::intrinsics::unreachable();
 }
 
@@ -107,45 +108,45 @@ fn __aeabi_uidivbase(mut num: u32, mut den: u32, modwanted: bool) -> u32 {
 
 #[cfg(test)]
 mod tests {
-  use super::*;
+    use super::*;
 
-  #[test]
-  fn divide_even() {
-    assert_eq!(10, __aeabi_uidiv(100, 10));
-  }
+    #[test]
+    fn divide_even() {
+        assert_eq!(10, __aeabi_uidiv(100, 10));
+    }
 
-  #[test]
-  fn divide_uneven() {
-    assert_eq!(10, __aeabi_uidiv(105, 10));
-  }
+    #[test]
+    fn divide_uneven() {
+        assert_eq!(10, __aeabi_uidiv(105, 10));
+    }
 
-  #[test]
-  fn divide_denominator_bigger() {
-    assert_eq!(0, __aeabi_uidiv(5, 10));
-  }
+    #[test]
+    fn divide_denominator_bigger() {
+        assert_eq!(0, __aeabi_uidiv(5, 10));
+    }
 
-  #[test]
-  fn mod_even() {
-    assert_eq!(0, __aeabi_uidivmod(100, 10));
-  }
+    #[test]
+    fn mod_even() {
+        assert_eq!(0, __aeabi_uidivmod(100, 10));
+    }
 
-  #[test]
-  fn mod_uneven() {
-    assert_eq!(5, __aeabi_uidivmod(105, 10));
-  }
+    #[test]
+    fn mod_uneven() {
+        assert_eq!(5, __aeabi_uidivmod(105, 10));
+    }
 
-  #[test]
-  fn mod_denominator_bigger() {
-    assert_eq!(5, __aeabi_uidivmod(5, 10));
-  }
+    #[test]
+    fn mod_denominator_bigger() {
+        assert_eq!(5, __aeabi_uidivmod(5, 10));
+    }
 
-  #[test]
-  fn multiply_bigger_first() {
-    assert_eq!(100, __aeabi_lmul(20, 5));
-  }
+    #[test]
+    fn multiply_bigger_first() {
+        assert_eq!(100, __aeabi_lmul(20, 5));
+    }
 
-  #[test]
-  fn multiply_bigger_second() {
-    assert_eq!(100, __aeabi_lmul(5, 20));
-  }
+    #[test]
+    fn multiply_bigger_second() {
+        assert_eq!(100, __aeabi_lmul(5, 20));
+    }
 }

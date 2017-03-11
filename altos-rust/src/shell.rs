@@ -24,11 +24,13 @@ use kernel::collections::{Vec, String};
 
 const HELP: &'static str = r#"Available Commands:
     echo
-	clear
+    clear
+    blink
+    stop
     help
 "#;
 
-const CLEAR: &'static str = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
+const CLEAR: &'static str = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
 
 pub fn shell(_args: &mut Args) {
 	let mut blink_handle: Option<TaskHandle> = None;
@@ -101,9 +103,6 @@ fn blink(args: &mut Args) {
 	}
 }
 
-fn parse_command(mut words: Vec<&str>) {
-}
-
 fn get_and_echo_char() -> Option<char> {
     io::poll_char().map(|ch| {
         print!("{}", ch as char);
@@ -124,7 +123,9 @@ fn read_line() -> String {
                 return line;
             }
             if ch == '\x08' {
-                line.pop();
+                if let None = line.pop() {
+                    print!(" ");
+                }
             }
             else {
                 line.push(ch);

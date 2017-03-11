@@ -18,6 +18,7 @@
 #![no_std]
 #![feature(asm)]
 #![feature(naked_functions)]
+#![feature(core_intrinsics)]
 
 // NOTE: A lot of these functions are taken from other sources, one very useful resource is
 // https://github.com/rust-lang-nursery/compiler-builtins

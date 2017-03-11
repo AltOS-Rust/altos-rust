@@ -37,31 +37,72 @@ pub extern "C" fn __aeabi_lmul(a: u64, b: u64) -> u64 {
 
 #[no_mangle]
 pub extern "C" fn __aeabi_uidiv(num: u32, den: u32) -> u32 {
-  __aeabi_uidivbase(num, den, false)
+    __aeabi_uidivbase(num, den, false)
 }
 
 #[no_mangle]
-pub extern "C" fn __aeabi_uidivmod(num: u32, den: u32) -> u32 {
-  __aeabi_uidivbase(num, den, true)
+pub extern "C" fn __udivmodsi4(mut num: u32, mut den: u32, rem_p: Option<&mut u32>) -> u32 {
+	let mut quot = 0;
+	let mut qbit = 1;
+
+	if den == 0 {
+		return 0;
+	}
+
+	/*
+	 * left-justify denominator and count shift
+	 */
+	while den as i32 >= 0 {
+		den <<= 1;
+		qbit <<= 1;
+	}
+
+	while qbit != 0 {
+		if den <= num {
+			num -= den;
+			quot += qbit;
+		}
+		den >>= 1;
+		qbit >>= 1;
+	}
+
+	if let Some(rem) = rem_p {
+		*rem = num;
+    }
+
+	return quot;
+}
+
+#[no_mangle]
+#[naked]
+pub unsafe fn __aeabi_uidivmod() {
+    asm!("push {lr}
+          sub sp, sp, #4
+          mov r2, sp
+          bl __udivmodsi4
+          ldr r1, [sp]
+          add sp, sp, #4
+          pop {pc}");
+    ::core::intrinsics::unreachable();
 }
 
 fn __aeabi_uidivbase(mut num: u32, mut den: u32, modwanted: bool) -> u32 {
-  let mut bit: u32 = 1;
-  let mut res: u32 = 0;
+    let mut bit: u32 = 1;
+    let mut res: u32 = 0;
 
-  while den < num && bit != 0 && (den & (1<<31)) == 0 {
-    den <<= 1;
-    bit <<= 1;
-  }
-  while bit != 0 {
-    if num >= den {
-      num -= den;
-      res |= bit;
+    while den < num && bit != 0 && (den & (1<<31)) == 0 {
+        den <<= 1;
+        bit <<= 1;
     }
-    bit >>= 1;
-    den >>= 1;
-  }
-  if modwanted { num } else { res }
+    while bit != 0 {
+        if num >= den {
+            num -= den;
+            res |= bit;
+        }
+        bit >>= 1;
+        den >>= 1;
+    }
+    if modwanted { num } else { res }
 }
 
 #[cfg(test)]

@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2017 AltOS-Rust Team
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2017 AltOS-Rust Team
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
 //! Scheduling
 //!
@@ -39,13 +39,13 @@ pub static PRIORITY_QUEUES: [SyncQueue<TaskControl>; NUM_PRIORITIES] = [
     SyncQueue::new(),
     SyncQueue::new(),
     SyncQueue::new()
-    ];
+];
 pub static SLEEP_QUEUE: SyncQueue<TaskControl> = SyncQueue::new();
 pub static DELAY_QUEUE: SyncQueue<TaskControl> = SyncQueue::new();
 pub static OVERFLOW_DELAY_QUEUE: SyncQueue<TaskControl> = SyncQueue::new();
 pub static NORMAL_TASK_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
-const NORMAL_TASK_MAX: usize = 10;
 
+const NORMAL_TASK_MAX: usize = 10;
 
 impl Index<Priority> for [SyncQueue<TaskControl>] {
     type Output = SyncQueue<TaskControl>;
@@ -144,14 +144,14 @@ mod tests {
     use test;
 
     #[test]
-    //Board does not have any tasks scheduled on boot
+    // Board does not have any tasks scheduled on boot
     fn test_system_starts_with_no_task_scheduled() {
         let _g = test::set_up();
         assert!(test::current_task().is_none());
     }
 
     #[test]
-    //Scheduler starts and is able to schedule tasks
+    // Scheduler starts and is able to schedule tasks
     fn test_scheduler_starts() {
         let _g = test::set_up();
         assert!(test::current_task().is_none());
@@ -161,7 +161,7 @@ mod tests {
     }
 
     #[test]
-    //Scheduler selects the next task to run using Round Robin Algorithm
+    // Scheduler selects the next task to run using Round Robin Algorithm
     fn test_scheduler_runs_tasks_in_round_robin() {
         let _g = test::set_up();
         assert!(test::current_task().is_none());
@@ -181,7 +181,7 @@ mod tests {
     }
 
     #[test]
-    //Scheduler always picks a critical task frist
+    // Scheduler always picks a critical task frist
     fn test_scheduler_picks_critical_first() {
         let _g = test::set_up();
         assert!(test::current_task().is_none());
@@ -197,7 +197,7 @@ mod tests {
     }
 
     #[test]
-    //Scheduler picks the highest priority task that isn't blocked
+    // Scheduler picks the highest priority task that isn't blocked
     fn test_scheduler_picks_from_lower_queue_if_higher_is_blocked() {
         let _g = test::set_up();
         assert!(test::current_task().is_none());
@@ -224,7 +224,7 @@ mod tests {
     }
 
     #[test]
-    //Scheduler does not attempt to schedule destroyed tasks
+    // Scheduler does not attempt to schedule destroyed tasks
     fn test_scheduler_doesnt_schedule_destroyed_tasks() {
         let _g = test::set_up();
         assert!(test::current_task().is_none());
@@ -242,7 +242,7 @@ mod tests {
     }
 
     #[test]
-    //Scheduler does not rely on a sinle priority in order to operate
+    // Scheduler does not rely on a sinle priority in order to operate
     fn test_scheduler_runs_with_single_priority() {
         run_scheduler_with_single_priority(Priority::Critical);
         run_scheduler_with_single_priority(Priority::Normal);
@@ -262,7 +262,7 @@ mod tests {
     }
 
     #[test]
-    //Scheduler selects __Idle task if run when no tasks queued.
+    // Scheduler selects __Idle task if run when no tasks queued.
     fn test_pick_idle_when_no_task_in_queues() {
         let _g = test::set_up();
         start_scheduler();
@@ -270,7 +270,7 @@ mod tests {
     }
 
     #[test]
-    //Scheduler selects __Idle task if run when all taks are blocked.
+    // Scheduler selects __Idle task if run when all taks are blocked.
     fn test_pick_idle_when_all_tasks_are_blocked() {
         let _g = test::set_up();
         assert!(test::current_task().is_none());
@@ -293,7 +293,7 @@ mod tests {
     }
 
     #[test]
-    //Scheduler selects critical task when a Low task would be run before Normal
+    // Scheduler selects critical task when a Low task would be run before Normal
     fn test_scheduler_picks_critical_when_low_would_be_picked_before_normal() {
         let _g = test::set_up();
         let handle_1 = test::create_and_schedule_test_task(512, Priority::Normal, "Norm task");
@@ -305,14 +305,14 @@ mod tests {
             assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
         }
 
-        //We get the normal counter to max and now insert a critical task, low shouldn't run
+        // We get the normal counter to max and now insert a critical task, low shouldn't run
         let handle_2 = test::create_and_schedule_test_task(512, Priority::Critical, "Critical task");
         switch_context();
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
     }
 
     #[test]
-    //Scheduler picks Low over Normal at a ratio of 1:NORMAL_TASK_MAX
+    // Scheduler picks Low over Normal at a ratio of 1:NORMAL_TASK_MAX
     fn test_scheduler_selects_low_over_normal_according_to_ratio() {
         let _g = test::set_up();
         let handle_1 = test::create_and_schedule_test_task(512, Priority::Normal, "Norm task");

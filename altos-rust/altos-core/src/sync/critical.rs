@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2017 AltOS-Rust Team
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2017 AltOS-Rust Team
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
 use core::ops::Drop;
 use arch;
@@ -39,11 +39,11 @@ use arch;
 pub struct CriticalSection;
 
 impl CriticalSection {
-  /// Marks the beginning of a critical section, returns a `CriticalSectionGuard` that will end the
-  /// critical section upon falling out of scope.
-  pub fn begin() -> CriticalSectionGuard {
-    CriticalSectionGuard(arch::begin_critical())
-  }
+    /// Marks the beginning of a critical section, returns a `CriticalSectionGuard` that will end the
+    /// critical section upon falling out of scope.
+    pub fn begin() -> CriticalSectionGuard {
+        CriticalSectionGuard(arch::begin_critical())
+    }
 }
 
 /// Tracks the lifetime of a critical section.
@@ -54,7 +54,7 @@ impl CriticalSection {
 pub struct CriticalSectionGuard(usize);
 
 impl Drop for CriticalSectionGuard {
-  fn drop(&mut self) {
-    arch::end_critical(self.0);
-  }
+    fn drop(&mut self) {
+        arch::end_critical(self.0);
+    }
 }

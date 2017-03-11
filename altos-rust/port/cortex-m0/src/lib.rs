@@ -72,7 +72,7 @@ pub mod kernel {
 
     pub mod collections {
         // TODO: Do we want to expose an allocation interface?
-        pub use altos_core::collections::Vec;
+        pub use altos_core::collections::{String, Vec};
         pub use altos_core::queue::{SortedList, Queue, Node};
     }
 

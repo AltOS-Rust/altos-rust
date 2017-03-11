@@ -32,12 +32,14 @@ use cortex_m0::kernel::sync::Mutex;
 use cortex_m0::peripheral::gpio::{self, Port};
 use cortex_m0::io;
 
+mod shell;
 
 #[no_mangle]
 pub fn application_entry() -> ! {
     // -----------------
     // Tasks go between the lines.
     // ----------------
+    kernel::syscall::new_task(shell::shell, Args::empty(), 1024, Priority::Normal, "shell");
     kernel::task::start_scheduler();
 
     loop { unsafe { arm::asm::bkpt() }; }

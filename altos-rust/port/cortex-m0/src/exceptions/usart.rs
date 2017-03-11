@@ -14,10 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+extern crate arm;
 
-use peripheral::usart::{Usart, USART2_TX_BUFFER_FULL_CHAN, USART2_TC_CHAN};
+use peripheral::usart::{Usart, USART2_TX_CHAN, USART2_RX_CHAN};
 use altos_core::syscall;
-use io::TX_BUFFER;
+use io::{TX_BUFFER, RX_BUFFER};
 
 // Handles transmitting any bytes when an interrupt is generated
 pub fn usart_tx(mut usart: Usart) {
@@ -27,13 +28,23 @@ pub fn usart_tx(mut usart: Usart) {
         }
         else {
             usart.disable_transmit_interrupt();
-            syscall::wake(USART2_TX_BUFFER_FULL_CHAN);
+            syscall::wake(USART2_TX_CHAN);
         }
     }
 
     if usart.is_transmission_complete() {
         usart.disable_transmit_complete_interrupt();
-        syscall::wake(USART2_TC_CHAN);
+        syscall::wake(USART2_TX_CHAN);
         usart.clear_tc_flag();
+    }
+}
+
+/// Handles receiving any bytes when an interrupt is generated
+pub fn usart_rx(mut usart: Usart) {
+    usart.clear_ore_flag();
+    if usart.is_rx_reg_full() {
+        let byte = usart.load_byte();
+        unsafe { RX_BUFFER.insert(byte) };
+        syscall::wake(USART2_RX_CHAN);
     }
 }

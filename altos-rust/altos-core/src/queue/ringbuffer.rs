@@ -15,7 +15,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-// TODO: Make variable sized ring buffers? On further research, this doesn't seem to be possible at
+// NOTE: Make variable sized ring buffers? On further research, this doesn't seem to be possible at
 // this time. From the documentation on the array primitive type:
 // "...Rust does not yet support code that is generic over the size of an array type."
 //
@@ -28,7 +28,6 @@ const RING_BUFFER_SIZE: usize = 8;
 /// A queue to store bytes of data.
 pub struct RingBuffer {
     data: [u8; RING_BUFFER_SIZE],
-    // TODO: u8?
     start: usize,
     end: usize,
     full: bool,

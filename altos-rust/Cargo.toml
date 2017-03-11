@@ -8,7 +8,7 @@ crate-type = ["staticlib"]
 
 [target.thumbv6m-none-eabi.dependencies.cortex_m0]
 path = "port/cortex-m0"
-features = ["serial"]
+features = ["minicom", "serial"]
 
 [profile.dev]
 opt-level = 1

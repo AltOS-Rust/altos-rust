@@ -53,9 +53,9 @@ pub use self::control::{WordLength, Mode, Parity, StopLength, HardwareFlowContro
 pub use self::baudr::BaudRate;
 
 /// Defines the wake/sleep channel for the TX buffer when full.
-pub const USART2_TX_BUFFER_FULL_CHAN: usize = 43;
-/// Defines the wake/sleep channel for when transmission complete flag is set.
-pub const USART2_TC_CHAN: usize = 43 * 2;
+pub const USART2_TX_CHAN: usize = 43;
+/// Defines the wake/sleep channel for when bytes are available in the receive buffer
+pub const USART2_RX_CHAN: usize = 43 * 3;
 
 /// STM32F0 has two Usart registers available.
 #[derive(Copy, Clone, Debug)]
@@ -63,7 +63,7 @@ pub enum UsartX {
     /// Connected to PA9 (TX) and PA10 (RX).
     Usart1,
     /// Usart2 is the debug serial.
-    /// Connected to PA2 (TX) and PA3 (RX).
+    /// Connected to PA2 (TX) and pa15 (RX).
     Usart2,
 }
 
@@ -281,17 +281,17 @@ pub fn init() {
 
     gpio::GPIO::enable(gpio::Group::A);
     let mut pa2 = gpio::Port::new(2, gpio::Group::A);
-    let mut pa3 = gpio::Port::new(3, gpio::Group::A);
+    let mut pa15 = gpio::Port::new(15, gpio::Group::A);
     pa2.set_function(gpio::AlternateFunction::One);
-    pa3.set_function(gpio::AlternateFunction::One);
+    pa15.set_function(gpio::AlternateFunction::One);
     pa2.set_speed(gpio::Speed::High);
-    pa3.set_speed(gpio::Speed::High);
+    pa15.set_speed(gpio::Speed::High);
     pa2.set_mode(gpio::Mode::Alternate);
-    pa3.set_mode(gpio::Mode::Alternate);
+    pa15.set_mode(gpio::Mode::Alternate);
     pa2.set_type(gpio::Type::PushPull);
-    pa3.set_type(gpio::Type::PushPull);
+    pa15.set_type(gpio::Type::PushPull);
     pa2.set_pull(gpio::Pull::Up);
-    pa3.set_pull(gpio::Pull::Up);
+    pa15.set_pull(gpio::Pull::Up);
 
     let mut usart2 = Usart::new(UsartX::Usart2);
     usart2.disable_usart();

@@ -54,13 +54,13 @@ use core::mem::size_of;
 /// assert_eq!(value, 0x0F0F);
 /// ```
 #[derive(Copy, Clone)]
-pub struct Volatile<T: Copy>(RawVolatile<T>);
+pub struct Volatile<T>(RawVolatile<T>);
 
 #[doc(hidden)]
 #[derive(Copy, Clone)]
-pub struct RawVolatile<T: Copy>(*const T);
+pub struct RawVolatile<T>(*const T);
 
-impl<T: Copy> Volatile<T> {
+impl<T> Volatile<T> {
   /// Creates a new `Volatile` pointer.
   ///
   /// This is unsafe because the address could be potentially anywhere, and forcing a write to a
@@ -89,7 +89,7 @@ impl<T: Copy> Volatile<T> {
   }
 }
 
-impl<T: Copy> Deref for Volatile<T> {
+impl<T> Deref for Volatile<T> {
   type Target = RawVolatile<T>;
 
   fn deref(&self) -> &Self::Target {
@@ -97,7 +97,7 @@ impl<T: Copy> Deref for Volatile<T> {
   }
 }
 
-impl<T: Copy> DerefMut for Volatile<T> {
+impl<T> DerefMut for Volatile<T> {
   fn deref_mut(&mut self) -> &mut Self::Target {
     &mut self.0
   }
@@ -114,6 +114,20 @@ impl<T: Copy> RawVolatile<T> {
   /// Loads a value from the address pointed at.
   pub unsafe fn load(&self) -> T {
     volatile_load(self.0)
+  }
+}
+
+impl<T> Deref for RawVolatile<T> {
+  type Target = T;
+
+  fn deref(&self) -> &Self::Target {
+    unsafe { &*self.0 }
+  }
+}
+
+impl<T> DerefMut for RawVolatile<T> {
+  fn deref_mut(&mut self) -> &mut Self::Target {
+    unsafe { &mut *(self.0 as *mut _) }
   }
 }
 

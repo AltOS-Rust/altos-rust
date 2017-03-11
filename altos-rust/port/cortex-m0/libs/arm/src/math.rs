@@ -37,74 +37,123 @@ pub extern "C" fn __aeabi_lmul(a: u64, b: u64) -> u64 {
 
 #[no_mangle]
 pub extern "C" fn __aeabi_uidiv(num: u32, den: u32) -> u32 {
-  __aeabi_uidivbase(num, den, false)
+    __aeabi_uidivbase(num, den, false)
 }
 
 #[no_mangle]
-pub extern "C" fn __aeabi_uidivmod(num: u32, den: u32) -> u32 {
-  __aeabi_uidivbase(num, den, true)
+pub extern "C" fn __udivmodsi4(mut num: u32, mut den: u32, rem_p: Option<&mut u32>) -> u32 {
+    let mut quot = 0;
+    let mut qbit = 1;
+
+    if den == 0 {
+        return 0;
+    }
+
+    /*
+     * left-justify denominator and count shift
+     */
+    while den as i32 >= 0 {
+        den <<= 1;
+        qbit <<= 1;
+    }
+
+    while qbit != 0 {
+        if den <= num {
+            num -= den;
+            quot += qbit;
+        }
+        den >>= 1;
+        qbit >>= 1;
+    }
+
+    if let Some(rem) = rem_p {
+        *rem = num;
+    }
+
+    return quot;
+}
+
+#[cfg(target_arch="arm")]
+#[no_mangle]
+#[naked]
+pub unsafe fn __aeabi_uidivmod() {
+    asm!("push {lr}
+          sub sp, sp, #4
+          mov r2, sp
+          bl __udivmodsi4
+          ldr r1, [sp]
+          add sp, sp, #4
+          pop {pc}"
+    );
+    ::core::intrinsics::unreachable();
 }
 
 fn __aeabi_uidivbase(mut num: u32, mut den: u32, modwanted: bool) -> u32 {
-  let mut bit: u32 = 1;
-  let mut res: u32 = 0;
+    let mut bit: u32 = 1;
+    let mut res: u32 = 0;
 
-  while den < num && bit != 0 && (den & (1<<31)) == 0 {
-    den <<= 1;
-    bit <<= 1;
-  }
-  while bit != 0 {
-    if num >= den {
-      num -= den;
-      res |= bit;
+    while den < num && bit != 0 && (den & (1<<31)) == 0 {
+        den <<= 1;
+        bit <<= 1;
     }
-    bit >>= 1;
-    den >>= 1;
-  }
-  if modwanted { num } else { res }
+    while bit != 0 {
+        if num >= den {
+            num -= den;
+            res |= bit;
+        }
+        bit >>= 1;
+        den >>= 1;
+    }
+    if modwanted { num } else { res }
 }
 
 #[cfg(test)]
 mod tests {
-  use super::*;
+    use super::*;
 
-  #[test]
-  fn divide_even() {
-    assert_eq!(10, __aeabi_uidiv(100, 10));
-  }
+    #[test]
+    fn test_divide_even() {
+        assert_eq!(10, __aeabi_uidiv(100, 10));
+    }
 
-  #[test]
-  fn divide_uneven() {
-    assert_eq!(10, __aeabi_uidiv(105, 10));
-  }
+    #[test]
+    fn test_divide_uneven() {
+        assert_eq!(10, __aeabi_uidiv(105, 10));
+    }
 
-  #[test]
-  fn divide_denominator_bigger() {
-    assert_eq!(0, __aeabi_uidiv(5, 10));
-  }
+    #[test]
+    fn test_divide_denominator_bigger() {
+        assert_eq!(0, __aeabi_uidiv(5, 10));
+    }
 
-  #[test]
-  fn mod_even() {
-    assert_eq!(0, __aeabi_uidivmod(100, 10));
-  }
+    #[test]
+    fn test_mod_even() {
+        let mut rem: u32 = !0;
+        assert_eq!(10, __udivmodsi4(100, 10, Some(&mut rem)));
+        assert_eq!(0, rem);
+    }
 
-  #[test]
-  fn mod_uneven() {
-    assert_eq!(5, __aeabi_uidivmod(105, 10));
-  }
+    #[test]
+    fn test_mod_uneven() {
+        let mut rem: u32 = !0;
+        assert_eq!(10, __udivmodsi4(105, 10, Some(&mut rem)));
+        assert_eq!(5, rem);
+    }
 
-  #[test]
-  fn mod_denominator_bigger() {
-    assert_eq!(5, __aeabi_uidivmod(5, 10));
-  }
+    #[test]
+    fn test_mod_denominator_bigger() {
+        let mut rem: u32 = !0;
+        assert_eq!(0, __udivmodsi4(5, 10, Some(&mut rem)));
+        assert_eq!(5, rem);
+    }
 
-  #[test]
-  fn multiply_bigger_first() {
-    assert_eq!(100, __aeabi_lmul(20, 5));
-  }
+    #[test]
+    fn test_multiply_bigger_first() {
+        assert_eq!(100, __aeabi_lmul(20, 5));
+    }
 
-  #[test]
-  fn multiply_bigger_second() {
-    assert_eq!(100, __aeabi_lmul(5, 20));
-  }
+    #[test]
+    fn test_multiply_bigger_second() {
+        assert_eq!(100, __aeabi_lmul(5, 20));
+    }
 }

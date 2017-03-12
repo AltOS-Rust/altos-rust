@@ -74,6 +74,26 @@ impl Adc {
         }
     }
 
+    pub fn get_calibration(&mut self) -> u16 {
+        self.cr.start_adc_calibration();
+        // Wait until calibration is finished
+        loop {
+            if !self.cr.is_adc_calibrating() {
+                break;
+            }
+        }
+        // Calibration data can now be read from data register
+        self.dr.get_calibration_factor()
+    }
+
+    pub fn adc_ready(&mut self) -> bool {
+        self.isr.adc_ready()
+    }
+
+    pub fn start_adc_conversion(&mut self) {
+        self.cr.start_adc_conversion();
+    }
+
     pub fn enable_adc(&mut self) {
         self.cr.enable_adc();
     }
@@ -135,7 +155,19 @@ pub fn init() {
     // ADC channel config (239.5 Cycles as sampling time)
 
     // ADC Calibration (Get calibration factor for ADC1)
+    // Right now, we just ignore the retreived calibration value. Is this correct?
+    adc1.get_calibration();
+
     // Enable ADC Peripheral (ADC1)
-    // While loop spin: Wait for ADRDY flag
+    adc1.enable_adc();
+
+    // Wait for ADRDY flag to be set
+    loop {
+        if adc1.adc_ready() {
+            break;
+        }
+    }
+
     // ADC start of conversion (ADC1)
+    adc1.start_adc_conversion();
 }

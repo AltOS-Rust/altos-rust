@@ -74,8 +74,13 @@ impl Adc {
         }
     }
 
-    // Functions here...
-    pub fn enable_adc(&mut self) {}
+    pub fn enable_adc(&mut self) {
+        self.cr.enable_adc();
+    }
+
+    pub fn disable_adc(&mut self) {
+        self.cr.disable_adc();
+    }
 }
 
 /// Initialize the ADC peripheral.
@@ -106,6 +111,15 @@ pub fn init() {
     pa0.set_pull(gpio::Pull::Neither);
 
     let mut adc1 = Adc::new();
+
+    // Functions we need...
+    // adc1.set_resolution();
+    // adc1.set_continuous_conversion_mode();
+    // adc1.set_align();
+    // adc1.set_scan_direction();
+    // adc1.set_channel_config();
+    // adc1.configure_channel();
+    // adc1.get_calibration();
 
     // ADC DeInit (?)
     // Initialize ADC structure (?)

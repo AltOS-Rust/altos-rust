@@ -15,7 +15,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-//...
 use super::super::Register;
 use super::defs::*;
 
@@ -39,5 +38,23 @@ impl Register for DR {
 }
 
 impl DR {
+    /*
+    DATA[15:0]: Converted data
+    These bits are read only. They contain the conversion result from the last converted channel.
+    Data may be left or right aligned.
+    Just after a calibration is complete, DATA[6:0] contains the calibration factor.
+    */
+    // Make this u16?
+    pub fn get_converted_data(&self) -> u16 {
+        unsafe {
+            self.addr().load() as u16
+        }
+    }
 
+    // Calibration factor is put in data register [6:0] at end of calibration
+    pub fn get_calibration_factor(&self) -> u16 {
+        unsafe {
+            (self.addr().load() & 0x7F) as u16
+        }
+    }
 }

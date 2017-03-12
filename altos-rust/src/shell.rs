@@ -30,10 +30,10 @@ const HELP: &'static str = "Available Commands:
     blink
     stop
     uptime
+    test
     exit
     help";
 
-const CLEAR: &'static str = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
 
 enum Expr {
     Op(Box<Expr>, Operator, Box<Expr>),
@@ -89,8 +89,7 @@ pub fn shell(_args: &mut Args) {
                     println!("");
                 },
                 "clear" => {
-                    println!("{}", CLEAR);
-                    println!("{}", CLEAR);
+                    print!("{}[2J", 27 as char)
                 },
                 "eval" => {
                     if words.len() > 2 {

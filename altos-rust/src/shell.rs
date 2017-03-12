@@ -33,7 +33,6 @@ const HELP: &'static str = "Available Commands:
     exit
     help";
 
-const CLEAR: &'static str = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
 
 enum Expr {
     Op(Box<Expr>, Operator, Box<Expr>),
@@ -89,8 +88,8 @@ pub fn shell(_args: &mut Args) {
                     println!("");
                 },
                 "clear" => {
-                    println!("{}", CLEAR);
-                    println!("{}", CLEAR);
+                    // ANSI ESC sequence to clear screen and put cursor at at top of terminal.
+                    print!("\x1b[2J")
                 },
                 "eval" => {
                     if words.len() > 2 {
@@ -133,15 +132,15 @@ pub fn shell(_args: &mut Args) {
                     args.add_num(rate);
                     blink_handle = Some(kernel::syscall::new_task(blink, args.finalize(), 1024, Priority::Low, "blink"));
                 },
-                "uptime" => {
-                    let hms = uptime();
-                    println!("{:02}:{:02}:{:02}", hms.0, hms.1, hms.2);
-                },
                 "stop" => {
                     if let Some(mut handle) = blink_handle.take() {
                         handle.destroy();
                         turn_off_led();
                     }
+                },
+                "uptime" => {
+                    let hms = uptime();
+                    println!("{:02}:{:02}:{:02}", hms.0, hms.1, hms.2);
                 },
                 "exit" => kernel::syscall::exit(),
                 "help" => println!("{}", HELP),

@@ -132,8 +132,8 @@ impl TestFreeList {
     // Helper function to check that every block in the list satisfies some condition
     // Returns false if the condition returns false for any node
     pub fn each_free_block_satisfies<F>(&self, condition: F) -> bool
-        where F: Fn(&free_list::BlockHeader) -> bool
-    {
+        where F: Fn(&free_list::BlockHeader) -> bool {
+
         let mut current = self.free_list.head;
         while let Some(curr) = current.get_ref() {
             if !condition(curr) {

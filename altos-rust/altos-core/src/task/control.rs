@@ -591,14 +591,14 @@ mod tests {
     use super::*;
     use test;
 
-    fn test_get_task() -> TaskControl {
+    fn get_task() -> TaskControl {
         // NOTE: We can't return the TaskControl and the TaskHandle as a tuple here because the
         // TaskControl object get's moved on return so we would end up with a dangling pointer in our
         // TaskHandle
         test::create_test_task(512, Priority::Normal, "task test")
     }
 
-    fn test_get_invalid_task() -> TaskControl {
+    fn get_invalid_task() -> TaskControl {
         let mut task = test::create_test_task(512, Priority::Normal, "invalid test");
         task.valid = INVALID_TASK;
         task

@@ -80,10 +80,11 @@ pub fn in_kernel_mode() -> bool {
         let stack_mask: usize;
         #[cfg(target_arch="arm")]
         asm!("mrs $0, CONTROL\n" /* get the stack control mask */
-        : "=r"(stack_mask)
-        : /* no inputs */
-        : /* no clobbers */
-        : "volatile");
+            : "=r"(stack_mask)
+            : /* no inputs */
+            : /* no clobbers */
+            : "volatile"
+        );
         #[cfg(not(target_arch="arm"))]
         {
             stack_mask = 0;
@@ -118,10 +119,11 @@ pub fn end_critical(primask: usize) {
     unsafe {
         #[cfg(target_arch="arm")]
         asm!("msr PRIMASK, $0"
-        : /* no outputs */
-        : "r"(primask)
-        : /* no clobbers */
-        : "volatile");
+            : /* no outputs */
+            : "r"(primask)
+            : /* no clobbers */
+            : "volatile"
+        );
     }
 }
 

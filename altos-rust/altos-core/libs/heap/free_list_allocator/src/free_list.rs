@@ -143,7 +143,7 @@ impl FreeList {
         // Adjust the heap size down based on alignment change to starting position
         // and then adjust it down again if it's not aligned to block header size.
         let use_heap_size =
-        alignment::align_down(heap_size - align_diff, mem::size_of::<BlockHeader>());
+            alignment::align_down(heap_size - align_diff, mem::size_of::<BlockHeader>());
 
         match heap.get_ref_mut() {
             Some(start) => *start = BlockHeader::new(use_heap_size),
@@ -155,7 +155,7 @@ impl FreeList {
     // Traverses the free list, looking for two sequential free blocks which return true
     // when passed into match_condition.
     fn find_block<F: Fn(Option<&BlockHeader>, &BlockHeader) -> bool>(&mut self, match_condition: F)
-    -> (Option<&'static mut BlockHeader>, Option<&'static mut BlockHeader>) {
+        -> (Option<&'static mut BlockHeader>, Option<&'static mut BlockHeader>) {
 
         let mut previous: Link = Link::null();
         let mut current = self.head;

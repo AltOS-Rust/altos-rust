@@ -373,6 +373,7 @@ mod tests {
     use alloc::boxed::Box;
 
     #[test]
+    #[allow(non_snake_case)]
     fn test_empty_dequeue_returns_None() {
         let mut list: Queue<Node<usize>> = Queue::new();
 

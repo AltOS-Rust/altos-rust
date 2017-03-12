@@ -75,23 +75,23 @@ impl Operator {
 }
 
 pub fn shell(_args: &mut Args) {
-	let mut blink_handle: Option<TaskHandle> = None;
+    let mut blink_handle: Option<TaskHandle> = None;
     loop {
         print!(" > ");
         let line = read_line();
         let mut words: Vec<&str> = line.split(' ').collect();
-		if words.len() > 0 {
-			match words.remove(0) {
-				"echo" => {
-					for word in words {
-						print!("{} ", word);
-					}
-					println!("");
-				},
-				"clear" => {
-					println!("{}", CLEAR);
-					println!("{}", CLEAR);
-				},
+        if words.len() > 0 {
+            match words.remove(0) {
+                "echo" => {
+                    for word in words {
+                        print!("{} ", word);
+                    }
+                    println!("");
+                },
+                "clear" => {
+                    println!("{}", CLEAR);
+                    println!("{}", CLEAR);
+                },
                 "eval" => {
                     if words.len() > 2 {
                         let expr = match (words[0].parse(), words[2].parse()) {
@@ -117,7 +117,7 @@ pub fn shell(_args: &mut Args) {
                         println!("USAGE: eval <lhs> <op> <rhs>");
                     }
                 },
-				"blink" => {
+                "blink" => {
                     let rate: usize = if words.len() > 0 {
                         words[0].parse::<usize>().unwrap_or(100)
                     }
@@ -125,53 +125,53 @@ pub fn shell(_args: &mut Args) {
                         100
                     };
 
-					if let Some(mut handle) = blink_handle.take() {
-						handle.destroy();
-						turn_off_led();
-					}
-					let mut args = ArgsBuilder::with_capacity(1);
-					args.add_num(rate);
-					blink_handle = Some(kernel::syscall::new_task(blink, args.finalize(), 1024, Priority::Low, "blink"));
-				},
+                    if let Some(mut handle) = blink_handle.take() {
+                        handle.destroy();
+                        turn_off_led();
+                    }
+                    let mut args = ArgsBuilder::with_capacity(1);
+                    args.add_num(rate);
+                    blink_handle = Some(kernel::syscall::new_task(blink, args.finalize(), 1024, Priority::Low, "blink"));
+                },
                 "uptime" => {
                     let hms = uptime();
                     println!("{:02}:{:02}:{:02}", hms.0, hms.1, hms.2);
                 },
-				"stop" => {
-					if let Some(mut handle) = blink_handle.take() {
-						handle.destroy();
-						turn_off_led();
-					}
-				},
+                "stop" => {
+                    if let Some(mut handle) = blink_handle.take() {
+                        handle.destroy();
+                        turn_off_led();
+                    }
+                },
                 "quit" => kernel::syscall::exit(),
-				"help" => println!("{}", HELP),
+                "help" => println!("{}", HELP),
                 "" => {},
-				command_word => println!("Unknown command: '{}'", command_word),
-			}
-		}
+                command_word => println!("Unknown command: '{}'", command_word),
+            }
+        }
     }
 }
 
 fn turn_on_led() {
-	use cortex_m0::peripheral::gpio::{self, Port};
-	let pb3 = Port::new(3, gpio::Group::B);
-	pb3.set();
+    use cortex_m0::peripheral::gpio::{self, Port};
+    let pb3 = Port::new(3, gpio::Group::B);
+    pb3.set();
 }
 
 fn turn_off_led() {
-	use cortex_m0::peripheral::gpio::{self, Port};
-	let pb3 = Port::new(3, gpio::Group::B);
-	pb3.reset();
+    use cortex_m0::peripheral::gpio::{self, Port};
+    let pb3 = Port::new(3, gpio::Group::B);
+    pb3.reset();
 }
 
 fn blink(args: &mut Args) {
-	let rate = args.pop_num();
-	loop {
-		turn_on_led();
-		delay_ms(rate);
-		turn_off_led();
-		delay_ms(rate);
-	}
+    let rate = args.pop_num();
+    loop {
+        turn_on_led();
+        delay_ms(rate);
+        turn_off_led();
+        delay_ms(rate);
+    }
 }
 
 fn get_and_echo_char() -> Option<char> {
@@ -194,6 +194,7 @@ fn read_line() -> String {
                 return line;
             }
             if ch == '\x08' {
+                // Force the cursor to stay past the end of our prompt
                 if let None = line.pop() {
                     print!(" ");
                 }

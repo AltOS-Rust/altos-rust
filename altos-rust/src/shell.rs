@@ -88,7 +88,8 @@ pub fn shell(_args: &mut Args) {
                     println!("");
                 },
                 "clear" => {
-                    print!("{}[2J", 27 as char)
+                    // ANSI ESC sequence to clear screen and put cursor at at top of terminal.
+                    print!("\x1b[2J")
                 },
                 "eval" => {
                     if words.len() > 2 {

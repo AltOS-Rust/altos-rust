@@ -131,15 +131,15 @@ pub fn shell(_args: &mut Args) {
                     args.add_num(rate);
                     blink_handle = Some(kernel::syscall::new_task(blink, args.finalize(), 1024, Priority::Low, "blink"));
                 },
-                "uptime" => {
-                    let hms = uptime();
-                    println!("{:02}:{:02}:{:02}", hms.0, hms.1, hms.2);
-                },
                 "stop" => {
                     if let Some(mut handle) = blink_handle.take() {
                         handle.destroy();
                         turn_off_led();
                     }
+                },
+                "uptime" => {
+                    let hms = uptime();
+                    println!("{:02}:{:02}:{:02}", hms.0, hms.1, hms.2);
                 },
                 "exit" => kernel::syscall::exit(),
                 "help" => println!("{}", HELP),

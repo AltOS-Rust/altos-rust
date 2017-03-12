@@ -208,8 +208,11 @@ fn read_line() -> String {
 
 fn uptime() -> (usize, usize, usize) {
     let curr_time = now();
-    let minutes = curr_time.sec / 60;
+
+    let mut minutes = curr_time.sec / 60;
     let hours = minutes / 60;
     let seconds = curr_time.sec % 60;
+    minutes = minutes % 60;
+
     (hours, minutes, seconds)
 }

@@ -17,7 +17,7 @@
 
 use cortex_m0::kernel;
 use cortex_m0::io;
-use cortex_m0::time::delay_ms;
+use cortex_m0::time::{delay_ms, now};
 use kernel::task::{TaskHandle, Priority};
 use kernel::task::args::{ArgsBuilder, Args};
 use kernel::collections::{Vec, String};
@@ -29,6 +29,7 @@ const HELP: &'static str = "Available Commands:
     eval
     blink
     stop
+    uptime
     quit
     help";
 
@@ -132,6 +133,10 @@ pub fn shell(_args: &mut Args) {
 					args.add_num(rate);
 					blink_handle = Some(kernel::syscall::new_task(blink, args.finalize(), 1024, Priority::Low, "blink"));
 				},
+                "uptime" => {
+                    let hms = uptime();
+                    println!("{:02}:{:02}:{:02}", hms.0, hms.1, hms.2);
+                },
 				"stop" => {
 					if let Some(mut handle) = blink_handle.take() {
 						handle.destroy();
@@ -198,4 +203,12 @@ fn read_line() -> String {
             }
         }
     }
+}
+
+fn uptime() -> (usize, usize, usize) {
+    let curr_time = now();
+    let minutes = curr_time.sec / 60;
+    let hours = minutes / 60;
+    let seconds = curr_time.sec % 60;
+    (hours, minutes, seconds)
 }

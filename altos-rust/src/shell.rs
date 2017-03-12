@@ -30,7 +30,7 @@ const HELP: &'static str = "Available Commands:
     blink
     stop
     uptime
-    quit
+    exit
     help";
 
 const CLEAR: &'static str = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
@@ -143,7 +143,7 @@ pub fn shell(_args: &mut Args) {
                         turn_off_led();
                     }
                 },
-                "quit" => kernel::syscall::exit(),
+                "exit" => kernel::syscall::exit(),
                 "help" => println!("{}", HELP),
                 "" => {},
                 command_word => println!("Unknown command: '{}'", command_word),

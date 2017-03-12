@@ -37,7 +37,7 @@ const CLEAR: &'static str = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\
 enum Expr {
     Op(Box<Expr>, Operator, Box<Expr>),
     Val(isize),
-    Invalid,
+    Invalid(&'static str),
 }
 
 impl Expr {
@@ -50,7 +50,7 @@ impl Expr {
                 }
             },
             Expr::Val(x) => Ok(x),
-            Expr::Invalid => Err("Invalid expression"),
+            Expr::Invalid(msg) => Err(msg),
         }
     }
 }
@@ -93,17 +93,19 @@ pub fn shell(_args: &mut Args) {
 				},
                 "eval" => {
                     if words.len() > 2 {
-                        let expr = match (words[0].parse::<isize>(), words[2].parse::<isize>()) {
+                        let expr = match (words[0].parse(), words[2].parse()) {
                             (Ok(x), Ok(y)) => {
                                 match words[1] {
                                     "+" => Expr::Op(Box::new(Expr::Val(x)), Operator::Add, Box::new(Expr::Val(y))),
                                     "-" => Expr::Op(Box::new(Expr::Val(x)), Operator::Sub, Box::new(Expr::Val(y))),
                                     "*" => Expr::Op(Box::new(Expr::Val(x)), Operator::Mul, Box::new(Expr::Val(y))),
                                     "/" => Expr::Op(Box::new(Expr::Val(x)), Operator::Div, Box::new(Expr::Val(y))),
-                                    _ => Expr::Invalid,
+                                    _ => Expr::Invalid("Invalid operator"),
                                 }
                             },
-                            _ => Expr::Invalid,
+                            (Err(_), Ok(_)) => Expr::Invalid("Left expression failed to parse"),
+                            (Ok(_), Err(_)) => Expr::Invalid("Right expression failed to parse"),
+                            (Err(_), Err(_)) => Expr::Invalid("Both expressions failed to parse"),
                         };
                         match expr.eval() {
                             Ok(result) => println!("{} {} {} = {}", words[0], words[1], words[2], result),

@@ -16,7 +16,16 @@
  */
 
 #[no_mangle]
-pub extern "C" fn __aeabi_lmul(a: u64, b: u64) -> u64 {
+pub extern "C" fn __aeabi_lmul(b_low: u32, a_hi: u32, a_low: u32, b_hi: u32) -> u64 {
+    // NOTE: DANGER WILL ROBINSON, DANGER! Currently there's a bug where the high and low bits of
+    // the arguments being passed into this method are passed in the wrong order. This is a
+    // workaround to put the bits back into the correct order. This code will certainly shatter
+    // if/when this bug is fixed. Issue is at: https://github.com/rust-lang/rust/issues/39056
+    //
+    // Right now we're doing this mainly for demoing purposes just to get multiplication working
+    let a: u64 = ((a_hi as u64) << 32) | a_low as u64;
+    let b: u64 = ((b_hi as u64) << 32) | b_low as u64;
+
     let half_bits: u32 = 64 / 4;
     let lower_mask = !0 >> half_bits;
     let mut low = ((a as u32) & lower_mask).wrapping_mul((b as u32) & lower_mask);

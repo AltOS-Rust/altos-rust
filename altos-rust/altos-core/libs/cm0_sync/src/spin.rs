@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2017  AltOS-Rust Team
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2017  AltOS-Rust Team
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
 //! Spin based synchronization.
 //!
@@ -27,7 +27,6 @@
 
 // NOTE: This has been copied into the memory allocation layer because of the way our OS stack is
 // laid out. It's a dumb but straigtforward hack and allow us to make heap allocation thread-safe.
-
 
 use atomic::{ATOMIC_BOOL_INIT, AtomicBool, Ordering};
 use core::ops::{Drop, Deref, DerefMut};
@@ -163,11 +162,9 @@ impl<'mx, T: ?Sized> Drop for SpinGuard<'mx, T> {
 #[cfg(test)]
 mod tests {
     use std::prelude::v1::*;
-
     use std::sync::mpsc::channel;
     use std::sync::Arc;
     use std::thread;
-
     use super::*;
 
     #[derive(Eq, PartialEq, Debug)]

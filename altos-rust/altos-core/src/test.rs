@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2017 AltOS-Rust Team
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2017 AltOS-Rust Team
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
 //! This module provides a testing framework for the AltOS operating system to help test features
 //! of the operating system.
@@ -23,8 +23,9 @@ macro_rules! assert_not {
     ($cond:expr, $($arg:tt)+) => { assert!(!$cond $(, $arg)+); }
 }
 
-use sched::{CURRENT_TASK, SLEEP_QUEUE, DELAY_QUEUE, OVERFLOW_DELAY_QUEUE, PRIORITY_QUEUES,
-            NORMAL_TASK_COUNTER};
+use sched::{CURRENT_TASK, SLEEP_QUEUE, DELAY_QUEUE,
+            OVERFLOW_DELAY_QUEUE, PRIORITY_QUEUES, NORMAL_TASK_COUNTER};
+
 use sync::{SpinMutex, SpinGuard};
 use task::{Priority, TaskControl, TaskHandle, State, Delay};
 use task::args::Args;
@@ -45,13 +46,13 @@ pub fn set_up() -> SpinGuard<'static, ()> {
     guard
 }
 
-pub fn create_test_task(stack_size: usize, priority: Priority, name: &'static str)
--> TaskControl {
+pub fn create_test_task(stack_size: usize, priority: Priority, name: &'static str) -> TaskControl {
     TaskControl::new(test_task, Args::empty(), stack_size, priority, name)
 }
 
-pub fn create_and_schedule_test_task(stack_size: usize, priority: Priority, name: &'static str)
--> TaskHandle {
+pub fn create_and_schedule_test_task(stack_size: usize,
+    priority: Priority, name: &'static str) -> TaskHandle
+{
     ::syscall::new_task(test_task, Args::empty(), stack_size, priority, name)
 }
 
@@ -70,10 +71,9 @@ pub fn block_current_task(delay_type: Delay) {
 }
 
 pub fn create_two_tasks() -> (TaskHandle, TaskHandle) {
-  let handle_1 = create_and_schedule_test_task(512, Priority::Normal, "test task 1");
-  let handle_2 = create_and_schedule_test_task(512, Priority::Normal, "test task 2");
-  (handle_1, handle_2)
+    let handle_1 = create_and_schedule_test_task(512, Priority::Normal, "test task 1");
+    let handle_2 = create_and_schedule_test_task(512, Priority::Normal, "test task 2");
+    (handle_1, handle_2)
 }
-
 
 fn test_task(_args: &mut Args) {}

@@ -30,7 +30,6 @@ const HELP: &'static str = "Available Commands:
     blink
     stop
     uptime
-    test
     exit
     help";
 

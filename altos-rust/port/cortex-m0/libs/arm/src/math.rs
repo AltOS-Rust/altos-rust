@@ -80,7 +80,7 @@ pub extern "C" fn __udivmodsi4(mut num: u32, mut den: u32, rem_p: Option<&mut u3
 #[cfg(target_arch="arm")]
 #[no_mangle]
 #[naked]
-unsafe fn __aeabi_uidivmod() {
+pub unsafe fn __aeabi_uidivmod() {
     asm!("push {lr}
         sub sp, sp, #4
         mov r2, sp

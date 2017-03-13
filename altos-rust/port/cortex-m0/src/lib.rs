@@ -1,25 +1,27 @@
 /*
- * Copyright (C) 2017 AltOS-Rust Team
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2017 AltOS-Rust Team
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
+
+//! This crate is the hardware interface for the cortex-m0 processor.
 
 #![feature(lang_items)]
 #![feature(asm)]
 #![feature(naked_functions)]
 #![feature(const_fn)]
-#![feature(drop_types_in_const)] // Probably can come back and remove this later
+#![feature(drop_types_in_const)]
 #![allow(dead_code)]
 #![feature(linkage)]
 //#![feature(compiler_builtins_lib)] // Keep this around in case we want to try and get it working
@@ -40,9 +42,9 @@ pub extern crate arm;
 mod test;
 
 pub mod io;
-mod exceptions;
-mod interrupt;
-mod system_control;
+pub mod exceptions;
+pub mod interrupt;
+pub mod system_control;
 pub mod peripheral;
 pub mod time;
 
@@ -55,6 +57,10 @@ pub use exceptions::EXCEPTIONS;
 
 use altos_core::volatile;
 
+/// Re-exports a subset of the core operating system interface.
+///
+/// This is to enable a higher level of control as to what the user
+/// can access.
 pub mod kernel {
     pub use altos_core::syscall;
 
@@ -65,13 +71,11 @@ pub mod kernel {
         pub use altos_core::{Priority};
     }
 
-    // TODO: Do we want to expose an allocation interface?
     pub mod alloc {
         pub use altos_core::alloc::boxed::Box;
     }
 
     pub mod collections {
-        // TODO: Do we want to expose an allocation interface?
         pub use altos_core::collections::Vec;
         pub use altos_core::queue::{SortedList, Queue, Node};
     }
@@ -88,7 +92,8 @@ pub mod kernel {
 #[cfg(not(any(test, feature="doc")))]
 #[lang = "panic_fmt"]
 extern "C" fn panic_fmt(fmt: core::fmt::Arguments,
-                        (file, line): (&'static str, u32)) -> ! {
+    (file, line): (&'static str, u32)) -> ! {
+
     unsafe { arm::asm::disable_interrupts() };
     kprintln!("Panicked at File: {}, Line: {}", file, line);
     kprintln!("{}", fmt);
@@ -135,7 +140,8 @@ fn init_data_segment() {
                 "str r0, [r2]\n",
                 "adds r2, #4\n",
                 "b copy\n", /* repeat until done */
-                "d_done:\n")
+                "d_done:\n"
+            )
             : /* no outputs */
             : /* no inputs */
             : "r0", "r1", "r2", "r3" /* clobbers */
@@ -158,7 +164,8 @@ fn init_bss_segment() {
                 "str r0, [r1]\n", /* if not, zero out memory at current location */
                 "adds r1, #4\n",
                 "b loop\n", /* repeat until done */
-                "b_done:\n")
+                "b_done:\n"
+            )
             : /* no outputs */
             : /* no inputs */
             : "r0", "r1", "r2" /* clobbers */
@@ -168,23 +175,23 @@ fn init_bss_segment() {
 }
 
 fn init_heap() {
-#[cfg(target_arch="arm")]
+    #[cfg(target_arch="arm")]
     unsafe {
         let heap_start: usize;
         let heap_size: usize;
         asm!(
-                concat!(
-                    "ldr r0, =_heap_start\n",
-                    "ldr r1, =_heap_end\n",
-                    "subs r2, r1, r0\n")
-                : "={r0}"(heap_start), "={r2}"(heap_size)
-                : /* no inputs */
-                : "r0", "r1", "r2"
-                : "volatile"
-            );
+            concat!(
+                "ldr r0, =_heap_start\n",
+                "ldr r1, =_heap_end\n",
+                "subs r2, r1, r0\n"
+            )
+            : "={r0}"(heap_start), "={r2}"(heap_size)
+            : /* no inputs */
+            : "r0", "r1", "r2"
+            : "volatile"
+        );
         altos_core::init::init_heap(heap_start, heap_size);
     }
-
 }
 
 fn init_led() {

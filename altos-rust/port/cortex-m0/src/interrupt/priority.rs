@@ -1,23 +1,28 @@
 /*
- * Copyright (C) 2017 AltOS-Rust Team
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2017 AltOS-Rust Team
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
 use peripheral::{Register, Field};
 use interrupt::defs::Hardware;
 
+/// The priority of the interrupt.
+///
+/// If in the interrupt handler and another interrupt with a
+/// higher priority is generated, the CPU will handle the higher
+/// priority interrupt before it finishes handling the lower priority interrupt.
 #[derive(Copy, Clone)]
 pub enum Priority {
     Highest,
@@ -58,20 +63,20 @@ impl PriorityControl {
     pub fn new(base_addr: *const u32) -> Self {
         PriorityControl {
             ipr_registers: [
-                IPR::new(base_addr, 0x00),
-                IPR::new(base_addr, 0x04),
-                IPR::new(base_addr, 0x08),
-                IPR::new(base_addr, 0x0C),
-                IPR::new(base_addr, 0x10),
-                IPR::new(base_addr, 0x14),
-                IPR::new(base_addr, 0x18),
-                IPR::new(base_addr, 0x1C)],
+            IPR::new(base_addr, 0x00),
+            IPR::new(base_addr, 0x04),
+            IPR::new(base_addr, 0x08),
+            IPR::new(base_addr, 0x0C),
+            IPR::new(base_addr, 0x10),
+            IPR::new(base_addr, 0x14),
+            IPR::new(base_addr, 0x18),
+            IPR::new(base_addr, 0x1C)],
         }
     }
 
-    pub fn set_priority(&self, priority: Priority, hardware: Hardware) {
+    pub fn set_priority(&mut self, priority: Priority, hardware: Hardware) {
         let interrupt = hardware as u8;
-        let ipr = self.ipr_registers[(interrupt / 4) as usize];
+        let mut ipr = self.ipr_registers[(interrupt / 4) as usize];
         ipr.set_priority(priority, interrupt % 4);
     }
 
@@ -109,8 +114,8 @@ impl IPR {
             mem_offset: offset,
         }
     }
-    
-    fn set_priority(&self, priority: Priority, interrupt: u8) {
+
+    fn set_priority(&mut self, priority: Priority, interrupt: u8) {
 
         let mask = priority.mask();
         unsafe {

@@ -308,6 +308,6 @@ pub fn init() {
     usart2.enable_transmit_interrupt();
     usart2.enable_usart();
 
-    let nvic = interrupt::nvic();
+    let mut nvic = interrupt::nvic();
     nvic.enable_interrupt(interrupt::Hardware::USART2);
 }

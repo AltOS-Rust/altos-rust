@@ -15,6 +15,8 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+//! This module handles defining exception handlers.
+
 #[cfg(feature="serial")]
 mod usart;
 

@@ -203,7 +203,7 @@ fn init_led() {
 }
 
 fn init_clock() {
-    let rcc = rcc::rcc();
+    let mut rcc = rcc::rcc();
 
     // 12 is the max we can go since our input clock is (8MHz / 2)
     let clock_multiplier: u8 = 12;
@@ -230,7 +230,7 @@ fn init_clock() {
 }
 
 fn init_ticks() {
-    let systick = systick::systick();
+    let mut systick = systick::systick();
 
     systick.use_processor_clock();
     systick.clear_current_value();

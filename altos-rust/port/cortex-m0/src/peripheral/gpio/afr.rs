@@ -16,6 +16,7 @@
 */
 
 use super::super::{Register, Field};
+use super::defs::*;
 
 /// Set the functionality of a port.
 ///
@@ -50,14 +51,14 @@ impl Field for AlternateFunction {
 impl AlternateFunction {
     fn from_mask(mask: u32) -> Self {
         match mask {
-            0b0000 => AlternateFunction::Zero,
-            0b0001 => AlternateFunction::One,
-            0b0010 => AlternateFunction::Two,
-            0b0011 => AlternateFunction::Three,
-            0b0100 => AlternateFunction::Four,
-            0b0101 => AlternateFunction::Five,
-            0b0110 => AlternateFunction::Six,
-            0b0111 => AlternateFunction::Seven,
+            AF0 => AlternateFunction::Zero,
+            AF1 => AlternateFunction::One,
+            AF2 => AlternateFunction::Two,
+            AF3 => AlternateFunction::Three,
+            AF4 => AlternateFunction::Four,
+            AF5 => AlternateFunction::Five,
+            AF6 => AlternateFunction::Six,
+            AF7 => AlternateFunction::Seven,
             _ => panic!("AlternateFunction::from_mask - mask was not a valid value!"),
         }
     }
@@ -111,7 +112,7 @@ impl Register for AFRL {
     }
 
     fn mem_offset(&self) -> u32 {
-        0x20
+        AFRL_OFFSET
     }
 }
 

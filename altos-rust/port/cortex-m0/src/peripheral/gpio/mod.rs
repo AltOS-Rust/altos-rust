@@ -70,10 +70,10 @@ impl Control for GPIO {
 impl GPIO {
     fn group(group: Group) -> GPIO {
         match group {
-            Group::A => GPIO::new(0x4800_0000 as *const _),
-            Group::B => GPIO::new(0x4800_0400 as *const _),
-            Group::C => GPIO::new(0x4800_0800 as *const _),
-            Group::F => GPIO::new(0x4800_1400 as *const _),
+            Group::A => GPIO::new(GROUPA_ADDR),
+            Group::B => GPIO::new(GROUPB_ADDR),
+            Group::C => GPIO::new(GROUPC_ADDR),
+            Group::F => GPIO::new(GROUPF_ADDR),
         }
     }
 
@@ -97,7 +97,7 @@ impl GPIO {
     ///   GPIO::enable(Group::B); // Enable IO group B (LED is pb3)
     /// ```
     pub fn enable(group: Group) {
-        let rcc = rcc::rcc();
+        let mut rcc = rcc::rcc();
 
         // Get the register bit that should be set to enable this group
         let io_group = match group {

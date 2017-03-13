@@ -26,7 +26,7 @@ pub const CFGR1_OFFSET:  u32 = 0x0C;
 pub const CFGR1_DMEAN:   u32 = 0b1;
 pub const CFGR1_DMACFG:  u32 = 0b1 << 1;
 pub const CFGR1_SCANDIR: u32 = 0b1 << 2;
-// CFGR1_RES bits 3 - 4 select conversion resolutions.
+// CFGR1_RES bits 4 - 3 select conversion resolutions.
 pub const CFGR1_RES_12_BIT: u32 = 0x0 << 3;
 pub const CFGR1_RES_10_BIT: u32 = 0x1 << 3;
 pub const CFGR1_RES_8_BIT: u32 = 0x2 << 3;
@@ -34,7 +34,7 @@ pub const CFGR1_RES_6_BIT: u32 = 0x3 << 3;
 
 pub const CFGR1_ALIGN: u32 = 0b1 << 5;
 
-// CFGR1_EXTSEL bits 6-8 select external events to trigger the start of conversion
+// CFGR1_EXTSEL bits 6 - 8 select external events to trigger the start of conversion
 pub const CFGR1_EXTSEL_TRG0: u32 = 0x0 << 6;
 pub const CFGR1_EXTSEL_TRG1: u32 = 0x1 << 6;
 pub const CFGR1_EXTSEL_TRG2: u32 = 0x2 << 6;
@@ -56,12 +56,12 @@ pub const CFGR1_CONT:       u32 = 0b1 << 13;
 pub const CFGR1_WAIT:       u32 = 0b1 << 14;
 pub const CFGR1_AUTOFF:     u32 = 0b1 << 15;
 pub const CFGR1_DISCEN:     u32 = 0b1 << 16;
-// Bits 21 - 17 are reserved and must be kept at reset value.
+// Bits 17 - 21 are reserved and must be kept at reset value.
 pub const CFGR1_AWDSGL:     u32 = 0b1 << 22;
 pub const CFGR1_AWDEN:     u32 = 0b1 << 23;
-// Bits 25 - 24 are reserved and must be kept at reset value.
+// Bits 24 - 25 are reserved and must be kept at reset value.
 
-// CFGR1_AWDCH bits 26 - 30 select 1 of the 18 input channels to be guarded by the analog watchdog.
+// CFGR1_AWDCH bits 26 - 30 select 1 of the 19 input channels to be guarded by the analog watchdog.
 // This may be an unnecassary definition... but I put them in here for completeness.
 pub const CFGR1_AWDCH_0:     u32 = 0x0 << 26;
 pub const CFGR1_AWDCH_1:     u32 = 0x1 << 26;
@@ -83,4 +83,40 @@ pub const CFGR1_AWDCH_16:     u32 = 0x16 << 26;
 pub const CFGR1_AWDCH_17:     u32 = 0x17 << 26;
 pub const CFGR1_AWDCH_18:     u32 = 0x18 << 26;
 // The remaining bit strings for for this range are reserved and must not be used.
-// Bit 9 is reserved and must be kept at reset value.
+// Bit 31 is reserved and must be kept at reset value.
+
+// ------------------------------------
+// ADC - CFGR2 bit definitions
+// ------------------------------------
+
+pub const CFGR2_OFFSET:         u32 = 0x10;
+// Bits 0 - 29 are reserved and must be kept at reset value.
+
+// CFGR2_CKMODE bits 30 - 31 select the ADC clock mode.
+// Bit string 0b11 for this range is reserved
+pub const CFGR2_CKMODE_ADCCLK:  u32 = 0x0 << 30;
+pub const CFGR2_CKMODE_PCLK2:   u32 = 0x1 << 30;
+pub const CFGR2_CKMODE_PCLK4:   u32 = 0x2 << 30;
+
+// ------------------------------------
+// ADC - SMPR bit definitions
+// ------------------------------------
+
+pub const SMPR_OFFSET:          u32 = 0x14;
+// SMPR_SMP bits 0 - 2 select the sampling time that applies to all channels.
+// Here, the variable suffix "1_5" means 1.5 ADC clock cycles and so forth.
+pub const SMPR_SMP_1_5:          u32 = 0x0;
+pub const SMPR_SMP_1_5:          u32 = 0x1;
+pub const SMPR_SMP_13_5:         u32 = 0x2;
+pub const SMPR_SMP_28_5:         u32 = 0x3;
+pub const SMPR_SMP_41_5:         u32 = 0x4;
+pub const SMPR_SMP_55_5:         u32 = 0x5;
+pub const SMPR_SMP_71_5:         u32 = 0x6;
+pub const SMPR_SMP_238_5:        u32 = 0x7;
+
+// Bits 3 - 31 are reserved and must be kept at reset value.
+
+// ------------------------------------
+// ADC - ADC_CHSELR bit definitions
+// ------------------------------------
+pub const ADC_CHSELR_OFFSET:        u32 = 0x28;

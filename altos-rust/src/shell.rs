@@ -22,17 +22,83 @@ use kernel::task::{TaskHandle, Priority};
 use kernel::task::args::{ArgsBuilder, Args};
 use kernel::collections::{Vec, String};
 use kernel::alloc::Box;
+use core::fmt::{self, Display};
 
 const HELP: &'static str = "Available Commands:
-    echo
+    echo [string ...]
     clear
-    eval
-    blink
+    eval <lhs> <op> <rhs>
+    blink [rate]
     stop
     uptime
     exit
-    help";
+    help [cmd]";
 
+const ECHO_HELP: &'static str = "Echo a string to the terminal";
+const CLEAR_HELP: &'static str = "Clear the terminal";
+const EVAL_HELP: &'static str = "Evaluate an expression of the form x <op> y";
+const BLINK_HELP: &'static str = "Blink the LED at the given rate in milliseconds";
+const STOP_HELP: &'static str = "Stop blinking the LED";
+const UPTIME_HELP: &'static str = "Display how long the system has been running as HH:MM:SS";
+const EXIT_HELP: &'static str = "Exit the shell";
+const HELP_HELP: &'static str = "Display available commands or more information about a certain command";
+
+enum ReadError {
+    UnclosedString,
+}
+
+impl Display for ReadError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let msg = match *self {
+            ReadError::UnclosedString => "unclosed string found",
+        };
+        write!(f, "{}", msg)
+    }
+}
+
+enum Command<'a> {
+    Echo,
+    Clear,
+    Eval,
+    Blink,
+    Stop,
+    Uptime,
+    Exit,
+    Help,
+    Invalid(&'a str),
+}
+
+impl<'a> Command<'a> {
+    fn help_msg(&self) -> (&'static str, &str) {
+        match *self {
+            Command::Echo => (ECHO_HELP, ""),
+            Command::Clear => (CLEAR_HELP, ""),
+            Command::Eval => (EVAL_HELP, ""),
+            Command::Blink => (BLINK_HELP, ""),
+            Command::Stop => (STOP_HELP, ""),
+            Command::Uptime => (UPTIME_HELP, ""),
+            Command::Exit => (EXIT_HELP, ""),
+            Command::Help => (HELP_HELP, ""),
+            Command::Invalid(invalid) => ("Unknown command: ", invalid),
+        }
+    }
+}
+
+impl<'a> From<&'a str> for Command<'a> {
+    fn from(string: &'a str) -> Command<'a> {
+        match string {
+            "echo" => Command::Echo,
+            "clear" => Command::Clear,
+            "eval" => Command::Eval,
+            "blink" => Command::Blink,
+            "stop" => Command::Stop,
+            "uptime" => Command::Uptime,
+            "exit" => Command::Exit,
+            "help" => Command::Help,
+            invalid => Command::Invalid(invalid),
+        }
+    }
+}
 
 enum Expr {
     Op(Box<Expr>, Operator, Box<Expr>),
@@ -77,21 +143,28 @@ pub fn shell(_args: &mut Args) {
     let mut blink_handle: Option<TaskHandle> = None;
     loop {
         print!(" > ");
-        let line = read_line();
-        let mut words: Vec<&str> = line.split(' ').collect();
+        let line = match read_line() {
+            Ok(line) => line,
+            Err(err) => {
+                println!("Error: {}", err);
+                continue;
+            },
+        };
+        let mut words: Vec<&str> = line.iter().map(|s| s.as_ref()).collect();
+        //let mut words: Vec<&str> = line.split(' ').collect();
         if words.len() > 0 {
-            match words.remove(0) {
-                "echo" => {
+            match Command::from(words.remove(0)) {
+                Command::Echo => {
                     for word in words {
                         print!("{} ", word);
                     }
                     println!("");
                 },
-                "clear" => {
+                Command::Clear => {
                     // ANSI ESC sequence to clear screen and put cursor at at top of terminal.
                     print!("\x1b[2J")
                 },
-                "eval" => {
+                Command::Eval => {
                     if words.len() > 2 {
                         let expr = match (words[0].parse(), words[2].parse()) {
                             (Ok(x), Ok(y)) => {
@@ -116,7 +189,7 @@ pub fn shell(_args: &mut Args) {
                         println!("USAGE: eval <lhs> <op> <rhs>");
                     }
                 },
-                "blink" => {
+                Command::Blink => {
                     let rate: usize = if words.len() > 0 {
                         words[0].parse::<usize>().unwrap_or(100)
                     }
@@ -132,20 +205,28 @@ pub fn shell(_args: &mut Args) {
                     args.add_num(rate);
                     blink_handle = Some(kernel::syscall::new_task(blink, args.finalize(), 1024, Priority::Low, "blink"));
                 },
-                "stop" => {
+                Command::Stop => {
                     if let Some(mut handle) = blink_handle.take() {
                         handle.destroy();
                         turn_off_led();
                     }
                 },
-                "uptime" => {
+                Command::Uptime => {
                     let hms = uptime();
                     println!("{:02}:{:02}:{:02}", hms.0, hms.1, hms.2);
                 },
-                "exit" => kernel::syscall::exit(),
-                "help" => println!("{}", HELP),
-                "" => {},
-                command_word => println!("Unknown command: '{}'", command_word),
+                Command::Exit => kernel::syscall::exit(),
+                Command::Help => {
+                    if words.len() > 0 {
+                        let command = Command::from(words[0]);
+                        let msg = command.help_msg();
+                        println!("{}{}", msg.0, msg.1);
+                    }
+                    else {
+                        println!("{}", HELP);
+                    }
+                }
+                Command::Invalid(invalid) => println!("Unknown command: '{}'", invalid),
             }
         }
     }
@@ -185,21 +266,44 @@ fn get_and_echo_char() -> Option<char> {
     })
 }
 
-fn read_line() -> String {
-    let mut line = String::new();
+fn read_line() -> Result<Vec<String>, ReadError> {
+    let mut line = Vec::new();
+    let mut word = String::new();
+    let mut in_string = false;
     loop {
         if let Some(ch) = get_and_echo_char() {
-            if ch == '\n' || ch == '\r' {
-                return line;
-            }
-            if ch == '\x08' {
-                // Force the cursor to stay past the end of our prompt
-                if let None = line.pop() {
-                    print!(" ");
-                }
-            }
-            else {
-                line.push(ch);
+            match ch {
+                '\n' | '\r' => {
+                    if in_string {
+                        return Err(ReadError::UnclosedString);
+                    }
+                    line.push(word);
+                    return Ok(line.into_iter().filter(|word| !word.is_empty()).map(|word| word.replace("\"", "")).collect());
+                },
+                '\x08' => {
+                    match word.pop() {
+                        Some(ch) if ch == '"' => in_string = !in_string,
+                        Some(_) => {},
+                        None => match line.pop() {
+                            Some(old_word) => word = old_word,
+                            None => print!(" "),
+                        },
+                    }
+                },
+                ' ' => {
+                    if !in_string {
+                        line.push(word);
+                        word = String::new();
+                    }
+                    else {
+                        word.push(' ');
+                    }
+                },
+                '"' => {
+                    word.push('"');
+                    in_string = !in_string;
+                },
+                _ => word.push(ch),
             }
         }
     }

@@ -19,32 +19,56 @@ use super::super::Register;
 use super::defs::*;
 
 #[derive(Copy, Clone, Debug)]
-pub struct CHELSR {
+pub struct CHSELR {
     base_addr: *const u32,
 }
 
-impl Register for CHELSR {
-    fn new( base_addr: *const u32) -> Self {
-        CHELSR { base_addr: base_addr }
+impl Register for CHSELR {
+    fn new( base_addr: *const u32 ) -> Self {
+        CHSELR { base_addr: base_addr }
     }
 
     fn base_addr(&self) -> *const u32 {
         self.base_addr
     }
 
-    fn mem_offset(&self) -> *const u32 {
-        CHELSR_OFFSET
+    fn mem_offset(&self) -> u32 {
+        CHSELR_OFFSET
     }
 }
 
-impl CHELSR {
+impl CHSELR {
     pub fn select_channel(&mut self, channel: usize) {
         match channel {
             0...18 => {
                 let chelsr_bit: u32 = 0b1 << channel;
-                *self.addr() |= cheslr_bit;
+                unsafe { *self.addr() |= chelsr_bit }
             },
-            _ => panic!{"ADC select_channel: invalid channel"},
+            _ => panic!{"CHSELR::select_channel - invalid channel"},
         }
     }
+
+    pub fn unselect_channel(&mut self, channel: usize) {
+        match channel {
+            0...18 => {
+                let chelsr_bit: u32 = 0b0 << channel;
+                unsafe { *self.addr() &= chelsr_bit; }
+            },
+            _ => panic!{"CHSELSR::select_channel - invalid channel"},
+        }
+    }
+
+    pub fn select_multiple_channels(&mut self, channel_array: [bool; 19]) {
+        let chelsr_bit: u32 = 0b1;
+        for channel in channel_array.iter() {
+            if *channel {
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test;
 }

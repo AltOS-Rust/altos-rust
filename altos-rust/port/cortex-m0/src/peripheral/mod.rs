@@ -21,6 +21,7 @@
 pub mod rcc;
 pub mod gpio;
 pub mod systick;
+pub mod adc;
 #[cfg(feature="serial")]
 pub mod usart;
 

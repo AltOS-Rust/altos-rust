@@ -106,7 +106,7 @@ pub const SMPR_OFFSET:          u32 = 0x14;
 // SMPR_SMP bits 0 - 2 select the sampling time that applies to all channels.
 // Here, the variable suffix "1_5" means 1.5 ADC clock cycles and so forth.
 pub const SMPR_SMP_1_5:          u32 = 0x0;
-pub const SMPR_SMP_1_5:          u32 = 0x1;
+pub const SMPR_SMP_7_5:          u32 = 0x1;
 pub const SMPR_SMP_13_5:         u32 = 0x2;
 pub const SMPR_SMP_28_5:         u32 = 0x3;
 pub const SMPR_SMP_41_5:         u32 = 0x4;
@@ -117,6 +117,28 @@ pub const SMPR_SMP_238_5:        u32 = 0x7;
 // Bits 3 - 31 are reserved and must be kept at reset value.
 
 // ------------------------------------
-// ADC - ADC_CHSELR bit definitions
+// ADC - CHSELR bit definitions
 // ------------------------------------
-pub const ADC_CHSELR_OFFSET:        u32 = 0x28;
+
+pub const CHSELR_OFFSET:    u32 = 0x28;
+// Bits 0 - 18 select the analog channels for conversion.
+pub const CHSELR_0:          u32 = 0b1;
+pub const CHSELR_1:          u32 = 0b1 << 1;
+pub const CHSELR_2:          u32 = 0b1 << 2;
+pub const CHSELR_3:          u32 = 0b1 << 3;
+pub const CHSELR_4:          u32 = 0b1 << 4;
+pub const CHSELR_5:          u32 = 0b1 << 5;
+pub const CHSELR_6:          u32 = 0b1 << 6;
+pub const CHSELR_7:          u32 = 0b1 << 7;
+pub const CHSELR_8:          u32 = 0b1 << 8;
+pub const CHSELR_9:          u32 = 0b1 << 9;
+pub const CHSELR_10:          u32 = 0b1 << 10;
+pub const CHSELR_11:          u32 = 0b1 << 11;
+pub const CHSELR_12:          u32 = 0b1 << 12;
+pub const CHSELR_13:          u32 = 0b1 << 13;
+pub const CHSELR_14:          u32 = 0b1 << 14;
+pub const CHSELR_15:          u32 = 0b1 << 15;
+pub const CHSELR_16:          u32 = 0b1 << 16;
+pub const CHSELR_17:          u32 = 0b1 << 17;
+pub const CHSELR_18:          u32 = 0b1 << 18;
+// Bits 19 - 31 are reserved and must be kept at reset value.

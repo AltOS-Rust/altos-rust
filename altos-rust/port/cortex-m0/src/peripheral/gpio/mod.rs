@@ -17,16 +17,6 @@
 
 //! This module provides types for configuring and controlling GPIO connections.
 
-use super::{Control, Register};
-use volatile::Volatile;
-use super::rcc;
-pub use self::port::Port;
-pub use self::moder::Mode;
-pub use self::otyper::Type;
-pub use self::ospeedr::Speed;
-pub use self::pupdr::Pull;
-pub use self::afr::AlternateFunction;
-
 mod port;
 mod moder;
 mod otyper;
@@ -34,6 +24,18 @@ mod bsrr;
 mod ospeedr;
 mod pupdr;
 mod afr;
+mod defs;
+
+use super::{Control, Register};
+use volatile::Volatile;
+use super::rcc;
+use self::defs::*;
+pub use self::port::Port;
+pub use self::moder::Mode;
+pub use self::otyper::Type;
+pub use self::ospeedr::Speed;
+pub use self::pupdr::Pull;
+pub use self::afr::AlternateFunction;
 
 /// An IO group containing up to 16 pins. For
 /// some reason the datasheet shows the memory

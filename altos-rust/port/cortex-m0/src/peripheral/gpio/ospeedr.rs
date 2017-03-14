@@ -16,6 +16,7 @@
 */
 
 use super::super::{Register, Field};
+use super::defs::*;
 
 /// Defines available GPIO speeds.
 #[derive(Copy, Clone)]
@@ -28,9 +29,9 @@ pub enum Speed {
 impl Field for Speed {
     fn mask(&self) -> u32 {
         match *self {
-            Speed::Low => 0b00,
-            Speed::Medium => 0b01,
-            Speed::High => 0b11,
+            Speed::Low => SPEED_LOW,
+            Speed::Medium => SPEED_MEDIUM,
+            Speed::High => SPEED_HIGH,
         }
     }
 }
@@ -38,9 +39,9 @@ impl Field for Speed {
 impl Speed {
     fn from_mask(mask: u32) -> Self {
         match mask {
-            0b00 | 0b10 => Speed::Low,
-            0b01 => Speed::Medium,
-            0b11 => Speed::High,
+            SPEED_LOW | SPEED_LOW_ALT => Speed::Low,
+            SPEED_MEDIUM => Speed::Medium,
+            SPEED_HIGH => Speed::High,
             _ => panic!("Speed::from_mask - mask was not a valid value!"),
         }
     }
@@ -61,7 +62,7 @@ impl Register for OSPEEDR {
     }
 
     fn mem_offset(&self) -> u32 {
-        0x08
+        OSPEEDR_OFFSET
     }
 }
 
@@ -74,7 +75,7 @@ impl OSPEEDR {
 
         unsafe {
             let mut reg = self.addr();
-            *reg &= !(0b11 << (port * 2));
+            *reg &= !(SPEED_MASK << (port * 2));
             *reg |= mask << (port * 2);
         }
     }
@@ -86,7 +87,7 @@ impl OSPEEDR {
 
         let mask = unsafe {
             let reg = self.addr();
-            (*reg & (0b11 << (port * 2))) >> (port * 2)
+            (*reg & (SPEED_MASK << (port * 2))) >> (port * 2)
         };
         Speed::from_mask(mask)
     }

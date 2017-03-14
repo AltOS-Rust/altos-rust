@@ -36,14 +36,14 @@ pub enum AlternateFunction {
 impl Field for AlternateFunction {
     fn mask(&self) -> u32 {
         match *self {
-            AlternateFunction::Zero => 0b0000,
-            AlternateFunction::One => 0b0001,
-            AlternateFunction::Two => 0b0010,
-            AlternateFunction::Three => 0b0011,
-            AlternateFunction::Four => 0b0100,
-            AlternateFunction::Five => 0b0101,
-            AlternateFunction::Six => 0b0110,
-            AlternateFunction::Seven => 0b0111,
+            AlternateFunction::Zero => AF0,
+            AlternateFunction::One => AF1,
+            AlternateFunction::Two => AF2,
+            AlternateFunction::Three => AF3,
+            AlternateFunction::Four => AF4,
+            AlternateFunction::Five => AF5,
+            AlternateFunction::Six => AF6,
+            AlternateFunction::Seven => AF7,
         }
     }
 }
@@ -125,8 +125,7 @@ impl AFRL {
 
         unsafe {
             let mut reg = self.addr();
-
-            *reg &= !(0b1111 << (port * 4));
+            *reg &= !(AFR_MASK << (port * 4));
             *reg |= mask << (port * 4);
         }
     }
@@ -139,7 +138,7 @@ impl AFRL {
         let mask = unsafe {
             let reg = self.addr();
 
-            *reg & (0b1111 << (port * 4))
+            *reg & (AFR_MASK << (port * 4))
         };
         AlternateFunction::from_mask(mask)
     }
@@ -160,7 +159,7 @@ impl Register for AFRH {
     }
 
     fn mem_offset(&self) -> u32 {
-        0x24
+        AFRH_OFFSET
     }
 }
 
@@ -178,7 +177,7 @@ impl AFRH {
         unsafe {
             let mut reg = self.addr();
 
-            *reg &= !(0b1111 << (port * 4));
+            *reg &= !(AFR_MASK << (port * 4));
             *reg |= mask << (port * 4);
         }
     }
@@ -193,7 +192,7 @@ impl AFRH {
         let mask = unsafe {
             let reg = self.addr();
 
-            *reg & (0b1111 << (port * 4))
+            *reg & (AFR_MASK << (port * 4))
         };
         AlternateFunction::from_mask(mask)
     }

@@ -16,6 +16,7 @@
 */
 
 use super::super::{Register, Field};
+use super::defs::*;
 
 /// Defines available modes for the GPIO pins.
 #[derive(Copy, Clone)]
@@ -29,10 +30,10 @@ pub enum Mode {
 impl Field for Mode {
     fn mask(&self) -> u32 {
         match *self {
-            Mode::Input => 0b00,
-            Mode::Output => 0b01,
-            Mode::Alternate => 0b10,
-            Mode::Analog => 0b11,
+            Mode::Input => MODE_INPUT,
+            Mode::Output => MODE_OUTPUT,
+            Mode::Alternate => MODE_ALTERNATE,
+            Mode::Analog => MODE_ANALOG,
         }
     }
 }
@@ -40,10 +41,10 @@ impl Field for Mode {
 impl Mode {
     fn from_mask(mask: u32) -> Self {
         match mask {
-            0b00 => Mode::Input,
-            0b01 => Mode::Output,
-            0b10 => Mode::Alternate,
-            0b11 => Mode::Analog,
+            MODE_INPUT => Mode::Input,
+            MODE_OUTPUT => Mode::Output,
+            MODE_ALTERNATE => Mode::Alternate,
+            MODE_ANALOG => Mode::Analog,
             _ => panic!("Mode::from_mask - mask was not a valid value!"),
         }
     }
@@ -78,7 +79,7 @@ impl MODER {
         unsafe {
             let mut reg = self.addr();
             // Zero the field first
-            *reg &= !(0b11 << (port * 2));
+            *reg &= !(MODE_MASK << (port * 2));
             *reg |= mask << (port * 2);
         }
     }
@@ -93,7 +94,7 @@ impl MODER {
         let mask = unsafe {
             let reg = self.addr();
 
-            (*reg & (0b11 << (port * 2))) >> (port * 2)
+            (*reg & (MODE_MASK << (port * 2))) >> (port * 2)
         };
         Mode::from_mask(mask)
     }

@@ -16,6 +16,8 @@
 */
 
 use super::super::{Register, Field};
+use super::defs::*;
+
 
 /// Defines the behavior of the GPIO pin
 /// when not asserted.
@@ -32,9 +34,9 @@ pub enum Pull {
 impl Field for Pull {
     fn mask(&self) -> u32 {
         match *self {
-            Pull::Neither => 0b00,
-            Pull::Up => 0b01,
-            Pull::Down => 0b10,
+            Pull::Neither => PUPD_NEITHER,
+            Pull::Up => PUPD_UP,
+            Pull::Down => PUPD_DOWN,
         }
     }
 }
@@ -42,9 +44,9 @@ impl Field for Pull {
 impl Pull {
     fn from_mask(mask: u32) -> Self {
         match mask {
-            0b00 => Pull::Neither,
-            0b01 => Pull::Up,
-            0b10 => Pull::Down,
+            PUPD_NEITHER => Pull::Neither,
+            PUPD_UP => Pull::Up,
+            PUPD_DOWN => Pull::Down,
             _ => panic!("Pull::from_mask - mask was an invalid value!"),
         }
     }
@@ -65,7 +67,7 @@ impl Register for PUPDR {
     }
 
     fn mem_offset(&self) -> u32 {
-        0x0C
+        PUPDR_OFFSET
     }
 }
 
@@ -78,7 +80,7 @@ impl PUPDR {
 
         unsafe {
             let mut reg = self.addr();
-            *reg &= !(0b11 << (port * 2));
+            *reg &= !(PUPD_MASK << (port * 2));
             *reg |= mask << (port * 2);
         }
     }
@@ -90,7 +92,7 @@ impl PUPDR {
 
         let mask = unsafe {
             let reg = self.addr();
-            (*reg & (0b11 << (port * 2))) >> (port * 2)
+            (*reg & (PUPD_MASK << (port * 2))) >> (port * 2)
         };
         Pull::from_mask(mask)
     }

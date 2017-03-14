@@ -16,6 +16,7 @@
 */
 
 use super::super::{Register, Field};
+use super::defs::*;
 
 /// Available GPIO pin types.
 #[derive(Copy, Clone)]
@@ -30,8 +31,8 @@ pub enum Type {
 impl Field for Type {
     fn mask(&self) -> u32 {
         match *self {
-            Type::PushPull => 0b0,
-            Type::OpenDrain => 0b1,
+            Type::PushPull => TYPE_PUSHPULL,
+            Type::OpenDrain => TYPE_OPENDRAIN,
         }
     }
 }
@@ -39,8 +40,8 @@ impl Field for Type {
 impl Type {
     fn from_mask(mask: u32) -> Self {
         match mask {
-            0b0 => Type::PushPull,
-            0b1 => Type::OpenDrain,
+            TYPE_PUSHPULL => Type::PushPull,
+            TYPE_OPENDRAIN => Type::OpenDrain,
             _ => panic!("Type::from_mask - mask was not a valid value!"),
         }
     }
@@ -61,7 +62,7 @@ impl Register for OTYPER {
     }
 
     fn mem_offset(&self) -> u32 {
-        0x04
+        OTYPER_OFFSET
     }
 }
 

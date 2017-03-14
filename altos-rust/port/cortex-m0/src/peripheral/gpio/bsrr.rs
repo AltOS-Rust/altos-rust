@@ -16,6 +16,7 @@
 */
 
 use super::super::Register;
+use super::defs::*;
 
 #[derive(Copy, Clone)]
 pub struct BSRR {
@@ -32,7 +33,7 @@ impl Register for BSRR {
     }
 
     fn mem_offset(&self) -> u32 {
-        0x18
+        BSRR_OFFSET
     }
 }
 
@@ -57,7 +58,7 @@ impl BSRR {
 
         unsafe {
             let mut reg = self.addr();
-            *reg |= 0b1 << (port + 16);
+            *reg |= 0b1 << (port + BSRR_RESET_OFFSET);
         }
     }
 }

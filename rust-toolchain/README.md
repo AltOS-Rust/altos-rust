@@ -74,7 +74,7 @@ The following packages will need to be installed in order to compile/debug a Rus
 ```bash
 brew tap PX4/homebrew-px4
 brew update
-brew install gcc-arm-none-eabi-49
+brew install gcc-arm-none-eabi-48
 ```
 
 # Installing/Using USB Connectivity and Debugger Programs

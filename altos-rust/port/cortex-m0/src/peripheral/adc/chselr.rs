@@ -15,8 +15,86 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use super::super::Register;
+use super::super::{Field, Register};
 use super::defs::*;
+
+// TODO: Comments
+#[derive(Copy, Clone)]
+pub enum Channel {
+    Zero,
+    One,
+    Two,
+    Three,
+    Four,
+    Five,
+    Six,
+    Seven,
+    Eight,
+    Nine,
+    Ten,
+    Eleven,
+    Twelve,
+    Thirteen,
+    Fourteen,
+    Fifteen,
+    Sixteen,
+    Seventeen,
+    Eighteen,
+}
+
+impl Field for Channel {
+    fn mask(&self) -> u32 {
+        match *self {
+            Channel::Zero => CHSELR_0,
+            Channel::One => CHSELR_1,
+            Channel::Two => CHSELR_2,
+            Channel::Three => CHSELR_3,
+            Channel::Four => CHSELR_4,
+            Channel::Five => CHSELR_5,
+            Channel::Six => CHSELR_6,
+            Channel::Seven => CHSELR_7,
+            Channel::Eight => CHSELR_8,
+            Channel::Nine => CHSELR_9,
+            Channel::Ten => CHSELR_10,
+            Channel::Eleven => CHSELR_11,
+            Channel::Twelve => CHSELR_12,
+            Channel::Thirteen => CHSELR_13,
+            Channel::Fourteen => CHSELR_14,
+            Channel::Fifteen => CHSELR_15,
+            Channel::Sixteen => CHSELR_16,
+            Channel::Seventeen => CHSELR_17,
+            Channel::Eighteen => CHSELR_18,
+        }
+    }
+}
+
+impl Channel {
+    fn from_mask(mask: u32) -> Self {
+        match mask {
+            CHSELR_0 => Channel::Zero,
+            CHSELR_1 => Channel::One,
+            CHSELR_2 => Channel::Two,
+            CHSELR_3 => Channel::Three,
+            CHSELR_4 => Channel::Four,
+            CHSELR_5 => Channel::Five,
+            CHSELR_6 => Channel::Six,
+            CHSELR_7 => Channel::Seven,
+            CHSELR_8 => Channel::Eight,
+            CHSELR_9 => Channel::Nine,
+            CHSELR_10 => Channel::Ten,
+            CHSELR_11 => Channel::Eleven,
+            CHSELR_12 => Channel::Twelve,
+            CHSELR_13 => Channel::Thirteen,
+            CHSELR_14 => Channel::Fourteen,
+            CHSELR_15 => Channel::Fifteen,
+            CHSELR_16 => Channel::Sixteen,
+            CHSELR_17 => Channel::Seventeen,
+            CHSELR_18 => Channel::Eighteen,
+            _ => panic!("Channel::from_mask - mask was not a valid value!"),
+        }
+    }
+}
+
 
 #[derive(Copy, Clone, Debug)]
 pub struct CHSELR {
@@ -38,31 +116,15 @@ impl Register for CHSELR {
 }
 
 impl CHSELR {
-    pub fn select_channel(&mut self, channel: usize) {
-        match channel {
-            0...18 => {
-                let chelsr_bit: u32 = 0b1 << channel;
-                unsafe { *self.addr() |= chelsr_bit }
-            },
-            _ => panic!{"CHSELR::select_channel - invalid channel"},
+    pub fn select_channel(&mut self, channel: Channel) {
+        unsafe {
+            *self.addr() |= channel.mask();
         }
     }
 
-    pub fn unselect_channel(&mut self, channel: usize) {
-        match channel {
-            0...18 => {
-                let chelsr_bit: u32 = 0b0 << channel;
-                unsafe { *self.addr() &= chelsr_bit; }
-            },
-            _ => panic!{"CHSELSR::select_channel - invalid channel"},
-        }
-    }
-
-    pub fn select_multiple_channels(&mut self, channel_array: [bool; 19]) {
-        let chelsr_bit: u32 = 0b1;
-        for channel in channel_array.iter() {
-            if *channel {
-            }
+    pub fn unselect_channel(&mut self, channel: Channel) {
+        unsafe {
+            *self.addr() &= !channel.mask();
         }
     }
 }

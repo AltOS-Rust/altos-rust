@@ -17,7 +17,8 @@
 
 // Need module description/doc comment here
 
+
+//use super::{Control, Register};
+
 mod defs;
 mod chselr;
-
-use super::{Control, Register};

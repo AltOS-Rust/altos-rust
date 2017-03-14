@@ -19,6 +19,7 @@
 
 use super::super::Register;
 use super::Clock;
+use super::defs::*;
 
 #[derive(Copy, Clone)]
 pub struct ConfigControl {
@@ -95,7 +96,7 @@ impl Register for CFGR {
     }
 
     fn mem_offset(&self) -> u32 {
-        0x04
+        CFGR_OFFSET
     }
 }
 

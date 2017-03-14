@@ -18,6 +18,7 @@
 //! This module handles the clock control register of the CRR
 
 use super::super::Register;
+use super::defs::*;
 
 pub mod clock_rate {
     static mut CLOCK_RATE: u32 = 0;
@@ -29,11 +30,9 @@ pub mod clock_rate {
     }
 
     pub fn update_system_clock_rate() {
-        const HSI_VALUE: u32 = 8_000_000;
-        const HSE_VALUE: u32 = 8_000_000;
-        const HSI48_VALUE: u32 = 48_000_000;
         use super::Clock;
         use super::super::super::systick;
+        use super::super::defs::*;
 
         let rcc = super::super::rcc();
         let rate = match rcc.get_system_clock_source() {
@@ -141,7 +140,7 @@ impl Register for CR {
     }
 
     fn mem_offset(&self) -> u32 {
-        0x0
+        CR_OFFSET
     }
 }
 
@@ -151,9 +150,9 @@ impl CR {
     /// successfully disabled.
     fn set_clock(&mut self, enable: bool, clock: Clock) -> bool {
         let mask = match clock {
-            Clock::PLL => 1 << 24,
-            Clock::HSE => 1 << 16,
-            Clock::HSI => 1 << 0,
+            Clock::PLL => PLLON,
+            Clock::HSE => HSEON,
+            Clock::HSI => HSION,
             _ => panic!("CR::enable_clock - argument clock is not controlled by this register!"),
         };
 
@@ -173,9 +172,9 @@ impl CR {
     /// Return true if the specified clock is enabled.
     fn clock_is_on(&self, clock: Clock) -> bool {
         let mask = match clock {
-            Clock::PLL => 1 << 24,
-            Clock::HSE => 1 << 16,
-            Clock::HSI => 1 << 0,
+            Clock::PLL => PLLON,
+            Clock::HSE => HSEON,
+            Clock::HSI => HSION,
             _ => panic!("CR::clock_is_on - argument clock is not controlled by thsi register!"),
         };
 
@@ -188,9 +187,9 @@ impl CR {
     /// Return true if the specified clock is ready for use.
     fn clock_is_ready(&self, clock: Clock) -> bool {
         let mask = match clock {
-            Clock::PLL => 1 << 25,
-            Clock::HSE => 1 << 17,
-            Clock::HSI => 1 << 1,
+            Clock::PLL => PLLRDY,
+            Clock::HSE => HSERDY,
+            Clock::HSI => HSIRDY,
             _ => panic!("CR::clock_is_ready - argument clock is not controlled by this register!"),
         };
 
@@ -218,7 +217,7 @@ impl Register for CR2 {
     }
 
     fn mem_offset(&self) -> u32 {
-        0x34
+        CR2_OFFSET
     }
 }
 
@@ -228,8 +227,8 @@ impl CR2 {
     /// successfully disabled.
     fn set_clock(&mut self, enable: bool, clock: Clock) -> bool {
         let mask = match clock {
-            Clock::HSI48 => 1 << 16,
-            Clock::HSI14 => 1 << 0,
+            Clock::HSI48 => CR2_HSI48ON,
+            Clock::HSI14 => CR2_HSI14ON,
             _ => panic!("CR2::set_clock - argument clock is not controlled by this register!"),
         };
 
@@ -249,8 +248,8 @@ impl CR2 {
     /// Return true if the specified clock is enabled.
     fn clock_is_on(&self, clock: Clock) -> bool {
         let mask = match clock {
-            Clock::HSI48 => 1 << 16,
-            Clock::HSI14 => 1 << 0,
+            Clock::HSI48 => CR2_HSI48ON,
+            Clock::HSI14 => CR2_HSI14ON,
             _ => panic!("CR2::clock_is_on - argument clock is not controlled by this register!"),
         };
 
@@ -263,8 +262,8 @@ impl CR2 {
     /// Return true if the specified clock is ready for use.
     fn clock_is_ready(&self, clock: Clock) -> bool {
         let mask = match clock {
-            Clock::HSI48 => 1 << 17,
-            Clock::HSI14 => 1 << 1,
+            Clock::HSI48 => CR2_HSI48RDY,
+            Clock::HSI14 => CR2_HSI14RDY,
             _ => panic!("CR2::clock_is_ready - argument clock is not controlled by this register!"),
         };
 

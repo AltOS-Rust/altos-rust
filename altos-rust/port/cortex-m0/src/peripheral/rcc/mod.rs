@@ -18,15 +18,17 @@
 //! This module controls the RCC (Reset and Clock Controller), it handles enabling and disabling
 //! clocks, setting clock configurations and the reset flags that are set on a reset.
 
-use super::Control;
-use arm::asm::dsb;
-use volatile::Volatile;
-pub use self::clock_control::Clock;
-pub use self::enable::Peripheral;
-
 mod clock_control;
 mod config;
 mod enable;
+mod defs;
+
+use super::Control;
+use arm::asm::dsb;
+use self::defs::*;
+use volatile::Volatile;
+pub use self::clock_control::Clock;
+pub use self::enable::Peripheral;
 
 /// Returns an instance of the RCC struct so it can be used to modify clock configuration.
 pub fn rcc() -> RCC {
@@ -50,7 +52,6 @@ impl Control for RCC {
 
 impl RCC {
     fn rcc() -> Self {
-        const RCC_ADDR: *const u32 = 0x4002_1000 as *const _;
         RCC {
             mem_addr: RCC_ADDR,
             cr: clock_control::ClockControl::new(RCC_ADDR),

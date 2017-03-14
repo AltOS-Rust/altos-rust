@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2017 AltOS-Rust Team
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2017 AltOS-Rust Team
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
 use altos_core::sync::Mutex;
 use altos_core::syscall;
@@ -25,8 +25,8 @@ static MS_RESOLUTION: AtomicUsize = ATOMIC_USIZE_INIT;
 
 /// Get the current system time.
 pub fn now() -> Time {
-  let time = SYSTEM_TIME.lock();
-  time.clone()
+    let time = SYSTEM_TIME.lock();
+    time.clone()
 }
 
 /// Delay a task for a certain number of milliseconds.
@@ -35,16 +35,16 @@ pub fn now() -> Time {
 /// running task.
 #[inline(never)]
 pub fn delay_ms(ms: usize) {
-  let ms_res = get_resolution();
-  if ms_res == 0 {
-    panic!("delay_ms - the time ms_resolution has not been set!");
-  }
-  syscall::sleep_for(syscall::FOREVER_CHAN, ms * ms_res);
+    let ms_res = get_resolution();
+    if ms_res == 0 {
+        panic!("delay_ms - the time ms_resolution has not been set!");
+    }
+    syscall::sleep_for(syscall::FOREVER_CHAN, ms * ms_res);
 }
 
 pub fn delay_s(s: usize) {
-  // FIXME: Handle overflow
-  delay_ms(s * 1000);
+    // FIXME: Handle overflow
+    delay_ms(s * 1000);
 }
 
 /// Set the ms resolution of the ticks.
@@ -53,123 +53,124 @@ pub fn delay_s(s: usize) {
 /// system has been running for a while could cause some tasks that are delayed to wake up too
 /// early.
 pub fn set_resolution(new: usize) {
-  MS_RESOLUTION.store(new, Ordering::Relaxed);
+    MS_RESOLUTION.store(new, Ordering::Relaxed);
 }
 
+/// Get current resolution value.
 pub fn get_resolution() -> usize {
-  MS_RESOLUTION.load(Ordering::Relaxed)
+    MS_RESOLUTION.load(Ordering::Relaxed)
 }
 
 // This should only get called by the system tick interrupt handler
 #[doc(hidden)]
 pub fn system_tick() {
-  static mut TICKS: usize = 0;
-  // We know this is safe because it should only be called by the system tick handler which can
-  // only be running on one thread at a time.
-  unsafe {
-    TICKS += 1;
-    if TICKS % get_resolution() == 0 {
-      match SYSTEM_TIME.try_lock() {
-        // If someone else is holding the lock, we'll just have to continue on, this could cause
-        // some drift in our time measurement
-        Some(mut time) => time.increment(),
-        None => {}
-      }
+    static mut TICKS: usize = 0;
+    // We know this is safe because it should only be called by the system tick handler which can
+    // only be running on one thread at a time.
+    unsafe {
+        TICKS += 1;
+        if TICKS % get_resolution() == 0 {
+            match SYSTEM_TIME.try_lock() {
+                // If someone else is holding the lock, we'll just have to continue on, this could cause
+                // some drift in our time measurement
+                Some(mut time) => time.increment(),
+                None => {}
+            }
+        }
     }
-  }
 }
 
 /// A type containing information about the time passed since the start of the system.
 #[derive(Copy, Clone)]
 pub struct Time {
-  /// Number of seconds that have passed.
-  pub sec: usize,
+    /// Number of seconds that have passed.
+    pub sec: usize,
 
-  /// Number of milliseconds that have passed.
-  pub msec: usize,
+    /// Number of milliseconds that have passed.
+    pub msec: usize,
 }
 
 impl Time {
-  /// Create a new timer initialized to 0 sec, 0 msec.
-  const fn new() -> Self {
-    Time {
-      sec: 0,
-      msec: 0,
+    /// Create a new timer initialized to 0 sec, 0 msec.
+    const fn new() -> Self {
+        Time {
+            sec: 0,
+            msec: 0,
+        }
     }
-  }
 
-  /// Increment the system time by 1 ms, incrementing the seconds as well if our ms rolls over.
-  fn increment(&mut self) {
-    let increment = Time {
-      sec: 0,
-      msec: 1,
-    };
-    *self += increment;
-  }
+    /// Increment the system time by 1 ms, incrementing the seconds as well if our ms rolls over.
+    fn increment(&mut self) {
+        let increment = Time {
+            sec: 0,
+            msec: 1,
+        };
+        *self += increment;
+    }
 }
 
 impl Add<Time> for Time {
-  type Output = Time;
+    type Output = Time;
 
-  fn add(mut self, rhs: Time) -> Self::Output {
-    self.sec += rhs.sec;
-    self.msec += rhs.msec;
-    if self.msec >= 1000 {
-      self.sec += 1;
-      self.msec %= 1000;
+    fn add(mut self, rhs: Time) -> Self::Output {
+        self.sec += rhs.sec;
+        self.msec += rhs.msec;
+        if self.msec >= 1000 {
+            self.sec += 1;
+            self.msec %= 1000;
+        }
+        self
     }
-    self
-  }
 }
 
 impl AddAssign<Time> for Time {
-  fn add_assign(&mut self, rhs: Time) {
-    *self = *self + rhs;
-  }
+    fn add_assign(&mut self, rhs: Time) {
+        *self = *self + rhs;
+    }
 }
 
 impl Sub<Time> for Time {
-  type Output = Time;
+    type Output = Time;
 
-  fn sub(mut self, rhs: Time) -> Self::Output {
-    // TODO: Figure out how to handle subtracting a bigger time from a smaller time... represent
-    //  seconds as an isize instead? (Then we lose a lot of our number space, and we have to check
-    //  for overflow)
-    self.sec -= rhs.sec;
-    if self.msec > rhs.msec {
-      self.msec -= rhs.msec;
+    fn sub(mut self, rhs: Time) -> Self::Output {
+        // TODO: Figure out how to handle subtracting a bigger time from a smaller time... represent
+        //  seconds as an isize instead? (Then we lose a lot of our number space, and we have to check
+        //  for overflow)
+        self.sec -= rhs.sec;
+        if self.msec > rhs.msec {
+            self.msec -= rhs.msec;
+        }
+        else {
+            self.sec -= 1;
+            self.msec = 1000 - (rhs.msec - self.msec)
+        }
+        self
     }
-    else {
-      self.sec -= 1;
-      self.msec = 1000 - (rhs.msec - self.msec)
-    }
-    self
-  }
 }
 
 #[cfg(test)]
 mod tests {
-  use super::*;
+    use super::*;
 
-  #[test]
-  fn add_times() {
-    let time1 = Time { sec: 100, msec: 10 };
-    let time2 = Time { sec: 200, msec: 20 };
+    #[test]
+    fn test_add_times_results_in_correct_summation() {
+        let time1 = Time { sec: 100, msec: 10 };
+        let time2 = Time { sec: 200, msec: 20 };
 
-    let time3 = time1 + time2;
+        let time3 = time1 + time2;
 
-    assert_eq!(time3.sec, 300);
-    assert_eq!(time3.msec, 30);
-  }
+        assert_eq!(time3.sec, 300);
+        assert_eq!(time3.msec, 30);
+    }
 
-  #[test]
-  fn add_times_overflowing() {
-    let time1 = Time { sec: 100, msec: 900 };
-    let time2 = Time { sec: 100, msec: 200 };
+    #[test]
+    fn test_add_times_overflowing_wraps_around_correctly() {
+        let time1 = Time { sec: 100, msec: 900 };
+        let time2 = Time { sec: 100, msec: 200 };
 
-    let time3 = time1 + time2;
+        let time3 = time1 + time2;
 
-    assert_eq!(time3.sec, 201);
-    assert_eq!(time3.msec, 100);
-  }
+        assert_eq!(time3.sec, 201);
+        assert_eq!(time3.msec, 100);
+    }
 }

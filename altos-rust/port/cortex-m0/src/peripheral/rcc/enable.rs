@@ -19,6 +19,7 @@
 //! clock to the peripherals controled by the AHB clock.
 
 use super::super::{Register, Field};
+use super::defs::*;
 
 /// Defines available peripherals.
 #[derive(Copy, Clone)]
@@ -75,51 +76,51 @@ impl Field for Peripheral {
     fn mask(&self) -> u32 {
         match *self {
             // AHB Peripherals
-            Peripheral::TouchSenseController => 0b1 << 24,
-            Peripheral::GPIOA => 0b1 << 17,
-            Peripheral::GPIOB => 0b1 << 18,
-            Peripheral::GPIOC => 0b1 << 19,
-            Peripheral::GPIOF => 0b1 << 22,
-            Peripheral::CRC => 0b1 << 6,
-            Peripheral::FLITF => 0b1 << 4,
-            Peripheral::SRAMInterface => 0b1 << 2,
-            Peripheral::DMA => 0b1 << 0,
-            Peripheral::DMA2 => 0b1 << 1,
+            Peripheral::TouchSenseController => TSCEN,
+            Peripheral::GPIOA => IOPAEN,
+            Peripheral::GPIOB => IOPBEN,
+            Peripheral::GPIOC => IOPCEN,
+            Peripheral::GPIOF => IOPFEN,
+            Peripheral::CRC => CRCEN,
+            Peripheral::FLITF => FLITFEN,
+            Peripheral::SRAMInterface => SRAMEN,
+            Peripheral::DMA => DMAEN,
+            Peripheral::DMA2 => DMA2EN,
 
             // APB1 Peripherals
-            Peripheral::CEC => 0b1 << 30,
-            Peripheral::DAC => 0b1 << 29,
-            Peripheral::PowerInterface => 0b1 << 28,
-            Peripheral::ClockRecoverySystem => 0b1 << 27,
-            Peripheral::CAN => 0b1 << 25,
-            Peripheral::USB => 0b1 << 23,
-            Peripheral::I2C1 => 0b1 << 21,
-            Peripheral::I2C2 => 0b1 << 22,
-            Peripheral::USART2 => 0b1 << 17,
-            Peripheral::USART3 => 0b1 << 18,
-            Peripheral::USART4 => 0b1 << 19,
-            Peripheral::USART5 => 0b1 << 20,
-            Peripheral::SPI2 => 0b1 << 14,
-            Peripheral::WindowWatchdog => 0b1 << 11,
-            Peripheral::TIM2 => 0b1 << 0,
-            Peripheral::TIM3 => 0b1 << 1,
-            Peripheral::TIM6 => 0b1 << 4,
-            Peripheral::TIM7 => 0b1 << 5,
-            Peripheral::TIM14 => 0b1 << 8,
+            Peripheral::CEC => CECEN,
+            Peripheral::DAC => DACEN,
+            Peripheral::PowerInterface => PWREN,
+            Peripheral::ClockRecoverySystem => CRSEN,
+            Peripheral::CAN => CANEN,
+            Peripheral::USB => USBEN,
+            Peripheral::I2C1 => I2C1EN,
+            Peripheral::I2C2 => I2C2EN,
+            Peripheral::USART2 => USART2EN,
+            Peripheral::USART3 => USART3EN,
+            Peripheral::USART4 => USART4EN,
+            Peripheral::USART5 => USART5EN,
+            Peripheral::SPI2 => SPI2EN,
+            Peripheral::WindowWatchdog => WWDGEN,
+            Peripheral::TIM2 => TIM2EN,
+            Peripheral::TIM3 => TIM3EN,
+            Peripheral::TIM6 => TIM6EN,
+            Peripheral::TIM7 => TIM7EN,
+            Peripheral::TIM14 => TIM14EN,
 
             // APB2 Peripherals
-            Peripheral::MCUDebug => 0b1 << 22,
-            Peripheral::TIM1 => 0b1 << 11,
-            Peripheral::TIM15 => 0b1 << 16,
-            Peripheral::TIM16 => 0b1 << 17,
-            Peripheral::TIM17 => 0b1 << 18,
-            Peripheral::USART1 => 0b1 << 14,
-            Peripheral::USART6 => 0b1 << 5,
-            Peripheral::USART7 => 0b1 << 6,
-            Peripheral::USART8 => 0b1 << 7,
-            Peripheral::SPI1 => 0b1 << 12,
-            Peripheral::ADC => 0b1 << 9,
-            Peripheral::SysCfgComp => 0b1 << 0,
+            Peripheral::MCUDebug => DBGMCUEN,
+            Peripheral::TIM1 => TIM1EN,
+            Peripheral::TIM15 => TIM15EN,
+            Peripheral::TIM16 => TIM16EN,
+            Peripheral::TIM17 => TIM17EN,
+            Peripheral::USART1 => USART1EN,
+            Peripheral::USART6 => USART6EN,
+            Peripheral::USART7 => USART7EN,
+            Peripheral::USART8 => USART8EN,
+            Peripheral::SPI1 => SPI1EN,
+            Peripheral::ADC => ADCEN,
+            Peripheral::SysCfgComp => SYSCFGCOMPEN,
         }
     }
 }
@@ -196,7 +197,7 @@ impl Register for AHBENR {
     }
 
     fn mem_offset(&self) -> u32 {
-        0x14
+        AHBENR_OFFSET
     }
 }
 
@@ -255,7 +256,7 @@ impl Register for APBENR1 {
     }
 
     fn mem_offset(&self) -> u32 {
-        0x1C
+        APBENR1_OFFSET
     }
 }
 
@@ -316,7 +317,7 @@ impl Register for APBENR2 {
     }
 
     fn mem_offset(&self) -> u32 {
-        0x18
+        APBENR2_OFFSET
     }
 }
 

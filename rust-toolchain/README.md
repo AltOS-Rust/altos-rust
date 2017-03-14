@@ -71,8 +71,11 @@ The following packages will need to be installed in order to compile/debug a Rus
 ```  
 
 ##### OS X
-
-brew install gcc-arm-none-eabi-48
+```bash
+brew tap PX4/homebrew-px4
+brew update
+brew install gcc-arm-none-eabi-49
+```
 
 # Installing/Using USB Connectivity and Debugger Programs
 
@@ -81,7 +84,8 @@ For linking to the STM32F0xx and doing on board debugging, there are two options
 From our experience thus far, while OpenOCD is easier to install, Stlink is easier to use.  
 For more information, and to research the differences between the two, please follow the respective link above.
 
-The install instructions for each are provided below. Note that there are not OS X instructions provided here. To check for OS X install instructions, follow the OpenOCD link above.
+The install instructions for each are provided below. 
+Note that there are not OS X instructions provided here. To check for OS X install instructions, follow the OpenOCD link above. Alternatively, there is a homebrew package. `brew install stlink`
 
 ## OpenOCD
 

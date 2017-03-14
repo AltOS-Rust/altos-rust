@@ -15,11 +15,12 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+mod icsr;
+mod defs;
+
 use ::volatile::Volatile;
 use ::peripheral::{Control, Register};
 use self::defs::*;
-
-mod icsr;
 
 pub fn scb() -> SCB {
     SCB::scb()

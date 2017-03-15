@@ -34,6 +34,7 @@ extern crate std;
 #[cfg(all(target_arch="arm", not(target_has_atomic="ptr")))]
 extern crate cm0_atomic as atomic;
 
+#[allow(unused_imports)]
 #[macro_use]
 extern crate altos_macros;
 

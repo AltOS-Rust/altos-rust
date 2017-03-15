@@ -56,6 +56,7 @@ pub fn create_and_schedule_test_task(stack_size: usize,
     ::syscall::new_task(test_task, Args::empty(), stack_size, priority, name)
 }
 
+#[allow(dead_code)]
 pub fn convert_handle_to_task_control(handle: TaskHandle) -> &'static TaskControl {
     unsafe { ::std::mem::transmute::<TaskHandle, &TaskControl>(handle) }
 }

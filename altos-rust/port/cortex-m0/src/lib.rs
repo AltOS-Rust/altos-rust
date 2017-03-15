@@ -17,6 +17,7 @@
 
 //! This crate is the hardware interface for the cortex-m0 processor.
 
+#![warn(missing_docs)]
 #![feature(lang_items)]
 #![feature(asm)]
 #![feature(naked_functions)]
@@ -32,6 +33,7 @@
 extern crate std;
 
 extern crate altos_core;
+#[allow(unused_imports)]
 #[macro_use]
 extern crate altos_macros;
 

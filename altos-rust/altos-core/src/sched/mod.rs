@@ -71,7 +71,7 @@ pub fn switch_context() {
                     panic!("switch_context - The current task's stack overflowed!");
                 }
                 if running.state == State::Blocked {
-                    match running.delay_type {
+                    match running.delay_type() {
                         Delay::Timeout => DELAY_QUEUE.enqueue(running),
                         Delay::Overflowed => OVERFLOW_DELAY_QUEUE.enqueue(running),
                         Delay::Sleep => SLEEP_QUEUE.enqueue(running),
@@ -80,8 +80,7 @@ pub fn switch_context() {
                         ),
                     }
                 } else {
-                    running.state = State::Ready;
-                    running.delay_type = Delay::Invalid;
+                    running.set_ready();
                     PRIORITY_QUEUES[queue_index].enqueue(running);
                 }
             }

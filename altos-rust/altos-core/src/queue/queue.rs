@@ -246,29 +246,6 @@ impl<T> Queue<T> {
         self.head.is_none()
     }
 
-    /// Returns an iterator over the values of `self` consuming `self`.
-    ///
-    /// # Examples
-    ///
-    /// ```rust,no_run
-    /// use altos_core::queue::{Node, Queue};
-    /// use altos_core::alloc::boxed::Box;
-    ///
-    /// let mut queue = Queue::new();
-    /// queue.enqueue(Box::new(Node::new(1)));
-    /// queue.enqueue(Box::new(Node::new(2)));
-    /// queue.enqueue(Box::new(Node::new(3)));
-    ///
-    /// let mut iter = queue.into_iter();
-    /// assert_eq!(iter.next().map(|n| **n), Some(1));
-    /// assert_eq!(iter.next().map(|n| **n), Some(2));
-    /// assert_eq!(iter.next().map(|n| **n), Some(3));
-    /// assert!(iter.next().is_none());
-    /// ```
-    pub fn into_iter(self) -> IntoIter<T> {
-        IntoIter(self)
-    }
-
     /// Returns an iterator over references to the values in `self`.
     ///
     /// # Examples
@@ -313,6 +290,15 @@ impl<T> Queue<T> {
     /// ```
     pub fn iter_mut(&mut self) -> IterMut<T> {
         IterMut { next: self.head.as_mut().map(|node| &mut **node) }
+    }
+}
+
+impl<T> IntoIterator for Queue<T> {
+    type Item = Box<Node<T>>;
+    type IntoIter = IntoIter<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter(self)
     }
 }
 

@@ -150,7 +150,14 @@ pub fn sched_yield() {
 /// }
 /// ```
 pub fn sleep(wchan: usize) {
-    sleep_for(wchan, 0);
+    debug_assert!(wchan != FOREVER_CHAN);
+    let _g = CriticalSection::begin();
+    // UNSAFE: Accessing CURRENT_TASK
+    match unsafe { CURRENT_TASK.as_mut() } {
+        Some(current) => current.sleep(wchan),
+        None => panic!("sleep - current task doesn't exist!"),
+    }
+    sched_yield();
 }
 
 /// Put the current task to sleep with a timeout, waiting on a channel to be woken up.
@@ -171,23 +178,9 @@ pub fn sleep_for(wchan: usize, delay: usize) {
     // give up its time slice for no reason
     let _g = CriticalSection::begin();
     // UNSAFE: Accessing CURRENT_TASK
-    if let Some(current) = unsafe { CURRENT_TASK.as_mut() } {
-        let ticks = tick::get_tick();
-        current.delay_type = if delay == 0 && wchan != FOREVER_CHAN {
-            Delay::Sleep
-        }
-        else {
-            Delay::Timeout
-        };
-        current.wchan = wchan;
-        current.state = State::Blocked;
-        current.delay = ticks.wrapping_add(delay);
-        if current.delay < ticks {
-            current.delay_type = Delay::Overflowed;
-        }
-    }
-    else {
-        panic!("sleep_for - current task doesn't exist!");
+    match unsafe { CURRENT_TASK.as_mut() } {
+        Some(current) => current.sleep_for(wchan, delay),
+        None => panic!("sleep_for - current task doesn't exist!"),
     }
     sched_yield();
 }
@@ -200,12 +193,11 @@ pub fn wake(wchan: usize) {
     // Since we're messing around with all the task queues, lets make sure everything gets done at
     // once
     let _g = CriticalSection::begin();
-    let mut to_wake = SLEEP_QUEUE.remove(|task| task.wchan == wchan);
-    to_wake.append(DELAY_QUEUE.remove(|task| task.wchan == wchan));
-    to_wake.append(OVERFLOW_DELAY_QUEUE.remove(|task| task.wchan == wchan));
-    for mut task in to_wake.into_iter() {
-        task.wchan = 0;
-        task.state = State::Ready;
+    let mut to_wake = SLEEP_QUEUE.remove(|task| task.wchan() == wchan);
+    to_wake.append(DELAY_QUEUE.remove(|task| task.wchan() == wchan));
+    to_wake.append(OVERFLOW_DELAY_QUEUE.remove(|task| task.wchan() == wchan));
+    for mut task in to_wake {
+        task.wake();
         PRIORITY_QUEUES[task.priority].enqueue(task);
     }
 }
@@ -224,11 +216,9 @@ pub fn system_tick() {
     // wake up all tasks sleeping until the current tick
     let ticks = tick::get_tick();
 
-    let to_wake = DELAY_QUEUE.remove(|task| task.delay <= ticks);
-    for mut task in to_wake.into_iter() {
-        task.wchan = 0;
-        task.state = State::Ready;
-        task.delay = 0;
+    let to_wake = DELAY_QUEUE.remove(|task| task.tick_to_wake() <= ticks);
+    for mut task in to_wake {
+        task.wake();
         PRIORITY_QUEUES[task.priority].enqueue(task);
     }
 

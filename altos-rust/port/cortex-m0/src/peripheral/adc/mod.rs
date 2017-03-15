@@ -22,6 +22,8 @@ mod isr;
 mod ier;
 mod cr;
 mod dr;
+mod defs;
+mod chselr;
 
 use super::{Control, Register};
 use volatile::Volatile;

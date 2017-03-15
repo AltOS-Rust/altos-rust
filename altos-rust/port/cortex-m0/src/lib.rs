@@ -52,6 +52,8 @@ use peripheral::adc;
 use peripheral::gpio;
 use peripheral::rcc;
 use peripheral::systick;
+//ADC testing...
+use peripheral::adc;
 
 #[cfg(target_arch="arm")]
 pub use exceptions::EXCEPTIONS;

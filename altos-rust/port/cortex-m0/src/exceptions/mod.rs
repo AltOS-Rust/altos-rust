@@ -26,6 +26,7 @@ use altos_core::syscall;
 // Interrupt vector table
 #[cfg(not(test))]
 #[cfg(target_arch="arm")]
+#[doc(hidden)]
 #[export_name="_EXCEPTIONS"]
 pub static EXCEPTIONS: [Option<unsafe extern "C" fn()>; 46] = [
     Some(default_handler),  // NMI: 1

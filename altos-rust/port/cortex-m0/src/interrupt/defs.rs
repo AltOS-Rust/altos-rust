@@ -16,6 +16,7 @@
 */
 
 // Defines all the perpherials that have interrupts.
+#[allow(missing_docs)]
 #[derive(Copy, Clone)]
 pub enum Hardware {
     WWDG = 0,

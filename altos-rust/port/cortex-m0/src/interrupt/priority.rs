@@ -23,6 +23,7 @@ use interrupt::defs::Hardware;
 /// If in the interrupt handler and another interrupt with a
 /// higher priority is generated, the CPU will handle the higher
 /// priority interrupt before it finishes handling the lower priority interrupt.
+#[allow(missing_docs)]
 #[derive(Copy, Clone)]
 pub enum Priority {
     Highest,

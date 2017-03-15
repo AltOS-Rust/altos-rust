@@ -21,9 +21,13 @@ use super::defs::*;
 /// Defines available modes for the GPIO pins.
 #[derive(Copy, Clone)]
 pub enum Mode {
+    /// Pin configured for input data
     Input,
+    /// Pin configured for output data
     Output,
+    /// Pin configured for an alternate function.
     Alternate,
+    /// Pin configured to receive analog signal.
     Analog,
 }
 

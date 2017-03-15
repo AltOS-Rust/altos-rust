@@ -15,6 +15,9 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+// This module is the entry point to the operating system.
+// Application tasks are created here.
+
 #![feature(const_fn)]
 #![no_std]
 #![allow(dead_code)]

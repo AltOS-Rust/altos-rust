@@ -15,6 +15,8 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+//! This module configures the system tick behavior.
+
 mod control_status;
 mod reload_value;
 mod current_value;

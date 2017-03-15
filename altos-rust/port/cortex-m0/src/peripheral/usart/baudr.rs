@@ -24,6 +24,7 @@ use super::super::Register;
 use super::defs::*;
 
 /// Five most common baud rates available.
+#[allow(missing_docs)]
 #[derive(Copy, Clone)]
 pub enum BaudRate {
     Hz4800,

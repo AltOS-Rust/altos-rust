@@ -22,6 +22,7 @@ use super::super::{Register, Field};
 use super::defs::*;
 
 /// Defines available peripherals.
+#[allow(missing_docs)]
 #[derive(Copy, Clone)]
 pub enum Peripheral {
     // AHB Peripherals

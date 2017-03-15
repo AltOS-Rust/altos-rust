@@ -19,6 +19,10 @@ use super::super::{Register, Field};
 use super::defs::*;
 
 /// Defines available GPIO speeds.
+///
+/// Refer to the device data sheet for the frequency specifications
+/// and the power supply and load conditions for each speed.
+#[allow(missing_docs)]
 #[derive(Copy, Clone)]
 pub enum Speed {
     Low,

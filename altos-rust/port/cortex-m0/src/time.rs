@@ -15,6 +15,13 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+//! This module handles keeping track of the system time.
+//!
+//! Provides methods for getting the current time, and updating the time based on the
+//! system tick rate.
+//!
+//! A Time type is provided to make time calculations easier.
+
 use altos_core::sync::Mutex;
 use altos_core::syscall;
 use altos_core::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
@@ -42,6 +49,7 @@ pub fn delay_ms(ms: usize) {
     syscall::sleep_for(syscall::FOREVER_CHAN, ms * ms_res);
 }
 
+/// Delay task for a certain number of seconds.
 pub fn delay_s(s: usize) {
     // FIXME: Handle overflow
     delay_ms(s * 1000);
@@ -164,7 +172,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_times_overflowing_wraps_around_correctly() {
+    fn test_add_times_and_ensure_overflowing_wraps_around_correctly() {
         let time1 = Time { sec: 100, msec: 900 };
         let time2 = Time { sec: 100, msec: 200 };
 

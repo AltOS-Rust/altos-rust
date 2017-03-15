@@ -43,9 +43,13 @@ pub use self::afr::AlternateFunction;
 /// they are left out.
 #[derive(Copy, Clone)]
 pub enum Group {
+    /// GPIO Group A
     A,
+    /// GPIO Group B
     B,
+    /// GPIO Group C
     C,
+    /// GPIO Group F
     F,
 }
 

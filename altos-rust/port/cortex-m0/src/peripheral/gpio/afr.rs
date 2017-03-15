@@ -21,6 +21,7 @@ use super::defs::*;
 /// Set the functionality of a port.
 ///
 /// See data sheet for port mappings.
+#[allow(missing_docs)]
 #[derive(Copy, Clone)]
 pub enum AlternateFunction {
     Zero,

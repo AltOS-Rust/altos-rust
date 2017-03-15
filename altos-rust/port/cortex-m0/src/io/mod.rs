@@ -44,8 +44,6 @@ mod imp {
     use core::fmt::{self, Write, Arguments};
     use peripheral::usart::{UsartX, Usart, USART2_TX_CHAN, USART2_RX_CHAN};
 
-    pub type Result<T> = ::core::result::Result<T, ()>;
-
     /// Buffer for transmitting bytes
     pub static mut TX_BUFFER: RingBuffer = RingBuffer::new();
 
@@ -95,7 +93,7 @@ mod imp {
             }
         }
 
-        fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+        fn read(&mut self, buf: &mut [u8]) -> usize {
             // UNSAFE: Accessing mutable static
             while unsafe {
                 let _g = CriticalSection::begin();
@@ -117,7 +115,7 @@ mod imp {
                     None => break,
                 }
             }
-            Ok(read)
+            read
         }
     }
 
@@ -217,9 +215,8 @@ mod imp {
         let mut buf: [u8; 1] = [0];
         let _g = READ_LOCK.lock();
         match serial.read(&mut buf) {
-            Ok(0) => None,
-            Ok(_) => Some(buf[0]),
-            Err(_) => unreachable!(),
+            0 => None,
+            _ => Some(buf[0]),
         }
     }
 }

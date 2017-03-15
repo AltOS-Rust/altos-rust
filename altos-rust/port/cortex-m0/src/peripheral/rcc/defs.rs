@@ -1,8 +1,41 @@
 pub const RCC_ADDR: *const u32 = 0x4002_1000 as *const _;
 
-pub const CFGR_OFFSET: u32 = 0x04;
+pub const CR_OFFSET: u32 = 0x00;
+// TODO: Preface these with CR
+pub const HSI_VALUE: u32 = 8_000_000;
+pub const HSE_VALUE: u32 = 8_000_000;
+pub const HSI48_VALUE: u32 = 48_000_000;
 
-// AHB Peripherals
+pub const HSION: u32 = 0b1 << 0;
+pub const HSIRDY: u32 = 0b1 << 1;
+pub const HSEON: u32 = 0b1 << 16;
+pub const HSERDY: u32 = 0b1 << 17;
+pub const PLLON: u32 = 0b1 << 24;
+pub const PLLRDY: u32 = 0b1 << 25;
+
+// CFGR Bit Offsets
+pub const CFGR_OFFSET: u32 = 0x04;
+pub const CFGR_CLOCK_HSI: u32 = 0b00;
+pub const CFGR_CLOCK_HSE: u32 = 0b01;
+pub const CFGR_CLOCK_PLL: u32 = 0b10;
+pub const CFGR_CLOCK_HSI48: u32 = 0b11;
+
+pub const CFGR_SWS_MASK: u32 = 0b11 << 2;
+pub const CFGR_SWS_HSI: u32 = CFGR_CLOCK_HSI << 2;
+pub const CFGR_SWS_HSE: u32 = CFGR_CLOCK_HSE << 2;
+pub const CFGR_SWS_PLL: u32 = CFGR_CLOCK_PLL << 2;
+pub const CFGR_SWS_HSI48: u32 = CFGR_CLOCK_HSI48 << 2;
+
+pub const CFGR_SW_CLEAR_MASK: u32 = 0b11;
+pub const CFGR_PLLSRC_MASK: u32 = 0b11 << 15;
+pub const CFGR_PLLSRC_HSI_2: u32 = CFGR_CLOCK_HSI << 15;
+pub const CFGR_PLLSRC_HSI_PREDIV: u32 = 0b01 << 15;
+pub const CFGR_PLLSRC_HSE_PREDIV: u32 = 0b10 << 15;
+pub const CFGR_PLLSRC_HSI48_PREDIV: u32 = CFGR_CLOCK_HSI48 << 15;
+
+pub const CFGR_PLLMUL_MASK: u32 = 0b1111 << 18;
+
+// AHBENR Bit Offsets
 pub const AHBENR_OFFSET: u32 = 0x14;
 pub const TSCEN: u32 = 0b1 << 24;
 pub const IOPAEN: u32 = 0b1 << 17;
@@ -52,18 +85,11 @@ pub const SPI1EN: u32 = 0b1 << 12;
 pub const ADCEN: u32 = 0b1 << 9;
 pub const SYSCFGCOMPEN: u32 = 0b1 << 0;
 
-pub const CR_OFFSET: u32 = 0x00;
-pub const HSI_VALUE: u32 = 8_000_000;
-pub const HSE_VALUE: u32 = 8_000_000;
-pub const HSI48_VALUE: u32 = 48_000_000;
+// CFGR2 Bit Offsets
+pub const CFGR2_OFFSET: u32 = 0x2C;
+pub const CFGR2_PREDIV_MASK: u32 = 0b1111;
 
-pub const HSION: u32 = 0b1 << 0;
-pub const HSIRDY: u32 = 0b1 << 1;
-pub const HSEON: u32 = 0b1 << 16;
-pub const HSERDY: u32 = 0b1 << 17;
-pub const PLLON: u32 = 0b1 << 24;
-pub const PLLRDY: u32 = 0b1 << 25;
-
+// CR2 Bit Offsets
 pub const CR2_OFFSET: u32 = 0x34;
 pub const CR2_HSI14ON: u32 = 0b1 << 0;
 pub const CR2_HSI14RDY: u32 = 0b1 << 1;

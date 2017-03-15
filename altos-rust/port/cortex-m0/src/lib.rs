@@ -17,7 +17,7 @@
 
 //! This crate is the hardware interface for the cortex-m0 processor.
 
-#![warn(missing_docs)]
+// #![warn(missing_docs)]
 #![feature(lang_items)]
 #![feature(asm)]
 #![feature(naked_functions)]

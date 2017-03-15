@@ -104,30 +104,30 @@ impl CFGR {
     fn get_system_clock_source(&self) -> Clock {
         let set_bits = unsafe {
             let reg = self.addr();
-            (*reg & (0b11 << 2)) >> 2
+            *reg & CFGR_SWS_MASK
         };
         match set_bits {
-            0b00 => Clock::HSI,
-            0b01 => Clock::HSE,
-            0b10 => Clock::PLL,
-            0b11 => Clock::HSI48,
+            CFGR_SWS_HSI => Clock::HSI,
+            CFGR_SWS_HSE => Clock::HSE,
+            CFGR_SWS_PLL => Clock::PLL,
+            CFGR_SWS_HSI48 => Clock::HSI48,
             _    => panic!("CFGR::get_system_clock_source - set bits gave an unknown value!"),
         }
     }
 
     fn set_system_clock_source(&mut self, clock: Clock) {
         let mask = match clock {
-            Clock::HSI => 0b00,
-            Clock::HSE => 0b01,
-            Clock::PLL => 0b10,
-            Clock::HSI48 => 0b11,
+            Clock::HSI => CFGR_CLOCK_HSI,
+            Clock::HSE => CFGR_CLOCK_HSE,
+            Clock::PLL => CFGR_CLOCK_PLL,
+            Clock::HSI48 => CFGR_CLOCK_HSI48,
             _ => panic!("CFGR::set_system_clock_source - the clock argument cannot be used as a source!"),
         };
 
         unsafe {
             let mut reg = self.addr();
             // Zero the selection first (does this have any side effects)?
-            *reg &= !0b11;
+            *reg &= !CFGR_SW_CLEAR_MASK;
             *reg |= mask;
         }
     }
@@ -135,29 +135,29 @@ impl CFGR {
     fn get_pll_source(&self) -> Clock {
         let set_bits = unsafe {
             let reg = self.addr();
-            (*reg & (0b11 << 15)) >> 15
+            *reg & CFGR_PLLSRC_MASK
         };
 
         match set_bits {
-            0b00 | 0b01 => Clock::HSI,
-            0b10 => Clock::HSE,
-            0b11 => Clock::HSI48,
+            CFGR_PLLSRC_HSI_2 | CFGR_PLLSRC_HSI_PREDIV => Clock::HSI,
+            CFGR_PLLSRC_HSE_PREDIV => Clock::HSE,
+            CFGR_PLLSRC_HSI48_PREDIV => Clock::HSI48,
             _ => panic!("CFGR::get_pll_source - set bits gave an unknown value!"),
         }
     }
 
     fn set_pll_source(&mut self, clock: Clock) {
         let mask = match clock {
-            Clock::HSI   => 0b00 << 15,
-            Clock::HSE   => 0b10 << 15,
-            Clock::HSI48 => 0b11 << 15,
+            Clock::HSI   => CFGR_PLLSRC_HSI_2,
+            Clock::HSE   => CFGR_PLLSRC_HSE_PREDIV,
+            Clock::HSI48 => CFGR_PLLSRC_HSI48_PREDIV,
             _ => panic!("CFGR::set_pll_source - the clock argument cannot be used as a source!"),
         };
 
         unsafe {
             let mut reg = self.addr();
             // Zero the register first
-            *reg &= !0b11 << 18;
+            *reg &= !CFGR_PLLSRC_MASK;
             *reg |= mask;
         }
     }
@@ -165,7 +165,7 @@ impl CFGR {
     fn get_pll_multiplier(&self) -> u8 {
         let set_bits = unsafe {
             let reg = self.addr();
-            (*reg & (0b1111 << 18)) >> 18
+            (*reg & CFGR_PLLMUL_MASK) >> 18
         };
 
         // Just the way the multiplier is set up...
@@ -185,7 +185,7 @@ impl CFGR {
         unsafe {
             let mut reg = self.addr();
             // Zero the register field
-            *reg &= !0b1111 << 18;
+            *reg &= !CFGR_PLLMUL_MASK;
             *reg |= mask;
         }
     }
@@ -206,7 +206,7 @@ impl Register for CFGR2 {
     }
 
     fn mem_offset(&self) -> u32 {
-        0x2C
+        CFGR2_OFFSET
     }
 }
 
@@ -214,7 +214,7 @@ impl CFGR2 {
     fn get_pll_prediv_factor(&self) -> u8 {
         let set_bits = unsafe {
             let reg = self.addr();
-            *reg & 0b1111
+            *reg & CFGR2_PREDIV_MASK
         };
 
         // Division factor is 1 greater than the value of the bits set
@@ -230,7 +230,7 @@ impl CFGR2 {
         unsafe {
             let mut reg = self.addr();
             // Zero the register field
-            *reg &= !0b1111;
+            *reg &= !CFGR2_PREDIV_MASK;
             *reg |= mask;
         }
     }

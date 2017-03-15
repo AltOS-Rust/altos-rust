@@ -21,12 +21,11 @@
 pub mod rcc;
 pub mod gpio;
 pub mod systick;
+// ADC testing... (Should have feature flag)
 pub mod adc;
 #[cfg(feature="serial")]
 pub mod usart;
 
-// ADC testing... (Should have feature flag)
-pub mod adc;
 
 use volatile::Volatile;
 

@@ -46,9 +46,6 @@ mod system_control;
 pub mod peripheral;
 pub mod time;
 
-//ADC testing...
-use peripheral::adc;
-
 use peripheral::gpio;
 use peripheral::rcc;
 use peripheral::systick;

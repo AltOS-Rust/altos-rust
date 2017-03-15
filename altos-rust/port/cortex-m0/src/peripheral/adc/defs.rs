@@ -78,9 +78,6 @@ pub const DR_OFFSET:  u32 = 0x40;
 // CHSELR: Channel selection register
 // CCR: Common configuration register
 
-// Base address for ADC register set
-pub const ADC_ADDR: *const u32 = 0x4001_2400 as *const _;
-
 // ------------------------------------
 // ADC - CFGR1 bit definitions
 // ------------------------------------

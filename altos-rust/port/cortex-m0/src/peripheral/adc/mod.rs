@@ -22,7 +22,6 @@ mod isr;
 mod ier;
 mod cr;
 mod dr;
-mod defs;
 mod chselr;
 
 use super::{Control, Register};
@@ -31,6 +30,7 @@ use self::cr::CR;
 use self::isr::ISR;
 use self::ier::IER;
 use self::dr::DR;
+use self::chselr::CHSELR;
 use self::defs::*;
 use peripheral::{rcc, gpio};
 // use interrupt;
@@ -52,7 +52,7 @@ pub struct Adc {
     // cfgr1: CFGR1,
     // cfgr2: CFGR2,
     // smpr: SMPR,
-    // chselr: CHSELR,
+    chselr: CHSELR,
 
     // tr: TR,
     // ccr: CCR,
@@ -73,6 +73,7 @@ impl Adc {
             isr: ISR::new(ADC_ADDR),
             ier: IER::new(ADC_ADDR),
             dr: DR::new(ADC_ADDR),
+            chselr: CHSELR::new(ADC_ADDR),
         }
     }
 

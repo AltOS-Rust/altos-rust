@@ -38,17 +38,17 @@ impl Register for ICSR {
 }
 
 impl ICSR {
-    pub fn set_pend_sv(&self) {
+    pub fn set_pend_sv(&mut self) {
         unsafe {
             let mut reg = self.addr();
-            *reg |= PEND_SV_SET;
+            *reg |= ICSR_PENDSVSET;
         }
     }
 
-    pub fn clear_pend_sv(&self) {
+    pub fn clear_pend_sv(&mut self) {
         unsafe {
             let mut reg = self.addr();
-            *reg |= PEND_SV_CLEAR;
+            *reg |= ICSR_PENDSVCLR;
         }
     }
 }

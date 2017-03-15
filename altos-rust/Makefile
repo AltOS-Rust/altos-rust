@@ -81,8 +81,8 @@ release: $(linker_script)
 gdb: debug
 	@$(gdb) $(gdb_flags) $(debug_build)
 
-gdb-st: debug
-	@$(gdb) $(st_gdb_flags) $(debug_build)
+gdb-st: release
+	@$(gdb) $(st_gdb_flags) $(release_build)
 
 gdb-ocd: debug
 	@$(gdb) $(ocd_gdb_flags) $(debug_build)

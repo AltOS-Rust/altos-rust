@@ -15,6 +15,9 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+//! This module provides system implementation information and allows
+//! configuration control and reporting of system exceptions.
+
 mod icsr;
 mod defs;
 
@@ -22,6 +25,7 @@ use ::volatile::Volatile;
 use ::peripheral::{Control, Register};
 use self::defs::*;
 
+/// Returns instance of the System Control Block.
 pub fn scb() -> SCB {
     SCB::scb()
 }
@@ -47,11 +51,16 @@ impl SCB {
         }
     }
 
-    pub fn set_pend_sv(&self) {
+    /// Trigger a pend_sv exception.
+    ///
+    /// PendSV signals to the operating system that a context
+    /// switch should occur.
+    pub fn set_pend_sv(&mut self) {
         self.icsr.set_pend_sv();
     }
 
-    pub fn clear_pend_sv(&self) {
+    /// Clear the pend_sv exception.
+    pub fn clear_pend_sv(&mut self) {
         self.icsr.clear_pend_sv();
     }
 }

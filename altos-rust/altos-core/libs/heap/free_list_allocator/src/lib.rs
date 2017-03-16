@@ -35,6 +35,7 @@ extern crate std;
 
 extern crate cm0_sync as sync;
 
+#[allow(unused_imports)]
 #[macro_use]
 extern crate altos_macros;
 

@@ -276,7 +276,7 @@ impl Usart {
 /// Connects the necessary GPIO pins, sets the clock, enables interrupts,
 /// and currently configures the Usart2 to 9600 8N1 configuration.
 pub fn init() {
-    let rcc = rcc::rcc();
+    let mut rcc = rcc::rcc();
     rcc.enable_peripheral(rcc::Peripheral::USART2);
 
     gpio::GPIO::enable(gpio::Group::A);
@@ -308,6 +308,6 @@ pub fn init() {
     usart2.enable_transmit_interrupt();
     usart2.enable_usart();
 
-    let nvic = interrupt::nvic();
+    let mut nvic = interrupt::nvic();
     nvic.enable_interrupt(interrupt::Hardware::USART2);
 }

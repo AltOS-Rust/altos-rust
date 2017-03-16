@@ -28,7 +28,7 @@ use sync::mutex::{MutexGuard, Mutex};
 /// boolean predicate (a condition) and a mutex. The predicate is always verified inside of the
 /// mutex before determining that thread must block.
 ///
-/// Each condition variable can be use with only one mutex at runtime, any attempt to use multiple
+/// Each condition variable can be used with only one mutex at runtime. Any attempt to use multiple
 /// mutexes on the same condition variable will result in a panic.
 pub struct CondVar {
     mutex: AtomicUsize,
@@ -45,11 +45,11 @@ impl CondVar {
         }
     }
 
-    /// Blocks the current task until this condition variable recieves a notification
+    /// Blocks the current task until this condition variable recieves a notification.
     ///
-    /// This function will automatically unlock the mutex represented by the guard passed in an block
-    /// the current task. Calls to notify after the mutex is unlocked can wake up this task. When
-    /// this call returns the lock will have been reacquired.
+    /// This function will automatically unlock the mutex represented by the guard passed in and
+    /// block the current task. Calls to notify after the mutex is unlocked can wake up this task.
+    /// When this call returns, the lock will have been reacquired.
     pub fn wait<'a, T>(&self, guard: MutexGuard<'a, T>) -> MutexGuard<'a, T> {
         // Get a reference to the locked mutex
         let mutex = ::sync::mutex_from_guard(&guard);
@@ -68,9 +68,9 @@ impl CondVar {
 
     /// Wakes up all tasks that are blocked on this condition variable.
     ///
-    /// This method will wake up any waiters on this condition variable. The calls to `notify_all()`
-    /// are not buffered in any way, calling `wait()` on another thread after calling `notify_all()` will
-    /// still block the thread.
+    /// This method will wake up any waiters on this condition variable. The calls to
+    /// `notify_all()` are not buffered in any way. Calling `wait()` on another thread after
+    /// calling `notify_all()` will still block the thread.
     pub fn notify_all(&self) {
         ::syscall::wake(self as *const _ as usize);
     }

@@ -22,7 +22,7 @@
 // So... I guess we can make multiple types each with a different size, like RingBuffer8,
 // RingBuffer16, etc. If we need larger buffers.
 
-/// The size of any ring buffers
+/// The size of any ring buffers.
 const RING_BUFFER_SIZE: usize = 8;
 
 /// A queue to store bytes of data.
@@ -44,11 +44,10 @@ impl RingBuffer {
         }
     }
 
-    /// Insert a byte into the buffer
+    /// Insert a byte into the buffer.
     ///
-    /// If the buffer is full, the byte being inserted will be dropped
-    /// rather than overwriting data in the queue.
-    /// Return true if the byte was successfully inserted into the buffer
+    /// If the buffer is full, the byte being inserted will be dropped rather than overwriting
+    /// data in the queue. Return true if the byte was successfully inserted into the buffer.
     pub fn insert(&mut self, byte: u8) -> bool {
         if !self.full {
             self.data[self.end] = byte;
@@ -66,7 +65,7 @@ impl RingBuffer {
         }
     }
 
-    /// Remove a byte from the buffer if there is one available
+    /// Remove a byte from the buffer if there is one available.
     pub fn remove(&mut self) -> Option<u8> {
         if self.start != self.end || self.full {
             let byte = self.data[self.start];
@@ -82,7 +81,7 @@ impl RingBuffer {
         }
     }
 
-    /// Check if the buffer is empty
+    /// Check if the buffer is empty, returning true if it is, and false otherwise.
     pub fn is_empty(&self) -> bool {
         self.start == self.end && !self.full
     }

@@ -77,7 +77,8 @@ impl<T> Queue<T> {
         self.tail = raw_tail;
     }
 
-    /// Takes an item off of the front of the queue, if there are no items in the queue returns None.
+    /// Takes an item off of the front of the queue and returns it. If there are no items in the
+    /// queue, it returns None.
     ///
     /// O(1) algorithmic time
     ///
@@ -104,7 +105,7 @@ impl<T> Queue<T> {
         })
     }
 
-    /// Removes all elements matching `predicate` and returns them in a new queue
+    /// Removes all elements matching `predicate` and returns them in a new queue.
     ///
     /// O(n) algorithmic time
     ///
@@ -228,7 +229,7 @@ impl<T> Queue<T> {
         ::core::mem::replace(self, Queue::new())
     }
 
-    /// Checks if the queue is empty, returns true if it is empty, false otherwise.
+    /// Checks if the queue is empty. Returns true if it is empty, false otherwise.
     ///
     /// O(1) algorithmic time
     ///
@@ -478,8 +479,8 @@ mod tests {
 
     #[test]
     fn test_append_empty_twice_does_not_break_the_queue() {
-        // This case is for a bug that was caused by appending an empty list twice and losing the whole
-        // list...
+        // This case is for a bug that was caused by appending an empty list twice and
+        // losing the whole list.
         let mut list1 = Queue::new();
         let list2 = Queue::new();
         let list3 = Queue::new();

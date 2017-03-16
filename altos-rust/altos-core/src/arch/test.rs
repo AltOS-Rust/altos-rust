@@ -26,13 +26,16 @@ pub fn yield_cpu() {
     sched::switch_context();
 }
 
-pub fn initialize_stack(stack_ptr: Volatile<usize>, _code: fn(&mut Args), _args: &Box<Args>) -> usize {
+pub fn initialize_stack(stack_ptr: Volatile<usize>, _code: fn(&mut Args), _args: &Box<Args>)
+    -> usize {
+
     stack_ptr.as_ptr() as usize
 }
 
 pub fn start_first_task() {
     // no-op
 }
+
 pub fn in_kernel_mode() -> bool {
     // no-op
     true

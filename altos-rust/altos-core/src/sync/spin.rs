@@ -18,8 +18,8 @@
 //! Spin based synchronization.
 //!
 //! This module provides implementation for the `SpinMutex` to allow for spin-based thread
-//! synchronization. These spinning primitives are meant for use within the kernel, outside of the
-//! kernel `Mutex` should be used as it provides a much more efficient use of CPU time.
+//! synchronization. These spinning primitives are meant for use within the kernel. Outside of the
+//! kernel, `Mutex` should be used, as it provides a much more efficient use of CPU time.
 
 // NOTE: This is mainly taken from the `spin` crate (https://github.com/mvdnes/spin-rs), we've
 // reproduced it here because atomic operations (which are needed for the crate) are not supported
@@ -31,14 +31,14 @@ use core::cell::UnsafeCell;
 
 /// A spin lock used to synchronize access to a shared resource.
 ///
-/// This locking primitive is based on spinning. If the lock is already held by another thread
-/// instead of the running thread yielding the CPU to another thread it will just spin. In a single
-/// threaded environment this will just waste time spinning at best, at worst it could deadlock the
-/// CPU if no other thread are able to run while this one is spinning. Nevertheless it is a useful
-/// tool to have within the kernel as the kernel itself cannot be preempted. In order to provide
-/// synchronization across multiple kernel threads a spin lock must be used. If there is only one
-/// kernel thread then there will be no contention over the resources and so deadlock will be a
-/// non-issue.
+/// This locking primitive is based on spinning. If the lock is already held by another thread,
+/// instead of the running thread yielding the CPU to another thread, it will just spin. In a
+/// single threaded environment, at best this will just waste time spinning, at worst it could
+/// deadlock the CPU if no other threads are able to run while this one is spinning. Nevertheless,
+/// it is a useful tool to have within the kernel as the kernel itself cannot be preempted.
+/// In order to provide synchronization across multiple kernel threads, a spin lock must be used.
+/// If there is only one kernel thread, then there will be no contention over the resources and
+/// so deadlock will be a non-issue.
 pub struct SpinMutex<T: ?Sized> {
     lock: AtomicBool,
     data: UnsafeCell<T>,
@@ -47,7 +47,7 @@ pub struct SpinMutex<T: ?Sized> {
 /// A guard that controls access to a shared resource.
 ///
 /// When a lock is acquired, a `SpinGuard` will be created for the locking thread. The thread can
-/// then use that guard to access the shared data. When the guard goes out of scope the lock will
+/// then use that guard to access the shared data. When the guard goes out of scope, the lock will
 /// automatically be freed.
 pub struct SpinGuard<'mx, T: ?Sized + 'mx> {
     lock: &'mx AtomicBool,
@@ -74,8 +74,8 @@ impl<T: ?Sized> SpinMutex<T> {
 
     /// Try to obtain the lock in a blocking fashion.
     ///
-    /// If the lock is not able to be obtained, the thread will just spin waiting for the lock to
-    /// become unlocked by another thread.
+    /// If the lock is not able to be obtained, the thread will just spin while waiting for the
+    /// lock to become unlocked by another thread.
     ///
     /// # Example
     ///
@@ -101,8 +101,9 @@ impl<T: ?Sized> SpinMutex<T> {
 
     /// Try to obtain the lock in a non-blocking fashion.
     ///
-    /// If the lock is not able to be obtained, instead of blocking this just returns `None`. This is
-    /// useful if a thread has other potential work to do instead of waiting on this shared resource.
+    /// If the lock is not able to be obtained, instead of blocking this just returns `None`.
+    /// This is useful if a thread has other potential work to do instead of waiting on this
+    /// shared resource.
     ///
     /// # Example
     ///
@@ -150,7 +151,7 @@ impl<'mx, T: ?Sized> DerefMut for SpinGuard<'mx, T> {
 }
 
 impl<'mx, T: ?Sized> Drop for SpinGuard<'mx, T> {
-    /// Dropping the guard will unlock the lock it came from
+    /// Dropping the guard will unlock the lock it came from.
     fn drop(&mut self) {
         self.lock.store(false, Ordering::Release);
     }
@@ -170,14 +171,14 @@ mod tests {
     struct NonCopy(i32);
 
     #[test]
-    fn smoke() {
+    fn test_spin_smoke() {
         let m = SpinMutex::new(());
         drop(m.lock());
         drop(m.lock());
     }
 
     #[test]
-    fn lots_and_lots() {
+    fn test_lots_and_lots() {
         static M: SpinMutex<()>  = SpinMutex::new(());
         static mut CNT: u32 = 0;
         const J: u32 = 1000;
@@ -208,7 +209,7 @@ mod tests {
     }
 
     #[test]
-    fn try_lock() {
+    fn test_try_lock() {
         let mutex = SpinMutex::new(42);
 
         // First lock succeeds
@@ -227,8 +228,7 @@ mod tests {
 
     #[test]
     fn test_mutex_arc_nested() {
-        // Tests nested mutexes and access
-        // to underlying data.
+        // Tests nested mutexes and access to underlying data.
         let arc = Arc::new(SpinMutex::new(1));
         let arc2 = Arc::new(SpinMutex::new(arc));
         let (tx, rx) = channel();

@@ -15,7 +15,7 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-//! Synchronization primitives for the AltOSRust kernel.
+//! Synchronization primitives for the AltOS-Rust kernel.
 //!
 //! This module implements several synchronization primitives for the kernel as well as
 //! applications that rely on the kernel. They are used to control access to shared resources

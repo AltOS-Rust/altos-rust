@@ -23,7 +23,7 @@ use atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 
 static SYSTEM_TICKS: AtomicUsize = ATOMIC_USIZE_INIT;
 
-/// Tick the system tick counter
+/// Tick the system tick counter.
 ///
 /// This method should only be called by the system tick interrupt handler.
 pub fn tick() {

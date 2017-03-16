@@ -17,7 +17,7 @@
 
 //! Scheduling
 //!
-//! This module contains the code for the scheduler and initialization.
+//! This module contains functionality for scheduling tasks to run and scheduler initialization.
 
 use task::{self, TaskControl, Delay, Priority, State};
 use queue::{SyncQueue, Node};
@@ -86,8 +86,8 @@ pub fn switch_context() {
                 }
             }
 
-            // If more than NORMAL_TASK_MAX Normal tasks have run don't try and schedule
-            // a normal priorty task and give low priority a shot at running.
+            // If more than NORMAL_TASK_MAX Normal tasks have run, don't try and schedule
+            // a normal priorty task, instead giving a low priority task a shot at running.
             let selected = if NORMAL_TASK_COUNTER.load(Ordering::Relaxed) >= NORMAL_TASK_MAX {
                 NORMAL_TASK_COUNTER.store(0, Ordering::Relaxed);
                 select_task(Priority::all_except(Priority::Normal))
@@ -119,10 +119,10 @@ fn select_task<I: Iterator<Item=Priority>>(priorities: I) -> Box<Node<TaskContro
             }
         }
     }
-    panic!("Task not selected!");
+    panic!("select_task - task not selected!");
 }
 
-/// Start running the first task in the queue
+/// Start running the first task in the queue.
 pub fn start_scheduler() {
     task::init_idle_task();
     for i in Priority::all() {
@@ -142,6 +142,19 @@ pub fn start_scheduler() {
 mod tests {
     use super::*;
     use test;
+
+    // A test helper function
+    fn run_scheduler_with_single_priority(priority: Priority) {
+        let _g = test::set_up();
+        assert!(test::current_task().is_none());
+        test::create_and_schedule_test_task(512, priority, "test task 1");
+        test::create_and_schedule_test_task(512, priority, "test task 2");
+        start_scheduler();
+        for _ in 0..100 {
+            assert!(test::current_task().is_some());
+            switch_context();
+        }
+    }
 
     #[test]
     fn test_system_starts_with_no_task_scheduled() {
@@ -240,18 +253,6 @@ mod tests {
         run_scheduler_with_single_priority(Priority::Critical);
         run_scheduler_with_single_priority(Priority::Normal);
         run_scheduler_with_single_priority(Priority::Low);
-    }
-
-    fn run_scheduler_with_single_priority(priority:Priority) {
-        let _g = test::set_up();
-        assert!(test::current_task().is_none());
-        test::create_and_schedule_test_task(512, priority, "test task 1");
-        test::create_and_schedule_test_task(512, priority, "test task 2");
-        start_scheduler();
-        for _ in 0..100 {
-            assert!(test::current_task().is_some());
-            switch_context();
-        }
     }
 
     #[test]

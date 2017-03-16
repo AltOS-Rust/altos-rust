@@ -22,8 +22,8 @@
 //! woken up when the resource become free again. This allows for more efficient use of CPU time as
 //! a thread that is waiting on a resource cannot do any work.
 //!
-//! When a thread is woken up it is not guaranteed that the resource is available, another thread
-//! could have been waiting on the same resource and woken up first. If this is the case then that
+//! When a thread is woken up, it is not guaranteed that the resource is available. Another thread
+//! could have been waiting on the same resource and woken up first. If this is the case, then that
 //! other thread could now be holding the lock.
 
 use atomic::{ATOMIC_BOOL_INIT, AtomicBool, Ordering};
@@ -42,7 +42,7 @@ pub struct Mutex<T: ?Sized> {
 /// A guard that controls access to a shared resource.
 ///
 /// When a lock is acquired, a `MutexGuard` will be created for the locking thread. The thread can
-/// then use that guard to access the shared data. When the guard goes out of scope the lock will
+/// then use that guard to access the shared data. When the guard goes out of scope, the lock will
 /// automatically be freed.
 pub struct MutexGuard<'mx, T: ?Sized + 'mx> {
     wchan: usize,
@@ -78,9 +78,9 @@ impl<T: ?Sized> Mutex<T> {
 
     /// Try to obtain the lock in a blocking fashion.
     ///
-    /// If the lock is not able to be obtained, the thread will be put to sleep waiting for the lock to
-    /// become unlocked by another thread. When the lock is released by the other thread this thread
-    /// will wake up and become ready to run again.
+    /// If the lock is not able to be obtained, the thread will be put to sleep, waiting for the
+    /// lock to become unlocked by another thread. When the lock is released by the other thread
+    /// this thread will wake up and become ready to run again.
     ///
     /// # Example
     ///
@@ -107,8 +107,9 @@ impl<T: ?Sized> Mutex<T> {
 
     /// Try to obtain the lock in a non-blocking fashion.
     ///
-    /// If the lock is not able to be obtained, instead of blocking this just returns `None`. This is
-    /// useful if a thread has other potential work to do instead of waiting on this shared resource.
+    /// If the lock is not able to be obtained, this just returns `None`, instead of blocking.
+    /// This is useful if a thread has other potential work to do instead of waiting on this
+    /// shared resource.
     ///
     /// # Example
     ///
@@ -131,7 +132,8 @@ impl<T: ?Sized> Mutex<T> {
                 MutexGuard {
                     wchan: self.wchan(),
                     lock: &self.lock,
-                    // UNSAFE: lock controls access to data, we only execute this branch if we've acquired it
+                    // UNSAFE: lock controls access to data, we only execute this branch
+                    // if we've acquired it
                     data: unsafe { &mut *self.data.get() },
                 }
             )
@@ -225,15 +227,16 @@ mod tests {
         let guard = mutex.lock();
         assert_eq!(mutex.lock.load(Ordering::Relaxed), true);
 
-        // Because these locks don't actually put the thread to sleep unless our operating system is
-        // running, we need to simulate a failed lock attempt by calling sleep on the lock's wchan.
+        // Because these locks don't actually put the thread to sleep unless our operating system
+        // is running, we need to simulate a failed lock attempt by calling sleep on the
+        // lock's wchan.
         syscall::sleep(mutex.wchan());
         assert_eq!(handle_1.state(), Ok(State::Blocked));
         assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
 
-        // task 2 is simulated to have acquired the lock, lets say it holds the lock for a few context
-        // switches.
+        // task 2 is simulated to have acquired the lock, lets say it holds the lock for a
+        // few context switches.
         syscall::system_tick();
         assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
@@ -248,7 +251,8 @@ mod tests {
         drop(guard);
         assert_eq!(mutex.lock.load(Ordering::Relaxed), false);
 
-        // Next context switch shoul go back to task 1, where theoretically it would acquire the lock
+        // Next context switch should go back to task 1, where theoretically it would
+        // acquire the lock
         syscall::system_tick();
         assert!(test::current_task().is_some());
         assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));

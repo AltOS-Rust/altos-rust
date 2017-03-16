@@ -15,7 +15,7 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-//! Syscall interface for the AltOS kernel
+//! Syscall interface for the AltOS-Rust kernel.
 
 use sched::{CURRENT_TASK, SLEEP_QUEUE, DELAY_QUEUE, OVERFLOW_DELAY_QUEUE, PRIORITY_QUEUES};
 use task::{Delay, State, Priority};

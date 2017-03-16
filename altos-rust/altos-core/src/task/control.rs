@@ -236,9 +236,9 @@ pub struct TaskControl {
     wchan: usize,
     delay: usize,
     delay_type: Delay,
-    pub destroy: bool,
-    pub priority: Priority,
-    pub state: State,
+    destroy: bool,
+    priority: Priority,
+    state: State,
 }
 
 unsafe impl Send for TaskControl {}
@@ -283,7 +283,10 @@ impl TaskControl {
     }
 
     pub fn destroy(&mut self) {
-        // TODO: Check if task is INIT task? So at least we always have a safe task to run...
+        if let Priority::__Idle = self.priority {
+            panic!("Tried to destroy the Idle task!");
+        }
+
         let _g = CriticalSection::begin();
         self.destroy = true;
         self.valid = INVALID_TASK;
@@ -303,6 +306,10 @@ impl TaskControl {
     pub fn set_ready(&mut self) {
         self.state = State::Ready;
         self.delay_type = Delay::Invalid;
+    }
+
+    pub fn set_running(&mut self) {
+        self.state = State::Running;
     }
 
     pub fn block(&mut self, delay_type: Delay) {
@@ -354,6 +361,12 @@ impl TaskControl {
     pub fn tick_to_wake(&self) -> usize { self.delay }
 
     pub fn delay_type(&self) -> Delay { self.delay_type }
+
+    pub fn priority(&self) -> Priority { self.priority }
+
+    pub fn is_destroyed(&self) -> bool { self.destroy }
+
+    pub fn state(&self) -> State { self.state }
 }
 
 /// A `TaskHandle` references a `TaskControl` and provides access to some state about it.

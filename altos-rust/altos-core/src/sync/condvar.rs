@@ -56,11 +56,12 @@ impl CondVar {
 
         self.verify(mutex);
 
+        ::syscall::condvar_wait(self, guard);
         // unlock the mutex
-        drop(guard);
+        //drop(guard);
 
         // Sleep on the cond var channel
-        ::syscall::sleep(self as *const _ as usize);
+        //::syscall::sleep(self as *const _ as usize);
 
         // re-acquire lock before returning
         mutex.lock()

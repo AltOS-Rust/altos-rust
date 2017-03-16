@@ -29,6 +29,7 @@
 use atomic::{ATOMIC_BOOL_INIT, AtomicBool, Ordering};
 use core::ops::{Drop, Deref, DerefMut};
 use core::cell::UnsafeCell;
+use syscall;
 
 /// A mutex lock to synchronize access to some shared resource.
 ///
@@ -69,11 +70,7 @@ impl<T: ?Sized> Mutex<T> {
     }
 
     fn obtain_lock(&self) {
-        while self.lock.compare_and_swap(false, true, Ordering::Acquire) != false {
-            // let another process run if we can't get the lock
-            let wchan = self.wchan();
-            ::syscall::sleep(wchan);
-        }
+        syscall::mutex_lock(&self.lock);
     }
 
     /// Try to obtain the lock in a blocking fashion.
@@ -169,8 +166,7 @@ impl<'mx, T: ?Sized> Drop for MutexGuard<'mx, T> {
     fn drop(&mut self) {
         // Do we care if we get pre-empted and another thread steals the lock before we wake the
         // sleeping tasks?
-        self.lock.store(false, Ordering::SeqCst);
-        ::syscall::wake(self.wchan);
+        syscall::mutex_unlock(self.lock);
     }
 }
 

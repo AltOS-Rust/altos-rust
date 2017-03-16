@@ -24,8 +24,12 @@ use task::{TaskHandle, TaskControl};
 use queue::Node;
 use alloc::boxed::Box;
 use tick;
-use sync::CriticalSection;
+use sync::{MutexGuard, CondVar, CriticalSection};
 use arch;
+use atomic::{AtomicBool, Ordering};
+
+// FIXME: When we can guarantee that syscalls will be executed in an interrupt free context, get
+// rid of critical sections in this file.
 
 /// An alias for the channel to sleep on that will never be awoken by a wakeup signal. It will
 /// still be woken after a timeout.
@@ -67,7 +71,7 @@ pub fn new_task(code: fn(&mut Args), args: Args, stack_depth: usize, priority: P
     drop(g);
 
     let handle = TaskHandle::new(&**task);
-    PRIORITY_QUEUES[task.priority].enqueue(task);
+    PRIORITY_QUEUES[task.priority()].enqueue(task);
     handle
 }
 
@@ -151,6 +155,8 @@ pub fn sched_yield() {
 /// ```
 pub fn sleep(wchan: usize) {
     debug_assert!(wchan != FOREVER_CHAN);
+    // Make the critical section for the whole function, wouldn't want to be rude and make a task
+    // give up its time slice for no reason
     let _g = CriticalSection::begin();
     // UNSAFE: Accessing CURRENT_TASK
     match unsafe { CURRENT_TASK.as_mut() } {
@@ -198,7 +204,7 @@ pub fn wake(wchan: usize) {
     to_wake.append(OVERFLOW_DELAY_QUEUE.remove(|task| task.wchan() == wchan));
     for mut task in to_wake {
         task.wake();
-        PRIORITY_QUEUES[task.priority].enqueue(task);
+        PRIORITY_QUEUES[task.priority()].enqueue(task);
     }
 }
 
@@ -219,7 +225,7 @@ pub fn system_tick() {
     let to_wake = DELAY_QUEUE.remove(|task| task.tick_to_wake() <= ticks);
     for mut task in to_wake {
         task.wake();
-        PRIORITY_QUEUES[task.priority].enqueue(task);
+        PRIORITY_QUEUES[task.priority()].enqueue(task);
     }
 
     // If ticks == all 1's then it's about to overflow.
@@ -231,7 +237,7 @@ pub fn system_tick() {
     // UNSAFE: Accessing CURRENT_TASK
     let current_priority = unsafe {
         match CURRENT_TASK.as_ref() {
-            Some(task) => task.priority,
+            Some(task) => task.priority(),
             None => panic!("system_tick - current task doesn't exist!"),
         }
     };
@@ -243,6 +249,27 @@ pub fn system_tick() {
             break;
         }
     }
+}
+
+pub fn mutex_lock(lock: &AtomicBool) {
+    while lock.compare_and_swap(false, true, Ordering::Acquire) != false {
+        // let another process run if we can't get the lock
+        let wchan = lock as *const _ as usize;
+        sleep(wchan);
+    }
+}
+
+pub fn mutex_unlock(lock: &AtomicBool) {
+    lock.store(false, Ordering::Release);
+    let wchan = lock as *const _ as usize;
+    wake(wchan);
+}
+
+pub fn condvar_wait<'a, T>(condvar: &CondVar, guard: MutexGuard<'a, T>) {
+    let _g = CriticalSection::begin();
+    sleep(condvar as *const _ as usize);
+    // Explicitly drop guard so that the mutex is unlocked before context switching.
+    drop(guard);
 }
 
 #[cfg(test)]

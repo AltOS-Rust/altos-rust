@@ -37,7 +37,7 @@ pub fn init_idle_task() {
 
     let task = TaskControl::new(idle_task_code, Args::empty(), INIT_TASK_STACK_SIZE, Priority::__Idle, "idle");
 
-    PRIORITY_QUEUES[task.priority].enqueue(Box::new(Node::new(task)));
+    PRIORITY_QUEUES[task.priority()].enqueue(Box::new(Node::new(task)));
 }
 
 fn idle_task_code(_args: &mut Args) {

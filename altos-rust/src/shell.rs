@@ -24,7 +24,7 @@ use kernel::collections::{Vec, String};
 use kernel::alloc::Box;
 use core::fmt::{self, Display};
 
-pub const LOGO: &str = "
+const LOGO: &str = "
             .                                                                       
             ;'                ..      '.                                            
            .cc.              x0kk.   .Oo  .xc                                       
@@ -245,7 +245,7 @@ pub fn shell(_args: &mut Args) {
                     println!("{:02}:{:02}:{:02}", hms.0, hms.1, hms.2);
                 },
                 Command::Rocket => {
-                    let timer: isize = if words.len() > 0 {
+                    let timer = if words.len() > 0 {
                         words[0].parse::<isize>().unwrap_or(5)    
                     } 
                     else {

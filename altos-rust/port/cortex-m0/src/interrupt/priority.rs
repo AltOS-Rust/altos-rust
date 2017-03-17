@@ -20,9 +20,9 @@ use interrupt::defs::Hardware;
 
 /// The priority of the interrupt.
 ///
-/// If in the interrupt handler and another interrupt with a
-/// higher priority is generated, the CPU will handle the higher
-/// priority interrupt before it finishes handling the lower priority interrupt.
+/// If in the interrupt handler and another interrupt with a higher priority is generated,
+/// the CPU will handle the higher priority interrupt before it finishes handling the
+/// lower priority interrupt.
 #[allow(missing_docs)]
 #[derive(Copy, Clone)]
 pub enum Priority {
@@ -117,7 +117,6 @@ impl IPR {
     }
 
     fn set_priority(&mut self, priority: Priority, interrupt: u8) {
-
         let mask = priority.mask();
         unsafe {
             let mut reg = self.addr();

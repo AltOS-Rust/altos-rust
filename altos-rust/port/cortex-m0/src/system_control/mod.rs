@@ -53,8 +53,7 @@ impl SCB {
 
     /// Trigger a pend_sv exception.
     ///
-    /// PendSV signals to the operating system that a context
-    /// switch should occur.
+    /// PendSV signals to the operating system that a context switch should occur.
     pub fn set_pend_sv(&mut self) {
         self.icsr.set_pend_sv();
     }

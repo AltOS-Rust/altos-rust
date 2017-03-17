@@ -75,7 +75,6 @@ impl ISER {
     }
 
     fn interrupt_is_enabled(&self, hardware: Hardware) -> bool {
-
         let interrupt = hardware as u8;
         unsafe {
             let reg = self.addr();

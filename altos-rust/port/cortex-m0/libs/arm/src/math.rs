@@ -33,7 +33,10 @@ pub extern "C" fn __aeabi_lmul(a: u64, b: u64) -> u64 {
     low += (t & lower_mask) << half_bits;
     high += t >> half_bits;
     high += ((a as u32) >> half_bits).wrapping_mul((b as u32) >> half_bits);
-    high = high.wrapping_add(((a >> 32) as u32).wrapping_mul((b as u32)).wrapping_add((a as u32).wrapping_mul(((b >> 32) as u32))));
+    high = high.wrapping_add(
+        ((a >> 32) as u32).wrapping_mul((b as u32))
+        .wrapping_add((a as u32).wrapping_mul(((b >> 32) as u32)))
+    );
     low as u64 | ((high as u64) << 32)
 }
 
@@ -74,7 +77,7 @@ pub extern "C" fn __udivmodsi4(mut num: u32, mut den: u32, rem_p: Option<&mut u3
     quot
 }
 
-// This is a for unsigned 32-bit mod.
+// This is for unsigned 32-bit mod.
 // Uses a special calling convention where the caller expects the
 // return value to be in $r1.
 #[cfg(target_arch="arm")]

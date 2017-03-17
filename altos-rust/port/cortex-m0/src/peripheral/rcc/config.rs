@@ -15,7 +15,7 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-//! This module handles the CFGR register which deals with clock configuration
+//! This module handles the CFGR register, which deals with clock configuration.
 
 use super::super::Register;
 use super::Clock;
@@ -36,18 +36,18 @@ impl ConfigControl {
     }
 
     /// Set the system clock source. The system clock can only be run off of the HSI, HSE, PLL or
-    /// HSI48 clocks, if another clock is specified the kernel will panic
+    /// HSI48 clocks. If another clock is specified, the kernel will panic
     pub fn set_system_clock_source(&mut self, clock: Clock) {
         self.cfgr.set_system_clock_source(clock);
     }
 
-    /// Return the system clock source
+    /// Return the system clock source.
     pub fn get_system_clock_source(&self) -> Clock {
         self.cfgr.get_system_clock_source()
     }
 
-    /// Set the specified clock to drive the PLL, only the HSI, HSE or HSI48 can drive the PLL, if
-    /// another clock is specified the kernel will panic.
+    /// Set the specified clock to drive the PLL, only the HSI, HSE or HSI48 can drive the PLL. If
+    /// another clock is specified, the kernel will panic.
     pub fn set_pll_source(&mut self, clock: Clock) {
         self.cfgr.set_pll_source(clock);
     }
@@ -57,19 +57,19 @@ impl ConfigControl {
         self.cfgr.get_pll_source()
     }
 
-    /// Set the PLL multiplier, the multiplier specified MUST be within the range of [2..16], if it
-    /// is outside of that range the kernel will panic.
+    /// Set the PLL multiplier, the multiplier specified MUST be within the range of [2..16]. If it
+    /// is outside of that range, the kernel will panic.
     pub fn set_pll_multiplier(&mut self, mul: u8) {
         self.cfgr.set_pll_multiplier(mul);
     }
 
-    /// Get the current multiplier for the PLL, the multiplier is in a range of [2..16].
+    /// Get the current multiplier for the PLL. The multiplier is in a range of [2..16].
     pub fn get_pll_multiplier(&self) -> u8 {
         self.cfgr.get_pll_multiplier()
     }
 
-    /// Set the PLL prediv factor, the factor specified MUST be within the range of [1..16],
-    /// if it is outside that range the kernel will panic.
+    /// Set the PLL prediv factor, the factor specified MUST be within the range of [1..16].
+    /// If it is outside that range, the kernel will panic.
     pub fn set_pll_prediv_factor(&mut self, factor: u8) {
         self.cfgr2.set_pll_prediv_factor(factor);
     }

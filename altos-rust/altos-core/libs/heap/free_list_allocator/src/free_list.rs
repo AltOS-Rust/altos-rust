@@ -255,7 +255,7 @@ impl FreeList {
 
         match dealloc_block.get_ref_mut() {
             Some(block) => *block = BlockHeader::new(used_memory),
-            None => panic!("Tried to deallocate a null pointer!"),
+            None => panic!("deallocate - tried to deallocate a null pointer!"),
         }
 
         // Traverses the free list, locating neighboring blocks to dealloc_block based on alloc_ptr

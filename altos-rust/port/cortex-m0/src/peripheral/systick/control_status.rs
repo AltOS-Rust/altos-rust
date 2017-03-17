@@ -23,7 +23,7 @@ pub enum ClockSource {
     Processor,
 }
 
-/// The control and status register for the SysTick timer
+/// The control and status register for the SysTick timer.
 #[derive(Copy, Clone)]
 pub struct CSR {
     base_addr: *const u32,

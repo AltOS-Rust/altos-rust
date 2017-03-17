@@ -15,7 +15,7 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-//! This module handles the clock control register of the CRR
+//! This module handles the clock control register of the CRR.
 
 use super::super::Register;
 use super::defs::*;
@@ -56,7 +56,7 @@ pub mod clock_rate {
 
         unsafe { CLOCK_RATE = rate; }
         let mut systick = systick::systick();
-        // Interrupt every milisecond
+        // Interrupt every millisecond
         systick.set_reload_value(rate / 1000);
     }
 }
@@ -90,7 +90,7 @@ impl ClockControl {
         }
     }
 
-    /// Enable a clock
+    /// Enable a clock.
     pub fn enable_clock(&mut self, clock: Clock) {
         match clock {
             Clock::HSI | Clock::HSE | Clock::PLL => self.cr.set_clock(true, clock),
@@ -98,7 +98,7 @@ impl ClockControl {
         };
     }
 
-    /// Disable a clock, if a clock is unable to be disabled the return value will be false.
+    /// Disable a clock. If a clock is unable to be disabled, the return value will be false.
     pub fn disable_clock(&mut self, clock: Clock) -> bool {
         match clock {
             Clock::HSI | Clock::HSE | Clock::PLL => self.cr.set_clock(false, clock),
@@ -106,7 +106,7 @@ impl ClockControl {
         }
     }
 
-    /// Return true if the specified clock is enabled, false otherwise
+    /// Return true if the specified clock is enabled, false otherwise.
     pub fn clock_is_on(&self, clock: Clock) -> bool {
         match clock {
             Clock::HSI | Clock::HSE | Clock::PLL => self.cr.clock_is_on(clock),
@@ -114,7 +114,7 @@ impl ClockControl {
         }
     }
 
-    /// Return true if the specified clock is ready for use, false otherwise
+    /// Return true if the specified clock is ready for use, false otherwise.
     pub fn clock_is_ready(&self, clock: Clock) -> bool {
         match clock {
             Clock::HSI | Clock::HSE | Clock::PLL => self.cr.clock_is_ready(clock),
@@ -123,8 +123,8 @@ impl ClockControl {
     }
 }
 
-/// The CR register only controls the PLL, HSE, and HSI clocks, if another clock is passed in as an
-/// argument to any of the methods that take a clock argument the kernel will panic.
+/// The CR register only controls the PLL, HSE, and HSI clocks. If another clock is passed in as an
+/// argument to any of the methods that take a clock argument, the kernel will panic.
 #[derive(Copy, Clone)]
 pub struct CR {
     base_addr: *const u32,
@@ -145,8 +145,8 @@ impl Register for CR {
 }
 
 impl CR {
-    /// Set a clock on if `enable` is true, off otherwise. If `enable` is true, the return value is
-    /// always true. If `enable` is false, the return value will be true if the clock was
+    /// Set a clock to be on if `enable` is true, off otherwise. If `enable` is true, the return
+    /// value is always true. If `enable` is false, the return value will be true if the clock was
     /// successfully disabled.
     fn set_clock(&mut self, enable: bool, clock: Clock) -> bool {
         let mask = match clock {
@@ -200,8 +200,8 @@ impl CR {
     }
 }
 
-/// The CR2 register only controls the HSI48 and HSI14 clocks, if another clock is passed in as an
-/// argument to any of the methods that take a clock argument the kernel will panic.
+/// The CR2 register only controls the HSI48 and HSI14 clocks. If another clock is passed in as an
+/// argument to any of the methods that take a clock argument, the kernel will panic.
 #[derive(Copy, Clone)]
 pub struct CR2 {
     base_addr: *const u32,
@@ -222,8 +222,8 @@ impl Register for CR2 {
 }
 
 impl CR2 {
-    /// Set a clock on if `enable` is true, off otherwise. If `enable` is true, the return value is
-    /// always true. If `enable` is false, the return value will be true if the clock was
+    /// Set a clock to be on if `enable` is true, off otherwise. If `enable` is true, the return
+    /// value is always true. If `enable` is false, the return value will be true if the clock was
     /// successfully disabled.
     fn set_clock(&mut self, enable: bool, clock: Clock) -> bool {
         let mask = match clock {

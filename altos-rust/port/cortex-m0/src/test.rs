@@ -15,6 +15,9 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+//! Provides a framework for testing code which accesses hardware-specific registers by utilizing
+//! mock registers.
+
 use peripheral::{Register};
 use std::ops::{Deref, DerefMut};
 use std::boxed::Box;

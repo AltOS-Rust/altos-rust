@@ -15,7 +15,7 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-//! This module controls the RCC (Reset and Clock Controller), it handles enabling and disabling
+//! This module controls the RCC (Reset and Clock Controller). It handles enabling and disabling
 //! clocks, setting clock configurations and the reset flags that are set on a reset.
 
 mod clock_control;
@@ -60,34 +60,34 @@ impl RCC {
         }
     }
 
-    /// Enable the specified clock
+    /// Enable the specified clock.
     pub fn enable_clock(&mut self, clock: Clock) {
         self.cr.enable_clock(clock);
     }
 
-    /// Disable the specified clock, if the clock cannot be disabled (if it is driving the PLL for
-    /// example) then this method will return false, it returns true otherwise
+    /// Disable the specified clock. If the clock cannot be disabled (if it is driving the PLL, for
+    /// example) then this method will return false. Otherwise, it returns true.
     pub fn disable_clock(&mut self, clock: Clock) -> bool {
         self.cr.disable_clock(clock)
     }
 
-    /// Return true if the specified clock is enabled
+    /// Return true if the specified clock is enabled.
     pub fn clock_is_on(&self, clock: Clock) -> bool {
         self.cr.clock_is_on(clock)
     }
 
-    /// Return true if the specified clock is ready to be used as the system clock
+    /// Return true if the specified clock is ready to be used as the system clock.
     pub fn clock_is_ready(&self, clock: Clock) -> bool {
         self.cr.clock_is_ready(clock)
     }
 
-    /// Return the clock driving the system clock
+    /// Return the clock driving the system clock.
     pub fn get_system_clock_source(&self) -> Clock {
         self.cfgr.get_system_clock_source()
     }
 
-    /// Set the system clock source. The system clock can only be run off of the HSI, HSE, PLL or
-    /// HSI48 clocks, if another clock is specified the kernel will panic
+    /// Set the system clock source. The system clock can only be run off of the HSI, HSE, PLL, or
+    /// HSI48 clocks. If another clock is specified, the kernel will panic.
     pub fn set_system_clock_source(&mut self, clock: Clock) {
         self.cfgr.set_system_clock_source(clock);
         // We need a memory barrier here since the hardware is writing to the system clock bit
@@ -97,36 +97,35 @@ impl RCC {
         clock_control::clock_rate::update_system_clock_rate();
     }
 
-    /// Get the clock driving the PLL
+    /// Get the clock driving the PLL.
     pub fn get_pll_source(&self) -> Clock {
         self.cfgr.get_pll_source()
     }
 
-    /// Set the specified clock to drive the PLL, only the HSI, HSE or HSI48 can drive the PLL, if
-    /// another clock is specified the kernel will panic.
+    /// Set the specified clock to drive the PLL. Only the HSI, HSE or HSI48 clocks can drive the
+    /// PLL. If another clock is specified, the kernel will panic.
     pub fn set_pll_source(&mut self, clock: Clock) {
         self.cfgr.set_pll_source(clock);
     }
-
 
     /// Get the current multiplier for the PLL, the multiplier is in a range of [2..16].
     pub fn get_pll_multiplier(&self) -> u8 {
         self.cfgr.get_pll_multiplier()
     }
 
-    /// Set the PLL multiplier, the multiplier specified MUST be within the range of [2..16], if it
-    /// is outside of that range the kernel will panic.
+    /// Set the PLL multiplier. The specified multiplier MUST be within the range of [2..16]. If it
+    /// is outside of that range, the kernel will panic.
     pub fn set_pll_multiplier(&mut self, mul: u8) {
         self.cfgr.set_pll_multiplier(mul);
     }
 
-    /// Get the current prediv factor for the PLL, the factor is in a range of [1..16].
+    /// Get the current prediv factor for the PLL. The factor is in a range of [1..16].
     pub fn get_pll_prediv_factor(&self) -> u8 {
         self.cfgr.get_pll_prediv_factor()
     }
 
-    /// Set the PLL prediv factor, the factor specified MUST be within the range of [1..16], if it is
-    /// outside that range the kernel will panic.
+    /// Set the PLL prediv factor, the factor specified MUST be within the range of [1..16]. If it
+    /// is outside that range, the kernel will panic.
     pub fn set_pll_prediv_factor(&mut self, factor: u8) {
         self.cfgr.set_pll_prediv_factor(factor);
     }

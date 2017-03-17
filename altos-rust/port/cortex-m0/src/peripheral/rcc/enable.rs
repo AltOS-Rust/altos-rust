@@ -15,7 +15,7 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-//! This module is used to control the AHBENR (AHB peripheral enable register) which controls the
+//! This module is used to control the AHBENR (AHB peripheral enable register), which controls the
 //! clock to the peripherals controled by the AHB clock.
 
 use super::super::{Register, Field};

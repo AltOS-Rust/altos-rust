@@ -16,6 +16,7 @@
 */
 
 //! This module defines interrupt behavior.
+
 use peripheral::Control;
 use volatile::Volatile;
 pub use interrupt::defs::Hardware;
@@ -31,8 +32,7 @@ pub fn nvic() -> NVIC {
     NVIC::nvic()
 }
 
-/// Controls the interrupt vectors for enabling/disabling
-/// interrupts for the peripherals.
+/// Controls the interrupt vectors for enabling/disabling interrupts for the peripherals.
 #[derive(Copy, Clone)]
 pub struct NVIC {
     mem_addr: *const u32,

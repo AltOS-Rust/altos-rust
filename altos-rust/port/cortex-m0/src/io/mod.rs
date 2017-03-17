@@ -44,10 +44,10 @@ mod imp {
     use core::fmt::{self, Write, Arguments};
     use peripheral::usart::{UsartX, Usart, USART2_TX_CHAN, USART2_RX_CHAN};
 
-    /// Buffer for transmitting bytes
+    /// A buffer for transmitting bytes.
     pub static mut TX_BUFFER: RingBuffer = RingBuffer::new();
 
-    /// Buffer for receiving bytes
+    /// A buffer for receiving bytes.
     pub static mut RX_BUFFER: RingBuffer = RingBuffer::new();
 
     // Mutex to ensure transmitted data is not jumbled.

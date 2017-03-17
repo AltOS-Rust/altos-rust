@@ -18,8 +18,8 @@
 use super::super::Register;
 use super::defs::*;
 
-/// The Reload Value Register specifies the start value to load into the SYST_CVR (Current Value
-/// Register)
+/// The Reload Value Register specifies the start value to load into the SYST_CVR
+/// (Current Value Register).
 #[derive(Copy, Clone)]
 pub struct RVR {
     base_addr: *const u32,
@@ -40,7 +40,7 @@ impl Register for RVR {
 }
 
 impl RVR {
-    /// Return the reload value of the register
+    /// Return the reload value of the register.
     pub fn get_reload_value(&self) -> u32 {
         unsafe {
             let reg = self.addr();
@@ -48,7 +48,7 @@ impl RVR {
         }
     }
 
-    /// Set the reload value of the register, it must be <= 0xFFFFFF or the kernel will panic
+    /// Set the reload value of the register. It must be <= 0xFFFFFF or the kernel will panic.
     pub fn set_reload_value(&mut self, value: u32) {
         if value & !RELOAD != 0 {
             panic!("RVR::set_reload_value - the value of the reload register must be <= 0xFFFFFF!");

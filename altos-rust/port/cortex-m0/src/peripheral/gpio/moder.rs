@@ -21,9 +21,9 @@ use super::defs::*;
 /// Defines available modes for the GPIO pins.
 #[derive(Copy, Clone)]
 pub enum Mode {
-    /// Pin configured for input data
+    /// Pin configured for input data.
     Input,
-    /// Pin configured for output data
+    /// Pin configured for output data.
     Output,
     /// Pin configured for an alternate function.
     Alternate,
@@ -88,8 +88,8 @@ impl MODER {
         }
     }
 
-    /// Get the current mode for the specified port, port must be a value between [0..15] or the kernel
-    /// will panic.
+    /// Get the current mode for the specified port, port must be a value between [0..15] or
+    /// the kernel will panic.
     pub fn get_mode(&self, port: u8) -> Mode {
         if port > 15 {
             panic!("MODER::get_mode - specified port must be a value between [0..15]!");

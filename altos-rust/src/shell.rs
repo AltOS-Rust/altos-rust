@@ -24,6 +24,25 @@ use kernel::collections::{Vec, String};
 use kernel::alloc::Box;
 use core::fmt::{self, Display};
 
+pub const LOGO: &str = "
+            .                                                                       
+            ;'                ..      '.                                            
+           .cc.              x0kk.   .Oo  .xc                                       
+           c,;:            .OO. xO.  .Oo 'dkxoc .d.  .o' .clccc.                    
+          ;'  ;'           kKdodd0k. .Oo  .kl   ,k,  'x; ,dc;,'.                    
+         ..    .          cXl   .o0o .Oo  .ko   ,k;  ;x;    ..ld.                   
+         c:.  .::         oO.     dx  xc   cddo, :dolcd' ;lcclc,                    
+        ;c;,',':c'                                                                  
+       .cc,    :cc.                                                                 
+      .ccl;    cll:        'dl   ;o;            ..                                  
+      :odxc    dxdd;       kK0d cOkO    .''.    ok    ...    .    .   .....  ...    
+     ,xkO0o    k00Ox.     .Kx.k0O':O, 'x'  'k:lookol.oxcx;. ;d.  ,d' ,oc.'ll:.'l:   
+    .k0KKKd    OXKK0k     ,Xl  l   O: xOoccccc  ck.  ox  '' ;d.  ,d' ,o.  :l.  :l   
+    d0KKXXd    OXXXKKl    ;Xl      Oc 'kd;      :k   ox     'dc  'd' ,o.  :l.  :l   
+  ;x0KXXO;      cKXXKKx,  xl.      0c.  lcccc   :l   ox      'cccc'   0   :l.  :l   
+.lxOKKXo          kXKK0ko.                                                          ";
+
+
 const HELP: &'static str = "Available Commands:
     echo [string ...]
     clear
@@ -226,7 +245,7 @@ pub fn shell(_args: &mut Args) {
                     println!("{:02}:{:02}:{:02}", hms.0, hms.1, hms.2);
                 },
                 Command::Rocket => {
-                    let timer:isize = if words.len() > 0 {
+                    let timer: isize = if words.len() > 0 {
                         words[0].parse::<isize>().unwrap_or(5)    
                     } 
                     else {
@@ -235,8 +254,7 @@ pub fn shell(_args: &mut Args) {
                     rocket(timer);
                 },
                 Command::Uname => {
-                    let logo = logo();
-                    println!("{}\n",logo);
+                    println!("{}\n", LOGO);
                     //Find more info and place it here
                     println!("AltOS Rust");
                 },
@@ -345,33 +363,9 @@ fn uptime() -> (usize, usize, usize) {
     (hours, minutes, seconds)
 }
 
-fn logo() -> String {
-    let mut logo = String::new();
-    logo.push_str("
-            .                                                                       
-            ;'                ..      '.                                            
-           .cc.              x0kk.   .Oo  .xc                                       
-           c,;:            .OO. xO.  .Oo 'dkxoc .d.  .o' .clccc.                    
-          ;'  ;'           kKdodd0k. .Oo  .kl   ,k,  'x; ,dc;,'.                    
-         ..    .          cXl   .o0o .Oo  .ko   ,k;  ;x;    ..ld.                   
-         c:.  .::         oO.     dx  xc   cddo, :dolcd' ;lcclc,                    
-        ;c;,',':c'                                                                  
-       .cc,    :cc.                                                                 
-      .ccl;    cll:        'dl   ;o;            ..                                  
-      :odxc    dxdd;       kK0d cOkO    .''.    ok    ...    .    .   .....  ...    
-     ,xkO0o    k00Ox.     .Kx.k0O':O, 'x'  'k:lookol.oxcx;. ;d.  ,d' ,oc.'ll:.'l:   
-    .k0KKKd    OXKK0k     ,Xl  l   O: xOoccccc  ck.  ox  '' ;d.  ,d' ,o.  :l.  :l   
-    d0KKXXd    OXXXKKl    ;Xl      Oc 'kd;      :k   ox     'dc  'd' ,o.  :l.  :l   
-  ;x0KXXO;      cKXXKKx,  xl.      0c.  lcccc   :l   ox      'cccc'   0   :l.  :l   
-.lxOKKXo          kXKK0ko.                                                          ");
-
-    logo
-}
-
-fn rocket(args:isize) {
-    let mut timer:isize = args;
-    let mut offset:isize = 15;
-    let stationary:isize = offset;
+fn rocket(mut timer: isize) {
+    let mut offset: isize = 15;
+    let stationary: isize = offset;
     let counter = timer + offset * 2; 
     let mut k = 0;
     
@@ -399,12 +393,12 @@ fn rocket(args:isize) {
         build_rocket_part(&mut rocket, "    |    |\n", offset+8);
         
         if (offset % 2 == 0) && (offset < stationary) {
-            build_rocket_part(&mut rocket, "     vwwv",offset+9);
+            build_rocket_part(&mut rocket, "     vwwv", offset+9);
         }
 
         newline_offset(&mut rocket, stationary - offset);
 
-        print!("{}",rocket);
+        print!("{}", rocket);
 
         if timer < 0 {
             if offset > -9 {
@@ -414,17 +408,16 @@ fn rocket(args:isize) {
             delay_ms(100);
         }
         else {
-            println!("\t\t/-------------\\     Blast off in...{}",timer);
+            println!("\t\t/-------------\\     Blast off in...{}", timer);
             delay_ms(1000);
         }
        
-
         k += 1;
         timer -= 1;
     }
 }
 
-fn newline_offset(string: &mut String, offset:isize){
+fn newline_offset(string: &mut String, offset: isize){
     let mut i = 0;
     if offset < 1 {
         return;
@@ -435,7 +428,7 @@ fn newline_offset(string: &mut String, offset:isize){
     }
 }
 
-fn build_rocket_part(rocket: &mut String,part: &str, offset:isize) {
+fn build_rocket_part(rocket: &mut String,part: &str, offset: isize) {
     if offset < 0 {
         return;    
     }

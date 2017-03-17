@@ -124,31 +124,29 @@ impl<T> AtomicPtr<T> {
     }
 
     pub fn compare_exchange(&self,
-        current: *mut T,
-        new: *mut T,
-        _success: Ordering,
-        _fail: Ordering)
+        current: *mut T, new: *mut T,
+        _success: Ordering, _fail: Ordering)
         -> Result<*mut T, *mut T> {
-            atomic! {
-                unsafe {
-                    let old = self.p.get();
-                    if *old == current {
-                        Ok(::core::mem::replace(&mut *old, new))
-                    }
-                    else {
-                        Err(*old)
-                    }
+
+        atomic! {
+            unsafe {
+                let old = self.p.get();
+                if *old == current {
+                    Ok(::core::mem::replace(&mut *old, new))
+                }
+                else {
+                    Err(*old)
                 }
             }
+        }
     }
 
     pub fn compare_exchange_weak(&self,
-        current: *mut T,
-        new: *mut T,
-        success: Ordering,
-        fail: Ordering)
+        current: *mut T, new: *mut T,
+        success: Ordering, fail: Ordering)
         -> Result<*mut T, *mut T> {
-            self.compare_exchange(current, new, success, fail)
+
+        self.compare_exchange(current, new, success, fail)
     }
 }
 
@@ -223,31 +221,29 @@ impl<T: Copy + PartialOrd> Atomic<T> {
     }
 
     pub fn compare_exchange(&self,
-        current: T,
-        new: T,
-        _success: Ordering,
-        _fail: Ordering)
+        current: T, new: T,
+        _success: Ordering, _fail: Ordering)
         -> Result<T, T> {
-            atomic! {
-                unsafe {
-                    let old = self.data.get();
-                    if *old == current {
-                        Ok(::core::mem::replace(&mut *old, new))
-                    }
-                    else {
-                        Err(*old)
-                    }
+
+        atomic! {
+            unsafe {
+                let old = self.data.get();
+                if *old == current {
+                    Ok(::core::mem::replace(&mut *old, new))
+                }
+                else {
+                    Err(*old)
                 }
             }
+        }
     }
 
     pub fn compare_exchange_weak(&self,
-        current: T,
-        new: T,
-        success: Ordering,
-        fail: Ordering)
+        current: T, new: T,
+        success: Ordering, fail: Ordering)
         -> Result<T, T> {
-            self.compare_exchange(current, new, success, fail)
+
+        self.compare_exchange(current, new, success, fail)
     }
 }
 

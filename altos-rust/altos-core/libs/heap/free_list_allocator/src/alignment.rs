@@ -19,7 +19,6 @@
 //!
 //! These functions are mainly intended to be used for adjusting the alignment of addresses,
 //! but they can also be used to adjust the size of the heap and memory allocations.
-//!
 
 // TODO: This file should probably be moved so that it can be utilized by both allocators
 

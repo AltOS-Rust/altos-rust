@@ -15,18 +15,17 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-//! Linked list code for the memory allocator
-//! This is intended for use by the free_list_allocator
+//! Linked list code for the memory allocator.
 //!
+//! This is intended for use by the free_list_allocator to keep track of free blocks of memory.
 
 use core::{mem, ptr};
 
 use alignment;
 
-/// A link pointing to a BlockHeader
+/// A link pointing to a BlockHeader.
 ///
-/// This type is used to provide a safe interface for getting links in our
-/// FreeList
+/// This type is used to provide a safe interface for getting links in our FreeList.
 #[derive(Copy, Clone)]
 pub struct Link(*const BlockHeader);
 
@@ -94,9 +93,9 @@ impl<'a> From<Option<&'a mut BlockHeader>> for Link {
 
 /// BlockHeader nodes keep track of a free block of memory.
 pub struct BlockHeader {
-    /// Size of block in bytes
+    /// Size of block in bytes.
     pub block_size: usize,
-    /// Next block in the list
+    /// Next block in the list.
     pub next_block: Link,
 }
 
@@ -113,13 +112,14 @@ impl BlockHeader {
     }
 }
 
-/// FreeList is a linked list which keeps track of free blocks of memory
-/// Free blocks are embedded in the free memory itself
+/// `FreeList` is a linked list which keeps track of free blocks of memory. Free blocks are
+/// embedded in the free memory itself so that the system does not require additional memory
+/// overhead to keep track of free memory.
 pub struct FreeList {
     pub head: Link,
 }
 
-// These are (trivially) implemented so FreeList objects can be passed between threads.
+// These are (trivially) implemented so `FreeList` objects can be passed between threads.
 unsafe impl Send for FreeList {}
 unsafe impl Sync for FreeList {}
 

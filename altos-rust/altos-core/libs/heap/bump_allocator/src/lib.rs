@@ -44,7 +44,7 @@ use atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 
 static mut BUMP_ALLOCATOR: BumpAllocator = BumpAllocator::new();
 
-/// Call this before doing any heap allocation. This MUST only be called once
+/// Call this before doing any heap allocation. This MUST only be called once.
 pub fn init_heap(heap_start: usize, heap_size: usize) {
     unsafe { BUMP_ALLOCATOR.init(heap_start, heap_size) };
 }
@@ -93,8 +93,8 @@ impl BumpAllocator {
     }
 }
 
-/// Align downwards. Returns the greatest x with alignment `align` so that x <= addr. The alignment
-/// must be a power of 2.
+/// Align downwards. Returns the greatest x with alignment `align` so that x <= addr.
+/// The alignment must be a power of 2.
 pub fn align_down(addr: usize, align: usize) -> usize {
     if align.is_power_of_two() {
         addr & !(align - 1)
@@ -107,8 +107,8 @@ pub fn align_down(addr: usize, align: usize) -> usize {
     }
 }
 
-/// Align upwards. Returns the smallest x with alignment `align` so that x >= addr. The alignment
-/// must be a power of 2.
+/// Align upwards. Returns the smallest x with alignment `align` so that x >= addr.
+/// The alignment must be a power of 2.
 pub fn align_up(addr: usize, align: usize) -> usize {
     align_down(addr + align - 1, align)
 }
@@ -157,7 +157,7 @@ mod tests {
     use std::vec::Vec;
 
     #[test]
-    fn test_alloc_smoke() {
+    fn test_allocate_smoke() {
         let mut allocator = BumpAllocator::new();
         allocator.init(0, 10 * 1024 * 1024);
         assert!(allocator.allocate(1024, 1).is_some());

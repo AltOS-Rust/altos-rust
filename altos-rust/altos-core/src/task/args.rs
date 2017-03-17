@@ -18,9 +18,9 @@
 //! Arguments used in tasks.
 //!
 //! This module contains implementations for structs that help pass arguments into a task. The
-//! `ArgsBuilder` struct provides an interface specifying what values the arguments to a task should
-//! have. Begin by specifying how many arguments a task should take by creating a new `ArgsBuilder`
-//! with that capacity, and use the `add_box()` and `add_num()` methods to give each
+//! `ArgsBuilder` struct provides an interface specifying what values the arguments to a task
+//! should have. Begin by specifying how many arguments a task should take by creating a new
+//! `ArgsBuilder` with that capacity, and use the `add_box()` and `add_num()` methods to give each
 //! argument a value. Once you have added all the arguments required, call the `finalize()` method
 //! to finish up the creation and return a usable `Args` object. For example:
 //!
@@ -68,8 +68,8 @@ impl ArgsBuilder {
 
     /// Creates a new builder with the specified capacity.
     ///
-    /// The number of arguments for a task should be known before hand in order to avoid unnecessary
-    /// reallocations. Attempting to exceed this capacity will panic the kernel.
+    /// The number of arguments for a task should be known before hand in order to avoid
+    /// unnecessary reallocations. Attempting to exceed this capacity will panic the kernel.
     pub fn with_capacity(cap: usize) -> Self {
         ArgsBuilder {
             cap: cap,
@@ -112,7 +112,7 @@ impl ArgsBuilder {
 
     /// Adds an integer value to the list of arguments.
     ///
-    /// The argument should be a `usize` value. When using the arguments within the task you must
+    /// The argument should be a `usize` value. When using the arguments within the task, you must
     /// know the type and order of each argument and cast them manually to the correct type.
     ///
     /// # Examples
@@ -156,8 +156,8 @@ impl ArgsBuilder {
     /// let finalized_args = args.finalize();
     /// ```
     pub fn finalize(mut self) -> Args {
-        // UNSAFE: We've kept track of how many args we've added, so this inner length is known to be
-        // correct
+        // UNSAFE: We've kept track of how many args we've added, so this inner length is known
+        // to be correct
         unsafe { self.vec.set_len(self.len) };
         Args::new(self.vec)
     }

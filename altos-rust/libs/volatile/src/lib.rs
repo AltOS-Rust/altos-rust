@@ -82,7 +82,7 @@ impl<T> Volatile<T> {
     pub unsafe fn offset(self, count: isize) -> Self {
         let base = self.as_ptr() as isize;
         // TODO: See https://github.com/rust-lang/rust/issues/39056
-        //  Change this back to a regular multiply once this gets fixed so we have overflow checking
+        // Change this back to a regular multiply once this gets fixed so we have overflow checking
         let offset = count.wrapping_mul(size_of::<T>() as isize);
         let addr = (base + offset) as *const T;
         Volatile::new(addr)

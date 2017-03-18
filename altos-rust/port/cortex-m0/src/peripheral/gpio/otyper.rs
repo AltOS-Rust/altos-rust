@@ -23,8 +23,7 @@ use super::defs::*;
 pub enum Type {
     /// Actively drives the output to High.
     PushPull,
-    /// Passively drives the output to High by an internal
-    /// or external pull-up resistor.
+    /// Passively drives the output to High by an internal or external pull-up resistor.
     OpenDrain,
 }
 

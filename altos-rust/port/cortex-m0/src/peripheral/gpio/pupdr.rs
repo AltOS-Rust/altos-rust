@@ -18,9 +18,7 @@
 use super::super::{Register, Field};
 use super::defs::*;
 
-
-/// Defines the behavior of the GPIO pin
-/// when not asserted.
+/// Defines the behavior of the GPIO pin when not asserted.
 #[derive(Copy, Clone)]
 pub enum Pull {
     /// No behavior.

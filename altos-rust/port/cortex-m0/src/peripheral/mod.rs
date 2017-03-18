@@ -26,8 +26,7 @@ pub mod usart;
 
 use volatile::Volatile;
 
-/// Defines the base address for a block of Control registers for
-/// a given peripheral.
+/// Defines the base address for a block of Control registers for a given peripheral.
 pub trait Control {
     /// Base address for the given peripheral.
     unsafe fn mem_addr(&self) -> Volatile<u32>;
@@ -38,7 +37,7 @@ pub trait Control {
 /// Uses the base address and the offset of the peripheral to calculate the
 /// memory address of the peripheral register.
 pub trait Register {
-    /// Create a new instance of the peripheral register with the using its base address.
+    /// Create a new instance of the peripheral register with its base address.
     fn new(base_addr: *const u32) -> Self;
     /// Return the base address for the given peripheral.
     fn base_addr(&self) -> *const u32;

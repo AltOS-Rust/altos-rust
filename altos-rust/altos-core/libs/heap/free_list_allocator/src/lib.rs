@@ -20,7 +20,6 @@
 //! The free list allocator uses a linked list to keep track of blocks of free memory, allowing
 //! for more effective use of memory than the bump allocator. This allocator reclaims memory
 //! on deallocations and allocates memory using the first fit strategy.
-//!
 
 #![feature(allocator)]
 #![feature(const_fn)]

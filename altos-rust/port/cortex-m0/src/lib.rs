@@ -65,7 +65,7 @@ use altos_core::volatile;
 /// can access.
 pub mod kernel {
     pub use altos_core::syscall;
-    /// Types and functions related to the creation, running, and destroying a Task.
+    /// Types and functions related to the creation, running, and destruction of a Task.
     pub mod task {
         pub use altos_core::args;
         pub use altos_core::TaskHandle;

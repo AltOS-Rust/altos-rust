@@ -15,8 +15,8 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-//! This module provides a testing framework for the AltOS operating system to help test features
-//! of the operating system.
+//! This module provides a testing framework for the AltOS-Rust operating system to help test
+//! features of the core operating system.
 
 macro_rules! assert_not {
     ($cond:expr) => { assert!(!$cond); };
@@ -50,9 +50,9 @@ pub fn create_test_task(stack_size: usize, priority: Priority, name: &'static st
     TaskControl::new(test_task, Args::empty(), stack_size, priority, name)
 }
 
-pub fn create_and_schedule_test_task(stack_size: usize,
-    priority: Priority, name: &'static str) -> TaskHandle
-{
+pub fn create_and_schedule_test_task(stack_size: usize, priority: Priority, name: &'static str)
+    -> TaskHandle {
+
     ::syscall::new_task(test_task, Args::empty(), stack_size, priority, name)
 }
 
@@ -65,7 +65,6 @@ pub fn current_task() -> Option<&'static mut TaskControl> {
     unsafe { CURRENT_TASK.as_mut().map(|task| &mut ***task) }
 }
 
-//Set a task to be permanently blocked
 pub fn block_current_task(delay_type: Delay) {
     current_task().unwrap().state = State::Blocked;
     current_task().unwrap().delay_type = delay_type;

@@ -48,8 +48,8 @@ pub enum Delay {
 
 /// Priorities that a task can have.
 ///
-/// Priorities declare which tasks should be run before others. A higher priority task will always
-/// be run before a lower priority task if it is ready to be run.
+/// Priorities declare which tasks should be run before others. In most cases, a higher priority
+/// task will be run before a lower priority task, if it's ready to run.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Priority {
     /// The highest priority.
@@ -61,14 +61,14 @@ pub enum Priority {
 
     /// The standard task priority.
     ///
-    /// Most tasks should be given this priority. The task can be preempted at any time so should not
-    /// rely on any operation to be atomic unless specifically marked in a critical section.
+    /// Most tasks should be given this priority. The task can be preempted at any time so should
+    /// not rely on any operation to be atomic unless specifically marked in a critical section.
     Normal = 1,
 
     /// The minimal task priority.
     ///
-    /// These task will only run after a number of normal task run, so it should be
-    /// used for task you do not want to run as often as normal
+    /// These tasks run with the lowest priority, meaning that they will not be run as often
+    /// as normal tasks.
     Low = 2,
 
     #[doc(hidden)]
@@ -199,7 +199,7 @@ impl Iterator for IterPrioritySkip {
     }
 }
 
-/// States a task can be in
+/// States a task can be in.
 ///
 /// States describe the current condition of a task. The scheduler uses this to determine which
 /// tasks are available to run.
@@ -248,7 +248,9 @@ impl TaskControl {
     /// Creates a new `TaskControl` initialized and ready to be scheduled.
     ///
     /// All of the arguments to this function are the same as the `new_task` kernel function.
-    pub fn new(code: fn(&mut Args), args: Args, depth: usize, priority: Priority, name: &'static str) -> Self {
+    pub fn new(code: fn(&mut Args), args: Args, depth: usize, priority: Priority, name: &'static str)
+        -> Self {
+
         let stack = Stack::new(depth);
 
         // Arguments struct stored right above the stack
@@ -273,8 +275,8 @@ impl TaskControl {
         task
     }
 
-    /// This initializes the task's stack. This method MUST only be called once, calling it more than
-    /// once could at best waste some stack space and at worst corrupt an active stack.
+    /// This initializes the task's stack. This method MUST only be called once, calling it more
+    /// than once could, at best, waste some stack space and, at worst, corrupt an active stack.
     fn initialize(&mut self, code: fn(&mut Args)) {
         self.stack.initialize(code, &self.args);
         self.state = State::Ready;
@@ -289,12 +291,12 @@ impl TaskControl {
 
     /// Checks if the stack has gone past its bounds, returns true if it has.
     ///
-    /// Used to check if the stack has exceeded the memory allocated for it. If it has this means
+    /// Used to check if the stack has exceeded the memory allocated for it. If it has, this means
     /// that we may have corrupted some memory.
     pub fn is_stack_overflowed(&self) -> bool {
-        // TODO: Add some stack guard bytes to check if we've overflowed during execution?
-        //  This would add some extra overhead, maybe have some #[cfg] that determines if we should add
-        //  this extra security?
+        // TODO: Add some stack guard bytes to check if we've overflowed during execution? This
+        // would add some extra overhead, maybe have some #[cfg] that determines if we should add
+        // this extra security?
         self.stack.check_overflow()
     }
 
@@ -322,14 +324,14 @@ impl TaskHandle {
         TaskHandle(task)
     }
 
-    /// Marks a task for destruction by the OS, returns true if it was in a valid state before the
+    /// Marks a task for destruction by the OS. Returns true if it was in a valid state before the
     /// call, false otherwise.
     ///
     /// This does not immediately clean up the task, it only marks the task for destruction. The
     /// memory associated with that task will be reclaimed at the operating system's convenience.
     /// There is no guarantee about when this will happen, and in some circumstances it may in fact
-    /// never happen, but once a task has been marked for destruction all attempts to access its data
-    /// through a `TaskHandle` will return `Err(())`.
+    /// never happen, but once a task has been marked for destruction all attempts to access its
+    /// data through a `TaskHandle` will return `Err(())`.
     ///
     /// # Examples
     ///
@@ -352,14 +354,14 @@ impl TaskHandle {
     /// # }
     /// ```
     pub fn destroy(&mut self) -> bool {
-        // FIXME: If the task has allocated any dynamic memory on it own, this will be leaked when the
-        //  task is destroyed.
-        //    A possible solution... allocate a heap space for each task. Pass a heap allocation
-        //    interface to the task implicitly and do all dynamic memory allocation through this
-        //    interface. When the task is destroyed we can just free the whole task-specific heap so we
-        //    wont have to worry about leaking memory. This means we would likely have to disallow core
-        //    library `Box` allocations within the task. Or... we just don't allow dynamic allocation
-        //    within tasks. - Daniel Seitz
+        // FIXME: If the task has allocated any dynamic memory on it own, this will be leaked when
+        // the task is destroyed.
+        //   A possible solution: Allocate a heap space for each task. Pass a heap allocation
+        //   interface to the task implicitly and do all dynamic memory allocation through this
+        //   interface. When the task is destroyed we can just free the whole task-specific heap
+        //   so we wont have to worry about leaking memory. This means we would likely have to
+        //   disallow core library `Box` allocations within the task. Or, we just don't allow
+        //   dynamic allocation within tasks. - Daniel Seitz
         let _g = CriticalSection::begin();
         if self.is_valid() {
             let task = self.task_ref_mut();
@@ -444,8 +446,8 @@ impl TaskHandle {
 
     /// Returns a task's tid (task identifier).
     ///
-    /// The tid is a unique identifier that differentiates different tasks even if they have the same
-    /// name.
+    /// The tid is a unique identifier that differentiates different tasks even if they have the
+    /// same name.
     ///
     /// # Examples
     ///
@@ -545,7 +547,7 @@ impl TaskHandle {
         }
     }
 
-    /// Check if the task pointed to by this handle is valid
+    /// Check if the task pointed to by this handle is valid.
     ///
     /// # Examples
     ///
@@ -563,25 +565,25 @@ impl TaskHandle {
     ///
     /// ```
     pub fn is_valid(&self) -> bool {
-        // UNSAFE: Yes, potentially we're reading from a dangling pointer (if the task has been freed,
-        // for instance), but there should be specific values at these locations, and if they aren't
-        // there then at least we'll know not to do anymore reads.
+        // UNSAFE: Yes, potentially we're reading from a dangling pointer (if the task has been
+        // freed, for instance), but there should be specific values at these locations, and if
+        // they aren't there then at least we'll know not to do anymore reads.
         let (tid, valid) = unsafe { ((*self.0).tid, (*self.0).valid) };
         let tid_mask = tid & 0xFF;
         valid == VALID_TASK + tid_mask
     }
 
     fn task_ref(&self) -> &TaskControl {
-        // UNSAFE: This is used internally to the TaskHandle, and is only ever called after checking if
-        // the handle is still valid. All operations are within critical sections and so can be
-        // considered atomic
+        // UNSAFE: This is used internally to the TaskHandle, and is only ever called after
+        // checking if the handle is still valid. All operations are within critical sections and
+        // so can be considered atomic
         unsafe { &*self.0 }
     }
 
     fn task_ref_mut(&mut self) -> &mut TaskControl {
-        // UNSAFE: This is used internally to the TaskHandle, and is only ever called after checking if
-        // the handle is still valid. All operations are within critical sections and so can be
-        // considered atomic
+        // UNSAFE: This is used internally to the TaskHandle, and is only ever called after
+        // checking if the handle is still valid. All operations are within critical sections and
+        // so can be considered atomic
         unsafe { &mut *(self.0 as *mut TaskControl) }
     }
 }
@@ -591,10 +593,11 @@ mod tests {
     use super::*;
     use test;
 
+    // get_task and get_invalid_task are helper functions for other tests
     fn get_task() -> TaskControl {
         // NOTE: We can't return the TaskControl and the TaskHandle as a tuple here because the
-        // TaskControl object get's moved on return so we would end up with a dangling pointer in our
-        // TaskHandle
+        // TaskControl object get's moved on return so we would end up with a dangling pointer
+        // in our TaskHandle
         test::create_test_task(512, Priority::Normal, "task test")
     }
 

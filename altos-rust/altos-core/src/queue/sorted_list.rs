@@ -85,7 +85,8 @@ impl<T: PartialOrd> SortedList<T> {
         }
     }
 
-    /// Takes an item off of the front of the list, if there are no items in the list returns None.
+    /// Takes an item off of the front of the list. If there are no items in the list,
+    /// it returns None.
     ///
     /// This method returns the lowest value currently stored in the list.
     ///
@@ -170,8 +171,8 @@ impl<T: PartialOrd> SortedList<T> {
     /// list1.merge(list2);
     /// ```
     pub fn merge(&mut self, list: SortedList<T>) {
-        // TODO: Figure out a more efficient way to do this (the other list is in sorted order after
-        // all...)
+        // TODO: Figure out a more efficient way to do this (the other list is in sorted order
+        // after all...)
         for item in list.into_iter() {
             self.insert(item);
         }
@@ -201,7 +202,7 @@ impl<T: PartialOrd> SortedList<T> {
         ::core::mem::replace(self, SortedList::new())
     }
 
-    /// Checks if the list is empty, returns true if it is, false otherwise.
+    /// Checks if the list is empty, returning true if it is, and false otherwise.
     ///
     /// O(1) algorithmic time
     ///

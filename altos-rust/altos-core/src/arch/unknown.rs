@@ -15,7 +15,7 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-//! This module is used to provide stubs for the architecture layer
+//! This module is used to provide stubs for the architecture layer.
 
 use volatile::Volatile;
 use task::args::Args;

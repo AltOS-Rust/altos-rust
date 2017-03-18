@@ -15,7 +15,7 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-//! Syscall interface for the AltOS kernel
+//! Syscall interface for the AltOS-Rust kernel.
 
 use sched::{CURRENT_TASK, SLEEP_QUEUE, DELAY_QUEUE, OVERFLOW_DELAY_QUEUE, PRIORITY_QUEUES};
 use task::{Delay, State, Priority};
@@ -27,17 +27,17 @@ use tick;
 use sync::CriticalSection;
 use arch;
 
-/// An alias for the channel to sleep on that will never be awoken by a wakeup signal, it will
-/// still be woken after a timeout
+/// An alias for the channel to sleep on that will never be awoken by a wakeup signal. It will
+/// still be woken after a timeout.
 pub const FOREVER_CHAN: usize = 0;
 
-/// Creates a new task and put it into the task queue for running. It returns a `TaskHandle` to
-/// monitor the task with
+/// Creates a new task and puts it into the task queue for running. It returns a `TaskHandle`
+/// which is used to monitor the task.
 ///
-/// `new_task` takes several arguments, a `fn(&mut Args)` pointer which specifies the code to run for
-/// the task, an `Args` argument for the arguments that will be passed to the task, a `usize`
+/// `new_task` takes several arguments, a `fn(&mut Args)` pointer which specifies the code to run
+/// for the task, an `Args` argument for the arguments that will be passed to the task, a `usize`
 /// argument for how much space should be allocated for the task's stack, a `Priority` argument for
-/// the priority that the task should run at, and a `&str` argument to give the task a readable
+/// the priority that the task should run with, and a `&str` argument to give the task a readable
 /// name.
 ///
 /// # Examples
@@ -58,7 +58,9 @@ pub const FOREVER_CHAN: usize = 0;
 ///   loop {}
 /// }
 /// ```
-pub fn new_task(code: fn(&mut Args), args: Args, stack_depth: usize, priority: Priority, name: &'static str) -> TaskHandle {
+pub fn new_task(code: fn(&mut Args), args: Args, stack_depth: usize, priority: Priority, name: &'static str)
+    -> TaskHandle {
+
     // Make sure the task is allocated in one fell swoop
     let g = CriticalSection::begin();
     let task = Box::new(Node::new(TaskControl::new(code, args, stack_depth, priority, name)));
@@ -72,11 +74,11 @@ pub fn new_task(code: fn(&mut Args), args: Args, stack_depth: usize, priority: P
 /// Exits and destroys the currently running task.
 ///
 /// This function must only be called from within task code. Doing so from elsewhere (like an
-/// interrupt handler, for example) will still destroy the currently running task, since something
-/// like an interrupt handler can interrupt any task there's no way to determine which task it
+/// interrupt handler, for example) will still destroy the currently running task. Since something
+/// like an interrupt handler can interrupt any task, there's no way to determine which task it
 /// would destroy.
 ///
-/// It marks the currently running task to be destroyed then immediatly yields to the scheduler
+/// It marks the currently running task to be destroyed, then immediatly yields to the scheduler
 /// to allow another task to run.
 ///
 /// # Examples
@@ -96,9 +98,9 @@ pub fn new_task(code: fn(&mut Args), args: Args, stack_depth: usize, priority: P
 /// This function will panic if the task is not successfully destroyed (i.e. it gets scheduled
 /// after this function is called), but this should never happen.
 pub fn exit() -> ! {
-    // UNSAFE: This can only be called from the currently running task, so we know we're the only one
-    // with a reference to the task. The destroy method is atomic so we don't have to worry about any
-    // threading issues
+    // UNSAFE: This can only be called from the currently running task, so we know we're the only
+    // one with a reference to the task. The destroy method is atomic so we don't have to worry
+    // about any threading issues.
     unsafe {
         debug_assert!(CURRENT_TASK.is_some());
         CURRENT_TASK.as_mut().unwrap().destroy();
@@ -192,8 +194,8 @@ pub fn sleep_for(wchan: usize, delay: usize) {
 
 /// Wake up all tasks sleeping on a channel.
 ///
-/// `wake` takes a `usize` argument that acts as an identifier to only wake up tasks sleeping on
-/// that same identifier.
+/// `wake` takes a `usize` argument that acts as an identifier. This will wake up any tasks
+/// sleeping on that identifier.
 pub fn wake(wchan: usize) {
     // Since we're messing around with all the task queues, lets make sure everything gets done at
     // once
@@ -208,9 +210,9 @@ pub fn wake(wchan: usize) {
     }
 }
 
-/// Update the system tick count and wake up any delayed tasks that need to be woken
+/// Update the system tick count and wake up any delayed tasks that need to be woken.
 ///
-/// This function will wake any tasks that have a delay
+/// This function will wake any tasks that have a delay.
 #[doc(hidden)]
 pub fn system_tick() {
     debug_assert!(arch::in_kernel_mode());
@@ -274,9 +276,9 @@ mod tests {
 
     #[test]
     fn test_sched_yield() {
-        // This isn't the greatest test, as the functionality of this method is really just dependent
-        // on the platform implementation... but at least we can make sure it's working properly for
-        // the test suite
+        // This isn't the greatest test, as the functionality of this method is really just
+        // dependent on the platform implementation, but at least we can make sure it's working
+        // properly for the test suite
         let _g = test::set_up();
         let (handle_1, handle_2) = test::create_two_tasks();
 

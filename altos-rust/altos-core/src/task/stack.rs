@@ -40,8 +40,8 @@ impl Stack {
         }
 
         Stack {
-            // UNSAFE: We've allocated 'depth' size already successfuly, so this offset must be within
-            // bounds
+            // UNSAFE: We've allocated 'depth' size already successfuly, so this offset must
+            // be within bounds.
             ptr: unsafe { ptr.offset(depth as isize) } as *const usize,
             base: ptr as *const usize,
             depth: depth,
@@ -49,8 +49,8 @@ impl Stack {
     }
 
     pub fn initialize(&mut self, code: fn(&mut Args), args: &Box<Args>) {
-        // UNSAFE: We're creating a volatile pointer to our stack, but we know that it must be valid if
-        // the object was successfully created
+        // UNSAFE: We're creating a volatile pointer to our stack, but we know that it must be
+        // valid if the object was successfully created.
         unsafe {
             let stack_ptr = self.ptr();
             self.ptr = arch::initialize_stack(stack_ptr, code, args) as *const usize;
@@ -71,8 +71,8 @@ impl Stack {
 impl Drop for Stack {
     fn drop(&mut self) {
         let align = ::core::mem::align_of::<u8>();
-        // UNSAFE: We're touching the allocation interface again, but we know this is the exact size
-        // and location of the block of memory that we allocated
+        // UNSAFE: We're touching the allocation interface again, but we know this is the exact
+        // size and location of the block of memory that we allocated.
         unsafe {
             heap::deallocate(self.base as *mut _, self.depth, align);
         }

@@ -19,9 +19,9 @@
 // We do this cfg for testing purposes, this allows doctests to run without any compilation errors.
 #![cfg(all(not(test), not(feature="test"), any(feature="free_list_allocator", feature="bump_allocator")))]
 
-//! Contains functions used for initialization of the kernel
+//! Contains functions used for initialization of the kernel.
 
-/// Initialize the heap so memory can be dynamically allocated
+/// Initialize the heap so memory can be dynamically allocated.
 ///
 /// # Examples
 ///

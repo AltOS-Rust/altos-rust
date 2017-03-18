@@ -79,8 +79,8 @@ pub fn system_tick() {
         TICKS += 1;
         if TICKS % get_resolution() == 0 {
             match SYSTEM_TIME.try_lock() {
-                // If someone else is holding the lock, we'll just have to continue on, this could cause
-                // some drift in our time measurement
+                // If someone else is holding the lock, we'll just have to continue on, this could
+                // cause some drift in our time measurement
                 Some(mut time) => time.increment(),
                 None => {}
             }
@@ -141,9 +141,9 @@ impl Sub<Time> for Time {
     type Output = Time;
 
     fn sub(mut self, rhs: Time) -> Self::Output {
-        // TODO: Figure out how to handle subtracting a bigger time from a smaller time... represent
-        //  seconds as an isize instead? (Then we lose a lot of our number space, and we have to check
-        //  for overflow)
+        // TODO: Figure out how to handle subtracting a bigger time from a smaller time. Represent
+        // seconds as an isize instead? (Then we lose a lot of our number space, and we have to
+        // check for overflow)
         self.sec -= rhs.sec;
         if self.msec > rhs.msec {
             self.msec -= rhs.msec;

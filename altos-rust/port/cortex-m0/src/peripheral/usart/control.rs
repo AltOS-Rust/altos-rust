@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2017 AltOS-Rust Team
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2017 AltOS-Rust Team
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
 /* This submodule contains the function implementations for the Usartx_CRx.
  * There are three control registers and that are responsible for proper
@@ -133,7 +133,7 @@ impl UsartControl {
 /// Defines the possible Mode configurations for the Usart.
 #[derive(Copy, Clone, Debug)]
 pub enum Mode {
-    /// Transmit and Receive turned off
+    /// Transmit and Receive turned off.
     None,
     /// Usart configured to only receive.
     Receive,
@@ -451,11 +451,11 @@ impl CR2 {
 /// Defines the possible HardwareFlowControl configurations for the Usart.
 #[derive(Copy, Clone, Debug)]
 pub enum HardwareFlowControl {
-    /// No hardware flow control
+    /// No hardware flow control.
     None,
-    /// Request to Send enabled
+    /// Request to Send enabled.
     Rts,
-    /// Clear to Send enabled
+    /// Clear to Send enabled.
     Cts,
     /// Both are enabled.
     All,

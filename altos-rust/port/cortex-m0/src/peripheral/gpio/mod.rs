@@ -37,10 +37,8 @@ pub use self::ospeedr::Speed;
 pub use self::pupdr::Pull;
 pub use self::afr::AlternateFunction;
 
-/// An IO group containing up to 16 pins. For
-/// some reason the datasheet shows the memory
-/// for groups D and E as reserved, so for now
-/// they are left out.
+/// An IO group containing up to 16 pins. For some reason, the datasheet shows the memory
+/// for groups D and E as reserved, so for now they are left out.
 #[derive(Copy, Clone)]
 pub enum Group {
     /// GPIO Group A
@@ -53,9 +51,7 @@ pub enum Group {
     F,
 }
 
-/// A GPIO contains the base address for a
-/// memory mapped GPIO group associated with
-/// it.
+/// A GPIO contains the base address for a memory mapped GPIO group associated with it.
 #[derive(Copy, Clone)]
 pub struct GPIO {
     mem_addr: *const u32,
@@ -95,8 +91,7 @@ impl GPIO {
         }
     }
 
-    /// Enable a GPIO group, you must do this before you can set any
-    /// pins within a group.
+    /// Enable a GPIO group. This must be done before setting any pins within a group.
     ///
     /// Example Usage:
     /// ```

@@ -15,7 +15,7 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-//! AltOSRust microkernel for embedded devices.
+//! AltOS-Rust microkernel for embedded devices.
 //!
 //! This microkernel provides task creation and scheduling for applications running on embedded
 //! devices.

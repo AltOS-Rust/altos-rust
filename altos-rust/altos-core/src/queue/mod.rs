@@ -30,7 +30,7 @@ pub use self::ringbuffer::*;
 use alloc::boxed::Box;
 use core::ops::{Deref, DerefMut};
 
-/// A wrapper struct that is used in AltOSRust collections
+/// A wrapper struct that is used in AltOS-Rust collections.
 ///
 /// This type is used to provide a common way of passing allocated objects between collections
 /// without doing reallocations. This is because of tight memory constraints, so it's best to avoid
@@ -63,14 +63,14 @@ impl<T> Node<T> {
 impl<T> Deref for Node<T> {
     type Target = T;
 
-    /// Gives a reference to the wrapped data
+    /// Gives a reference to the wrapped data.
     fn deref(&self) -> &Self::Target {
         &self.data
     }
 }
 
 impl<T> DerefMut for Node<T> {
-    /// Gives a mutable reference to the wrapped data
+    /// Gives a mutable reference to the wrapped data.
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.data
     }

@@ -15,7 +15,9 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-//! Provides a test framework for testing the free list allocator.
+/*
+ * Provides a test framework for testing the free list allocator.
+ */
 
 use std::vec::Vec;
 use std::ops::{Deref, DerefMut};

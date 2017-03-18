@@ -91,8 +91,7 @@ impl GPIO {
         }
     }
 
-    /// Enable a GPIO group. You must do this before you can set any
-    /// pins within a group.
+    /// Enable a GPIO group. This must be done before setting any pins within a group.
     ///
     /// Example Usage:
     /// ```

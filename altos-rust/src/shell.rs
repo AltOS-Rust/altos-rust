@@ -24,6 +24,25 @@ use kernel::collections::{Vec, String};
 use kernel::alloc::Box;
 use core::fmt::{self, Display};
 
+const LOGO: &str = "
+            .                                                                       
+            ;'                ..      '.                                            
+           .cc.              x0kk.   .Oo  .xc                                       
+           c,;:            .OO. xO.  .Oo 'dkxoc .d.  .o' .clccc.                    
+          ;'  ;'           kKdodd0k. .Oo  .kl   ,k,  'x; ,dc;,'.                    
+         ..    .          cXl   .o0o .Oo  .ko   ,k;  ;x;    ..ld.                   
+         c:.  .::         oO.     dx  xc   cddo, :dolcd' ;lcclc,                    
+        ;c;,',':c'                                                                  
+       .cc,    :cc.                                                                 
+      .ccl;    cll:        'dl   ;o;            ..                                  
+      :odxc    dxdd;       kK0d cOkO    .''.    ok    ...    .    .   .....  ...    
+     ,xkO0o    k00Ox.     .Kx.k0O':O, 'x'  'k:lookol.oxcx;. ;d.  ,d' ,oc.'ll:.'l:   
+    .k0KKKd    OXKK0k     ,Xl  l   O: xOoccccc  ck.  ox  '' ;d.  ,d' ,o.  :l.  :l   
+    d0KKXXd    OXXXKKl    ;Xl      Oc 'kd;      :k   ox     'dc  'd' ,o.  :l.  :l   
+  ;x0KXXO;      cKXXKKx,  xl.      0c.  lcccc   :l   ox      'cccc'   0   :l.  :l   
+.lxOKKXo          kXKK0ko.                                                          ";
+
+
 const HELP: &'static str = "Available Commands:
     echo [string ...]
     clear
@@ -31,6 +50,8 @@ const HELP: &'static str = "Available Commands:
     blink [rate]
     stop
     uptime
+    rocket [timer]
+    uname
     exit
     help [cmd]";
 
@@ -40,6 +61,8 @@ const EVAL_HELP: &'static str = "Evaluate an expression of the form x <op> y";
 const BLINK_HELP: &'static str = "Blink the LED at the given rate in milliseconds";
 const STOP_HELP: &'static str = "Stop blinking the LED";
 const UPTIME_HELP: &'static str = "Display how long the system has been running as HH:MM:SS";
+const ROCKET_HELP: &'static str = "Deploys a rocket?";
+const UNAME_HELP: &'static str = "Displays system information";
 const EXIT_HELP: &'static str = "Exit the shell";
 const HELP_HELP: &'static str = "Display available commands or more information about a certain command";
 
@@ -63,6 +86,8 @@ enum Command<'a> {
     Blink,
     Stop,
     Uptime,
+    Rocket,
+    Uname,
     Exit,
     Help,
     Invalid(&'a str),
@@ -77,6 +102,8 @@ impl<'a> Command<'a> {
             Command::Blink => (BLINK_HELP, ""),
             Command::Stop => (STOP_HELP, ""),
             Command::Uptime => (UPTIME_HELP, ""),
+            Command::Rocket => (ROCKET_HELP, ""),
+            Command::Uname => (UNAME_HELP, ""),
             Command::Exit => (EXIT_HELP, ""),
             Command::Help => (HELP_HELP, ""),
             Command::Invalid(invalid) => ("Unknown command: ", invalid),
@@ -93,6 +120,8 @@ impl<'a> From<&'a str> for Command<'a> {
             "blink" => Command::Blink,
             "stop" => Command::Stop,
             "uptime" => Command::Uptime,
+            "rocket" => Command::Rocket,
+            "uname"=> Command::Uname,
             "exit" => Command::Exit,
             "help" => Command::Help,
             invalid => Command::Invalid(invalid),
@@ -215,6 +244,20 @@ pub fn shell(_args: &mut Args) {
                     let hms = uptime();
                     println!("{:02}:{:02}:{:02}", hms.0, hms.1, hms.2);
                 },
+                Command::Rocket => {
+                    let timer = if words.len() > 0 {
+                        words[0].parse::<isize>().unwrap_or(5)    
+                    } 
+                    else {
+                        5
+                    };
+                    rocket(timer);
+                },
+                Command::Uname => {
+                    println!("{}\n", LOGO);
+                    //Find more info and place it here
+                    println!("AltOS Rust");
+                },
                 Command::Exit => kernel::syscall::exit(),
                 Command::Help => {
                     if words.len() > 0 {
@@ -318,4 +361,77 @@ fn uptime() -> (usize, usize, usize) {
     minutes = minutes % 60;
 
     (hours, minutes, seconds)
+}
+
+fn rocket(mut timer: isize) {
+    let mut offset: isize = 15;
+    let stationary: isize = offset;
+    let counter = timer + offset * 2; 
+    let mut k = 0;
+    
+    if timer < 0 {
+        timer = 5;
+    }
+
+    let mut rocket = String::new();
+    
+    while k < counter {
+        rocket.clear();
+        
+        print!("\x1b[2J");
+
+        newline_offset(&mut rocket, offset); 
+        
+        build_rocket_part(&mut rocket, "      /\\\n", offset);
+        build_rocket_part(&mut rocket, "     /  \\\n", offset+1);
+        build_rocket_part(&mut rocket, "    /    \\\n", offset+2);
+        build_rocket_part(&mut rocket, "    |  A |\n", offset+3);
+        build_rocket_part(&mut rocket, "    |  L |\n", offset+4);
+        build_rocket_part(&mut rocket, "   /|  T |\\\n", offset+5);
+        build_rocket_part(&mut rocket, "  / |  O | \\\n", offset+6);
+        build_rocket_part(&mut rocket, "  ^^|  S |^^\n", offset+7);
+        build_rocket_part(&mut rocket, "    |    |\n", offset+8);
+        
+        if (offset % 2 == 0) && (offset < stationary) {
+            build_rocket_part(&mut rocket, "     vwwv", offset+9);
+        }
+
+        newline_offset(&mut rocket, stationary - offset);
+
+        print!("{}", rocket);
+
+        if timer < 0 {
+            if offset > -9 {
+                offset -= 1;
+            }
+            println!("\t\t/-------------\\     Blast off!");
+            delay_ms(100);
+        }
+        else {
+            println!("\t\t/-------------\\     Blast off in...{}", timer);
+            delay_ms(1000);
+        }
+       
+        k += 1;
+        timer -= 1;
+    }
+}
+
+fn newline_offset(string: &mut String, offset: isize){
+    let mut i = 0;
+    if offset < 1 {
+        return;
+    }
+    while i < offset{
+        string.push_str("\n");
+        i += 1;
+    }
+}
+
+fn build_rocket_part(rocket: &mut String,part: &str, offset: isize) {
+    if offset < 0 {
+        return;    
+    }
+    rocket.push_str("\t\t");
+    rocket.push_str(part);
 }

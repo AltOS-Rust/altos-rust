@@ -515,11 +515,9 @@ mod tests {
         let (handle_1, handle_2) = test::create_two_tasks();
 
         start_scheduler();
-        assert!(test::current_task().is_some());
         assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
 
         sched_yield();
-        assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
     }
 
@@ -529,21 +527,17 @@ mod tests {
         let (handle_1, handle_2) = test::create_two_tasks();
 
         start_scheduler();
-        assert!(test::current_task().is_some());
         assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
 
         // There's some special logic when something sleeps on FOREVER_CHAN, so make sure we don't
         // sleep on it
         sleep(!FOREVER_CHAN);
-        assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
 
         sched_yield();
-        assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
 
         sched_yield();
-        assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
     }
 
@@ -553,19 +547,16 @@ mod tests {
         let (handle_1, handle_2) = test::create_two_tasks();
 
         start_scheduler();
-        assert!(test::current_task().is_some());
         assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
 
         // There's some special logic when something sleeps on FOREVER_CHAN, so make sure we don't
         // sleep on it
         sleep(!FOREVER_CHAN);
         assert_eq!(handle_1.state(), Ok(State::Blocked));
-        assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
 
         sched_yield();
         assert_eq!(handle_1.state(), Ok(State::Blocked));
-        assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
 
 
@@ -575,7 +566,6 @@ mod tests {
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
 
         sched_yield();
-        assert!(test::current_task().is_some());
         assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
     }
 
@@ -585,13 +575,11 @@ mod tests {
         let (handle_1, handle_2) = test::create_two_tasks();
 
         start_scheduler();
-        assert!(test::current_task().is_some());
         assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
 
         let old_tick = tick::get_tick();
         system_tick();
         assert_eq!(old_tick + 1, tick::get_tick());
-        assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
     }
 
@@ -601,37 +589,30 @@ mod tests {
         let (handle_1, handle_2) = test::create_two_tasks();
 
         start_scheduler();
-        assert!(test::current_task().is_some());
         assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
 
         sleep_for(FOREVER_CHAN, 4);
         assert_eq!(handle_1.state(), Ok(State::Blocked));
-        assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
 
         system_tick();
         assert_eq!(handle_1.state(), Ok(State::Blocked));
-        assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
 
         system_tick();
         assert_eq!(handle_1.state(), Ok(State::Blocked));
-        assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
 
         system_tick();
         assert_eq!(handle_1.state(), Ok(State::Blocked));
-        assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
 
         system_tick();
         // 4 Ticks have passed, task 1 should be woken up now
         assert_ne!(handle_1.state(), Ok(State::Blocked));
-        assert!(test::current_task().is_some());
         assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
 
         system_tick();
-        assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
     }
 
@@ -641,37 +622,30 @@ mod tests {
         let (handle_1, handle_2) = test::create_two_tasks();
 
         start_scheduler();
-        assert!(test::current_task().is_some());
         assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
 
         sleep_for(!FOREVER_CHAN, 4);
         assert_eq!(handle_1.state(), Ok(State::Blocked));
-        assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
 
         system_tick();
         assert_eq!(handle_1.state(), Ok(State::Blocked));
-        assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
 
         system_tick();
         assert_eq!(handle_1.state(), Ok(State::Blocked));
-        assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
 
         system_tick();
         assert_eq!(handle_1.state(), Ok(State::Blocked));
-        assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
 
         system_tick();
         // 4 Ticks have passed, task 1 should be woken up now
         assert_ne!(handle_1.state(), Ok(State::Blocked));
-        assert!(test::current_task().is_some());
         assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
 
         system_tick();
-        assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
     }
 
@@ -681,17 +655,14 @@ mod tests {
         let (handle_1, handle_2) = test::create_two_tasks();
 
         start_scheduler();
-        assert!(test::current_task().is_some());
         assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
 
         sleep_for(!FOREVER_CHAN, 4);
         assert_eq!(handle_1.state(), Ok(State::Blocked));
-        assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
 
         system_tick();
         assert_eq!(handle_1.state(), Ok(State::Blocked));
-        assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
 
         wake(!FOREVER_CHAN);
@@ -699,7 +670,6 @@ mod tests {
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
 
         system_tick();
-        assert!(test::current_task().is_some());
         assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
     }
 
@@ -709,19 +679,276 @@ mod tests {
         let (handle_1, handle_2) = test::create_two_tasks();
 
         start_scheduler();
-        assert!(test::current_task().is_some());
         assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
 
         // This should yield the task but immediately wake up on the next tick
         sleep_for(FOREVER_CHAN, 0);
         assert_eq!(handle_1.state(), Ok(State::Blocked));
-        assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
 
         system_tick();
         assert_ne!(handle_1.state(), Ok(State::Blocked));
-        assert!(test::current_task().is_some());
         assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+    }
+
+    #[test]
+    fn test_mutex_lock() {
+        let _g = test::set_up();
+        let raw_mutex = RawMutex::new();
+        let handle = new_task(test_task, Args::empty(), 512, Priority::Normal, "test creation task");
+
+        start_scheduler();
+        assert_eq!(handle.tid(), Ok(test::current_task().unwrap().tid()));
+
+        // We should not be blocked after this call
+        mutex_lock(&raw_mutex);
+        assert_eq!(handle.tid(), Ok(test::current_task().unwrap().tid()));
+        assert_eq!(handle.tid().ok(), raw_mutex.holder());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_mutex_lock_twice_with_same_task_id_panics() {
+        let _g = test::set_up();
+        let raw_mutex = RawMutex::new();
+        let handle = new_task(test_task, Args::empty(), 512, Priority::Normal, "test creation task");
+
+        start_scheduler();
+        assert_eq!(handle.tid(), Ok(test::current_task().unwrap().tid()));
+
+        // We should not be blocked after this call
+        mutex_lock(&raw_mutex);
+        assert_eq!(handle.tid(), Ok(test::current_task().unwrap().tid()));
+        assert_eq!(handle.tid().ok(), raw_mutex.holder());
+
+        mutex_lock(&raw_mutex);
+    }
+
+    // Hm... this test always fails because the second `mutex_lock` call should put the second task
+    // to sleep and block until the lock is acquired... But because it's blocking we can never get
+    // past that function call, so the scheduler just keeps trying to schedule tasks until it runs
+    // out of tasks to schedule. I'm not so sure how to solve this since this is the behavior that
+    // we want...
+    #[test]
+    #[ignore]
+    fn test_mutex_lock_while_locked_sleeps_current_task() {
+        let _g = test::set_up();
+        let raw_mutex = RawMutex::new();
+        let (handle_1, handle_2) = test::create_two_tasks();
+
+        start_scheduler();
+        assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+
+        // We should not be blocked after this call
+        mutex_lock(&raw_mutex);
+        assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+        assert_eq!(handle_1.tid().ok(), raw_mutex.holder());
+
+        // Switch to task 2 while task 1 holds lock
+        sched_yield();
+        assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+        mutex_lock(&raw_mutex);
+        assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+        assert_eq!(handle_2.state(), Ok(State::Blocked));
+    }
+
+    #[test]
+    fn test_mutex_try_lock() {
+        let _g = test::set_up();
+        let raw_mutex = RawMutex::new();
+        let handle = new_task(test_task, Args::empty(), 512, Priority::Normal, "test creation task");
+
+        start_scheduler();
+        assert_eq!(handle.tid(), Ok(test::current_task().unwrap().tid()));
+
+        assert_eq!(mutex_try_lock(&raw_mutex), true);
+    }
+
+    #[test]
+    fn test_mutex_try_lock_while_locked_returns_false() {
+        let _g = test::set_up();
+        let raw_mutex = RawMutex::new();
+        let (handle_1, handle_2) = test::create_two_tasks();
+
+        start_scheduler();
+        assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+
+        assert_eq!(mutex_try_lock(&raw_mutex), true);
+
+        // Switch to task 2 while task 1 holds lock
+        sched_yield();
+        assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+        assert_eq!(mutex_try_lock(&raw_mutex), false);
+    }
+
+    #[test]
+    fn test_mutex_try_lock_while_holding_lock_returns_true() {
+        let _g = test::set_up();
+        let raw_mutex = RawMutex::new();
+        let handle = new_task(test_task, Args::empty(), 512, Priority::Normal, "test creation task");
+
+        start_scheduler();
+        assert_eq!(handle.tid(), Ok(test::current_task().unwrap().tid()));
+
+        assert_eq!(mutex_try_lock(&raw_mutex), true);
+        assert_eq!(mutex_try_lock(&raw_mutex), true);
+    }
+
+    #[test]
+    fn test_mutex_unlock() {
+        let _g = test::set_up();
+        let raw_mutex = RawMutex::new();
+
+        let handle = new_task(test_task, Args::empty(), 512, Priority::Normal, "test creation task");
+
+        start_scheduler();
+        assert_eq!(handle.tid(), Ok(test::current_task().unwrap().tid()));
+
+        mutex_lock(&raw_mutex);
+        assert_eq!(handle.tid().ok(), raw_mutex.holder());
+
+        mutex_unlock(&raw_mutex);
+        assert!(raw_mutex.holder().is_none());
+    }
+
+    #[test]
+    fn test_mutex_unlock_while_unlocked_is_noop() {
+        let _g = test::set_up();
+        let raw_mutex = RawMutex::new();
+
+        start_scheduler();
+
+        assert!(raw_mutex.holder().is_none());
+
+        mutex_unlock(&raw_mutex);
+        assert!(raw_mutex.holder().is_none());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_mutex_unlock_while_not_holding_panics() {
+        let _g = test::set_up();
+        let raw_mutex = RawMutex::new();
+
+        let (handle_1, handle_2) = test::create_two_tasks();
+
+        start_scheduler();
+        assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+
+        mutex_lock(&raw_mutex);
+        assert_eq!(handle_1.tid().ok(), raw_mutex.holder());
+
+        sched_yield();
+        assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+        mutex_unlock(&raw_mutex);
+    }
+
+    #[test]
+    fn test_mutex_unlock_wakes_sleeping_tasks() {
+        let _g = test::set_up();
+        let raw_mutex = RawMutex::new();
+
+        let (handle_1, handle_2) = test::create_two_tasks();
+
+        start_scheduler();
+        assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+
+        mutex_lock(&raw_mutex);
+        assert_eq!(handle_1.tid().ok(), raw_mutex.holder());
+
+        sched_yield();
+        assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+        // Simulate blocking on acquiring the lock
+        sleep(raw_mutex.address());
+        assert_eq!(handle_2.state(), Ok(State::Blocked));
+        assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+
+        mutex_unlock(&raw_mutex);
+        assert_eq!(handle_2.state(), Ok(State::Ready));
+
+        // Task 2 can be scheduled again
+        sched_yield();
+        assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+    }
+
+    #[test]
+    fn test_condvar_wait() {
+        let _g = test::set_up();
+        let raw_mutex = RawMutex::new();
+        let cond_var = CondVar::new();
+
+        let handle = new_task(test_task, Args::empty(), 512, Priority::Normal, "test creation task");
+
+        start_scheduler();
+        assert_eq!(handle.tid(), Ok(test::current_task().unwrap().tid()));
+
+        mutex_lock(&raw_mutex);
+        assert_eq!(handle.tid().ok(), raw_mutex.holder());
+
+        condvar_wait(&cond_var, &raw_mutex);
+        assert_eq!(handle.state(), Ok(State::Blocked));
+    }
+
+    #[test]
+    fn test_condvar_wait_using_unlocked_lock_succeeds() {
+        let _g = test::set_up();
+        let raw_mutex = RawMutex::new();
+        let cond_var = CondVar::new();
+
+        let handle = new_task(test_task, Args::empty(), 512, Priority::Normal, "test creation task");
+
+        start_scheduler();
+        assert_eq!(handle.tid(), Ok(test::current_task().unwrap().tid()));
+
+        condvar_wait(&cond_var, &raw_mutex);
+        assert_eq!(handle.state(), Ok(State::Blocked));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_condvar_wait_using_unacquired_lock_panics() {
+        let _g = test::set_up();
+        let raw_mutex = RawMutex::new();
+        let cond_var = CondVar::new();
+
+        let (handle_1, handle_2) = test::create_two_tasks();
+
+        start_scheduler();
+        assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
+
+        mutex_lock(&raw_mutex);
+        assert_eq!(handle_1.tid().ok(), raw_mutex.holder());
+
+        // Switch to Task 2 while Task 1 holds the lock
+        sched_yield();
+        assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
+
+        condvar_wait(&cond_var, &raw_mutex);
+    }
+
+    #[test]
+    fn test_condvar_broadcast_wakes_waiting_tasks() {
+        let _g = test::set_up();
+        let raw_mutex = RawMutex::new();
+        let cond_var = CondVar::new();
+
+        let handle = new_task(test_task, Args::empty(), 512, Priority::Normal, "test creation task");
+
+        start_scheduler();
+        assert_eq!(handle.tid(), Ok(test::current_task().unwrap().tid()));
+
+        mutex_lock(&raw_mutex);
+        assert_eq!(handle.tid().ok(), raw_mutex.holder());
+
+        condvar_wait(&cond_var, &raw_mutex);
+        assert_eq!(handle.state(), Ok(State::Blocked));
+
+        condvar_broadcast(&cond_var);
+        assert_eq!(handle.state(), Ok(State::Ready));
     }
 
     // Stub used for new_task calls.

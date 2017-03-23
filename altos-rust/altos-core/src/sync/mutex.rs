@@ -47,6 +47,7 @@ pub type LockResult<E> = Result<(), E>;
 /// is already owned, it could potentially cause deadlock, so it is best to return an error
 /// expressing such a condition has occurred. Otherwise, the most common error state to run into
 /// would be if the lock is already held by another thread.
+#[derive(Copy, Clone, Debug)]
 pub enum LockError {
     /// The lock is already held by the thread trying to acquire it
     AlreadyOwned,
@@ -59,6 +60,7 @@ pub enum LockError {
 ///
 /// When trying to release a lock, the only truly valid state should be when the releasing thread
 /// is also the holder of the lock.
+#[derive(Copy, Clone, Debug)]
 pub enum UnlockError {
     /// The lock is not held by any thread currently
     NotLocked,
@@ -164,8 +166,12 @@ impl RawMutex {
         }
     }
 
-    // Get the current holder of the mutex, if one exists
-    fn holder(&self) -> Option<usize> {
+    /// Get the current holder of the mutex, if one exists
+    ///
+    /// This function will return the task id of the thread that is holding the mutex. If the mutex
+    /// is not locked then `None` will be returned. This is not an atomic operation, so it is
+    /// possible that after reading the value of the lock its state could change.
+    pub fn holder(&self) -> Option<usize> {
         let lock_value = self.lock.load(Ordering::Relaxed);
 
         if lock_value == UNLOCKED {
@@ -310,6 +316,101 @@ mod tests {
     const TASK_ID: usize = 0;
 
     #[test]
+    fn test_raw_mutex_try_lock() {
+        let raw_mutex = RawMutex::new();
+        match raw_mutex.try_lock(TASK_ID) {
+            Ok(_) => assert_ne!(raw_mutex.lock.load(Ordering::Relaxed), UNLOCKED),
+            Err(_) => assert!(false, "Failed to acquire the lock"),
+        }
+    }
+
+    #[test]
+    fn test_raw_mutex_try_lock_fails_when_locked_by_same_task_id() {
+        let raw_mutex = RawMutex::new();
+
+        match raw_mutex.try_lock(TASK_ID) {
+            Ok(_) => assert_ne!(raw_mutex.lock.load(Ordering::Relaxed), UNLOCKED),
+            Err(_) => assert!(false, "Failed to acquire lock on first try"),
+        }
+
+        match raw_mutex.try_lock(TASK_ID) {
+            Ok(_) => assert!(false, "Successfully acquired lock when it should be locked"),
+            Err(LockError::Locked) => assert!(false, "A different task id had the lock"),
+            Err(LockError::AlreadyOwned) => {},
+        }
+    }
+
+    #[test]
+    fn test_raw_mutex_try_lock_fails_when_locked_by_different_task_id() {
+        let raw_mutex = RawMutex::new();
+        match raw_mutex.try_lock(TASK_ID) {
+            Ok(_) => assert_ne!(raw_mutex.lock.load(Ordering::Relaxed), UNLOCKED),
+            Err(_) => assert!(false, "Failed to acquire lock on first try"),
+        }
+
+        match raw_mutex.try_lock(!TASK_ID) {
+            Ok(_) => assert!(false, "Successfully acquired lock when it should be locked"),
+            Err(LockError::AlreadyOwned) => assert!(false, "The same task id was holding the lock"),
+            Err(LockError::Locked) => {},
+        }
+    }
+
+    #[test]
+    fn test_raw_mutex_try_unlock() {
+        let raw_mutex = RawMutex::new();
+
+        // Force lock the mutex
+        raw_mutex.lock.store(LOCK_MASK|TASK_ID, Ordering::Relaxed);
+
+        match raw_mutex.try_unlock(TASK_ID) {
+            Ok(_) => assert_eq!(raw_mutex.lock.load(Ordering::Relaxed), UNLOCKED),
+            Err(_) => assert!(false, "Failed to unlock owned mutex"),
+        }
+
+    }
+
+    #[test]
+    fn test_raw_mutex_try_unlock_fails_with_wrong_task_id() {
+        let raw_mutex = RawMutex::new();
+
+        // Force lock the mutex
+        raw_mutex.lock.store(LOCK_MASK|TASK_ID, Ordering::Relaxed);
+
+        // Unlock with some other task id
+        match raw_mutex.try_unlock(!TASK_ID) {
+            Ok(_) => assert!(false, "Lock was successfully released with the wrong task id"),
+            Err(UnlockError::NotLocked) => assert!(false, "Lock was not locked in the first place"),
+            Err(UnlockError::NotOwned) => {},
+        }
+    }
+
+    #[test]
+    fn test_raw_mutex_try_unlock_fails_when_not_locked() {
+        let raw_mutex = RawMutex::new();
+
+        match raw_mutex.try_unlock(TASK_ID) {
+            Ok(_) => assert!(false, "Lock was successfully released when it wasn't locked"),
+            Err(UnlockError::NotOwned) => assert!(false, "Lock was owned when it should be free"),
+            Err(UnlockError::NotLocked) => {},
+        }
+    }
+
+    #[test]
+    fn test_raw_mutex_holder_returns_tid_of_holding_task() {
+        let raw_mutex = RawMutex::new();
+
+        raw_mutex.try_lock(TASK_ID).expect("Failed to acquire lock on first try");
+        assert_eq!(raw_mutex.holder(), Some(TASK_ID));
+    }
+
+    #[test]
+    fn test_raw_mutex_holder_returns_none_if_not_locked() {
+        let raw_mutex = RawMutex::new();
+
+        assert_eq!(raw_mutex.holder(), None);
+    }
+
+    #[test]
     fn test_mutex_smoke() {
         let _g = test::set_up();
         let mutex = Mutex::new(());
@@ -321,30 +422,6 @@ mod tests {
 
         drop(guard);
         assert_eq!(mutex.lock.lock.load(Ordering::Relaxed), UNLOCKED);
-    }
-
-    #[test]
-    fn test_raw_mutex_try_lock_fails() {
-        let raw_mutex = RawMutex::new();
-        match raw_mutex.try_lock(TASK_ID) {
-            Ok(_) => assert_ne!(raw_mutex.lock.load(Ordering::Relaxed), UNLOCKED),
-            Err(_) => assert!(false, "Failed to acquire lock on first try"),
-        }
-
-        match raw_mutex.try_lock(TASK_ID) {
-            Ok(_) => assert!(false, "Successfully acquired lock when it should be locked"),
-            Err(_) => assert_ne!(raw_mutex.lock.load(Ordering::Relaxed), UNLOCKED),
-        }
-
-        match raw_mutex.try_unlock(TASK_ID) {
-            Ok(_) => assert_eq!(raw_mutex.lock.load(Ordering::Relaxed), UNLOCKED),
-            Err(_) => assert!(false, "Failed to unlock owned mutex"),
-        }
-
-        match raw_mutex.try_lock(TASK_ID) {
-            Ok(_) => assert_ne!(raw_mutex.lock.load(Ordering::Relaxed), UNLOCKED),
-            Err(_) => assert!(false, "Failed to acquire lock after unlocking"),
-        }
     }
 
     #[test]

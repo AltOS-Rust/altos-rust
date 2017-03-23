@@ -20,6 +20,18 @@ use task::args::Args;
 use alloc::boxed::Box;
 use syscall;
 
+#[repr(C)]
+pub struct ExceptionStackFrame {
+    xpsr: usize,
+    pc: usize,
+    lr: usize,
+    r12: usize,
+    r3: usize,
+    r2: usize,
+    r1: usize,
+    r0: usize,
+}
+
 pub fn yield_cpu() {
     const ICSR_ADDR: usize = 0xE000_ED04;
     const PEND_SV_SET: usize = 0b1 << 28;
@@ -125,6 +137,72 @@ pub fn end_critical(primask: usize) {
             : "volatile"
         );
     }
+}
+
+#[naked]
+pub extern "aapcs" fn syscall0(call: u32) -> usize {
+    unsafe {
+        asm!("push {lr}
+            sub sp, sp, #4
+            svc 0
+            add sp, sp, #4
+            pop {pc}"
+        );
+    }
+    unreachable!();
+}
+
+#[naked]
+pub extern "aapcs" fn syscall1(call: u32, arg1: usize) -> usize {
+    unsafe {
+        asm!("push {lr}
+            sub sp, sp, #4
+            svc 0
+            add sp, sp, #4
+            pop {pc}"
+        );
+    }
+    unreachable!();
+}
+
+#[naked]
+pub extern "aapcs" fn syscall2(call: u32, arg1: usize, arg2: usize) -> usize {
+    unsafe {
+        asm!("push {lr}
+            sub sp, sp, #4
+            svc 0
+            add sp, sp, #4
+            pop {pc}"
+        );
+    }
+    unreachable!();
+}
+
+#[naked]
+pub extern "aapcs" fn syscall4(call: u32, arg1: usize, arg2: usize, arg3: usize, arg4: usize) -> usize {
+    unsafe {
+        asm!("push {r4, lr}
+            ldr r4 [sp, #8]
+            svc 0
+            pop {r4, pc}"
+        );
+    }
+    unreachable!();
+}
+
+#[naked]
+pub extern "aapcs" fn syscall5(call: u32, arg1: usize, arg2: usize, arg3: usize, arg4: usize, arg5: usize) -> usize {
+    unsafe {
+        asm!("push {r4-r5, lr}
+            sub sp, sp, #4
+            ldr r4 [sp, #16]
+            ldr r5 [sp, #20]
+            svc 0
+            add sp, sp, #4
+            pop {r4-r5, pc}"
+        );
+    }
+    unreachable!();
 }
 
 fn exit_error() -> ! {

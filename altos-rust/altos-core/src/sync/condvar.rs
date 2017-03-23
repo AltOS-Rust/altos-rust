@@ -18,7 +18,7 @@
 //! Condition variable.
 
 use atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
-use sync::mutex::{MutexGuard, Mutex};
+use sync::mutex::{RawMutex, MutexGuard};
 
 /// A Condition Variable
 ///
@@ -38,45 +38,48 @@ unsafe impl Send for CondVar {}
 unsafe impl Sync for CondVar {}
 
 impl CondVar {
-    /// Creates a new `CondVar` which is ready to be used.
+    /// Create a new `CondVar` which is ready to be used.
     pub const fn new() -> Self {
         CondVar {
             mutex: ATOMIC_USIZE_INIT,
         }
     }
 
-    /// Blocks the current task until this condition variable recieves a notification.
+    /// Block the current task until this condition variable recieves a notification.
     ///
     /// This function will automatically unlock the mutex represented by the guard passed in and
     /// block the current task. Calls to notify after the mutex is unlocked can wake up this task.
     /// When this call returns, the lock will have been reacquired.
-    pub fn wait<'a, T>(&self, guard: MutexGuard<'a, T>) -> MutexGuard<'a, T> {
-        // Get a reference to the locked mutex
-        let mutex = ::sync::mutex_from_guard(&guard);
+    ///
+    /// # Panics
+    ///
+    /// This call will panic if more than one distinct `Mutex` is used to wait with.
+    pub fn wait<'a, T>(&self, guard: &MutexGuard<'a, T>) {
+        // UNSAFE: Get a reference to the locked mutex so we can unlock it before going to sleep,
+        // we are holding the `MutexGuard` invariant by reacquiring the lock before returning from
+        // this function.
+        let raw_mutex = unsafe { ::sync::mutex_from_guard(guard) };
 
-        self.verify(mutex);
+        self.verify(raw_mutex);
 
-        // unlock the mutex
-        drop(guard);
-
-        // Sleep on the cond var channel
-        ::syscall::sleep(self as *const _ as usize);
+        ::syscall::condvar_wait(self, raw_mutex);
 
         // re-acquire lock before returning
-        mutex.lock()
+        ::syscall::mutex_lock(raw_mutex);
     }
 
-    /// Wakes up all tasks that are blocked on this condition variable.
+    /// Wake up all tasks that are blocked on this condition variable.
     ///
     /// This method will wake up any waiters on this condition variable. The calls to
     /// `notify_all()` are not buffered in any way. Calling `wait()` on another thread after
     /// calling `notify_all()` will still block the thread.
     pub fn notify_all(&self) {
-        ::syscall::wake(self as *const _ as usize);
+        ::syscall::condvar_broadcast(self);
     }
 
-    fn verify<T>(&self, mutex: &Mutex<T>) {
-        let addr = mutex as *const _ as usize;
+    // Verify that only one mutex is being used on this condition variable at a time
+    fn verify(&self, mutex: &RawMutex) {
+        let addr = mutex.address();
         match self.mutex.compare_and_swap(0, addr, Ordering::SeqCst) {
             // We have successfully bound the mutex
             0 => {},
@@ -112,10 +115,10 @@ mod tests {
 
         // Because these mutex locks don't actually put the running thread to sleep we need to simulate
         // two tasks running in parallel and watch what the current task is to see which is 'running'
-        let mut guard = mutex.lock();
+        let guard = mutex.lock();
 
         // We should be in task 2 after the wait
-        guard = condvar.wait(guard);
+        condvar.wait(&guard);
         assert_eq!(handle_1.state(), Ok(State::Blocked));
         assert!(test::current_task().is_some());
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
@@ -142,7 +145,10 @@ mod tests {
         assert!(test::current_task().is_some());
         assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
 
-        drop(guard);
+        // Don't drop the guard because we actually don't care about releasing the lock at the very
+        // end, and it will actually cause the test to panic if we don't end on the task that
+        // initially acquired the lock, which seems irrelavant to this test.
+        ::core::mem::forget(guard);
     }
 
     #[test]
@@ -156,8 +162,8 @@ mod tests {
         let guard1 = mutex1.lock();
         let guard2 = mutex2.lock();
 
-        condvar.wait(guard1);
-        condvar.wait(guard2);
+        condvar.wait(&guard1);
+        condvar.wait(&guard2);
     }
 
     #[test]
@@ -173,15 +179,15 @@ mod tests {
         assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
 
         // See smoke test for details
-        let mut guard = mutex.lock();
+        let guard = mutex.lock();
         // Task 1 waits on condvar
-        guard = condvar.wait(guard);
+        condvar.wait(&guard);
         assert_eq!(handle_1.state(), Ok(State::Blocked));
         // Task 2 waits on condvar
-        guard = condvar.wait(guard);
+        condvar.wait(&guard);
         assert_eq!(handle_2.state(), Ok(State::Blocked));
         // Task 3 waits on condvar
-        guard = condvar.wait(guard);
+        condvar.wait(&guard);
         assert_eq!(handle_3.state(), Ok(State::Blocked));
         assert!(test::current_task().is_some());
         assert_eq!(handle_4.tid(), Ok(test::current_task().unwrap().tid()));
@@ -218,6 +224,9 @@ mod tests {
         assert!(test::current_task().is_some());
         assert_eq!(handle_4.tid(), Ok(test::current_task().unwrap().tid()));
 
-        drop(guard);
+        // Don't drop the guard because we actually don't care about releasing the lock at the very
+        // end, and it will actually cause the test to panic if we don't end on the task that
+        // initially acquired the lock, which seems irrelavant to this test.
+        ::core::mem::forget(guard);
     }
 }

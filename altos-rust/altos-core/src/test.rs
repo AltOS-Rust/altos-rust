@@ -27,7 +27,7 @@ use sched::{CURRENT_TASK, SLEEP_QUEUE, DELAY_QUEUE,
             OVERFLOW_DELAY_QUEUE, PRIORITY_QUEUES, NORMAL_TASK_COUNTER};
 
 use sync::{SpinMutex, SpinGuard};
-use task::{Priority, TaskControl, TaskHandle, State, Delay};
+use task::{Priority, TaskControl, TaskHandle, Delay};
 use task::args::Args;
 use atomic::Ordering;
 
@@ -66,8 +66,7 @@ pub fn current_task() -> Option<&'static mut TaskControl> {
 }
 
 pub fn block_current_task(delay_type: Delay) {
-    current_task().unwrap().state = State::Blocked;
-    current_task().unwrap().delay_type = delay_type;
+    current_task().unwrap().block(delay_type);
 }
 
 pub fn create_two_tasks() -> (TaskHandle, TaskHandle) {

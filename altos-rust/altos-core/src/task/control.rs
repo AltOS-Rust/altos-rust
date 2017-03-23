@@ -233,12 +233,12 @@ pub struct TaskControl {
     tid: usize,
     name: &'static str,
     valid: usize,
-    pub wchan: usize,
-    pub delay: usize,
-    pub delay_type: Delay,
-    pub destroy: bool,
-    pub priority: Priority,
-    pub state: State,
+    wchan: usize,
+    delay: usize,
+    delay_type: Delay,
+    destroy: bool,
+    priority: Priority,
+    state: State,
 }
 
 unsafe impl Send for TaskControl {}
@@ -283,7 +283,10 @@ impl TaskControl {
     }
 
     pub fn destroy(&mut self) {
-        // TODO: Check if task is INIT task? So at least we always have a safe task to run...
+        if let Priority::__Idle = self.priority {
+            panic!("Tried to destroy the Idle task!");
+        }
+
         let _g = CriticalSection::begin();
         self.destroy = true;
         self.valid = INVALID_TASK;
@@ -300,7 +303,70 @@ impl TaskControl {
         self.stack.check_overflow()
     }
 
+    pub fn set_ready(&mut self) {
+        self.state = State::Ready;
+        self.delay_type = Delay::Invalid;
+    }
+
+    pub fn set_running(&mut self) {
+        self.state = State::Running;
+    }
+
+    pub fn block(&mut self, delay_type: Delay) {
+        self.state = State::Blocked;
+        self.delay_type = delay_type;
+    }
+
+    /// Wake a sleeping task
+    ///
+    /// Set a task to the `Ready` state from the `Blocked` state.
+    pub fn wake(&mut self) {
+        debug_assert!(self.state == State::Blocked);
+        self.set_ready();
+        self.wchan = 0;
+        self.delay = 0;
+    }
+
+    /// Put a task to sleep without timeout
+    ///
+    /// The task will sleep on `wchan` until woken up. If a wake signal is never received the task
+    /// will never awaken.
+    pub fn sleep(&mut self, wchan: usize) {
+        debug_assert!(self.state == State::Running);
+        self.block(Delay::Sleep);
+        self.wchan = wchan;
+    }
+
+    /// Put a task to sleep
+    ///
+    /// The task will sleep on `wchan` until woken up or until a number of ticks > `delay` has
+    /// passed. The task is guaranteed to wake up eventually.
+    pub fn sleep_for(&mut self, wchan: usize, delay: usize) {
+        debug_assert!(self.state == State::Running);
+        let ticks = ::tick::get_tick();
+        self.wchan = wchan;
+        self.delay = ticks.wrapping_add(delay);
+        if self.delay < ticks {
+            self.block(Delay::Overflowed);
+        }
+        else {
+            self.block(Delay::Timeout);
+        }
+    }
+
     pub fn tid(&self) -> usize { self.tid }
+
+    pub fn wchan(&self) -> usize { self.wchan }
+
+    pub fn tick_to_wake(&self) -> usize { self.delay }
+
+    pub fn delay_type(&self) -> Delay { self.delay_type }
+
+    pub fn priority(&self) -> Priority { self.priority }
+
+    pub fn is_destroyed(&self) -> bool { self.destroy }
+
+    pub fn state(&self) -> State { self.state }
 }
 
 /// A `TaskHandle` references a `TaskControl` and provides access to some state about it.
@@ -399,11 +465,11 @@ impl TaskHandle {
     ///
     /// If the task has been destroyed then this method will return an `Err(())`.
     pub fn priority(&self) -> HandleResult<Priority> {
-        let _g = CriticalSection::begin();
+        let priority = self.task_ref().priority;
         if self.is_valid() {
-            let task = self.task_ref();
-            Ok(task.priority)
-        } else {
+            Ok(priority)
+        }
+        else {
             Err(())
         }
     }
@@ -435,10 +501,9 @@ impl TaskHandle {
     ///
     /// If the task has been destroyed then this method will return an `Err(())`.
     pub fn state(&self) -> HandleResult<State> {
-        let _g = CriticalSection::begin();
+        let state = self.task_ref().state;
         if self.is_valid() {
-            let task = self.task_ref();
-            Ok(task.state)
+            Ok(state)
         } else {
             Err(())
         }
@@ -472,10 +537,9 @@ impl TaskHandle {
     ///
     /// If the task has been destroyed then this method will return an `Err(())`.
     pub fn tid(&self) -> HandleResult<usize> {
-        let _g = CriticalSection::begin();
+        let tid = self.task_ref().tid;
         if self.is_valid() {
-            let task = self.task_ref();
-            Ok(task.tid)
+            Ok(tid)
         } else {
             Err(())
         }
@@ -504,10 +568,9 @@ impl TaskHandle {
     ///
     /// If the task has been destroyed then this method will return an `Err(())`.
     pub fn name(&self) -> HandleResult<&'static str> {
-        let _g = CriticalSection::begin();
+        let name = self.task_ref().name;
         if self.is_valid() {
-            let task = self.task_ref();
-            Ok(task.name)
+            Ok(name)
         } else {
             Err(())
         }
@@ -538,10 +601,9 @@ impl TaskHandle {
     ///
     /// If the task has been destroyed then this method will return an `Err(())`.
     pub fn stack_size(&self) -> HandleResult<usize> {
-        let _g = CriticalSection::begin();
+        let size = self.task_ref().stack.depth();
         if self.is_valid() {
-            let task = self.task_ref();
-            Ok(task.stack.depth())
+            Ok(size)
         } else {
             Err(())
         }

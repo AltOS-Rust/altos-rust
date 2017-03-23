@@ -63,15 +63,15 @@ pub fn switch_context() {
     // UNSAFE: Accessing CURRENT_TASK
     match unsafe { CURRENT_TASK.take() } {
         Some(mut running) => {
-            if running.destroy {
+            if running.is_destroyed() {
                 drop(running);
             } else {
-                let queue_index = running.priority;
+                let queue_index = running.priority();
                 if running.is_stack_overflowed() {
                     panic!("switch_context - The current task's stack overflowed!");
                 }
-                if running.state == State::Blocked {
-                    match running.delay_type {
+                if running.state() == State::Blocked {
+                    match running.delay_type() {
                         Delay::Timeout => DELAY_QUEUE.enqueue(running),
                         Delay::Overflowed => OVERFLOW_DELAY_QUEUE.enqueue(running),
                         Delay::Sleep => SLEEP_QUEUE.enqueue(running),
@@ -80,8 +80,7 @@ pub fn switch_context() {
                         ),
                     }
                 } else {
-                    running.state = State::Ready;
-                    running.delay_type = Delay::Invalid;
+                    running.set_ready();
                     PRIORITY_QUEUES[queue_index].enqueue(running);
                 }
             }
@@ -95,7 +94,7 @@ pub fn switch_context() {
             else {
                 select_task(Priority::all())
             };
-            if let Priority::Normal = selected.priority {
+            if let Priority::Normal = selected.priority() {
                 NORMAL_TASK_COUNTER.fetch_add(1, Ordering::Relaxed);
             }
             unsafe { CURRENT_TASK = Some(selected) };
@@ -111,10 +110,10 @@ pub fn switch_context() {
 fn select_task<I: Iterator<Item=Priority>>(priorities: I) -> Box<Node<TaskControl>> {
     for priority in priorities {
         while let Some(mut new_task) = PRIORITY_QUEUES[priority].dequeue() {
-            if new_task.destroy {
+            if new_task.is_destroyed() {
                 drop(new_task);
             } else {
-                new_task.state = State::Running;
+                new_task.set_running();
                 return new_task;
             }
         }
@@ -125,16 +124,8 @@ fn select_task<I: Iterator<Item=Priority>>(priorities: I) -> Box<Node<TaskContro
 /// Start running the first task in the queue.
 pub fn start_scheduler() {
     task::init_idle_task();
-    for i in Priority::all() {
-        if let Some(mut task) = PRIORITY_QUEUES[i].dequeue() {
-            task.state = State::Running;
-            // UNSAFE: Accessing CURRENT_TASK
-            unsafe { CURRENT_TASK = Some(task) };
-            break;
-        }
-    }
     // UNSAFE: Accessing CURRENT_TASK
-    debug_assert!(unsafe { CURRENT_TASK.is_some() });
+    unsafe { CURRENT_TASK = Some(select_task(Priority::all())) };
     arch::start_first_task();
 }
 
@@ -259,7 +250,7 @@ mod tests {
     fn test_pick_idle_when_no_task_in_queues() {
         let _g = test::set_up();
         start_scheduler();
-        assert_eq!(test::current_task().unwrap().priority, Priority::__Idle);
+        assert_eq!(test::current_task().unwrap().priority(), Priority::__Idle);
     }
 
     #[test]
@@ -279,7 +270,7 @@ mod tests {
         }
 
         for _ in 0 ..100 {
-            assert_eq!(test::current_task().unwrap().priority, Priority::__Idle);
+            assert_eq!(test::current_task().unwrap().priority(), Priority::__Idle);
             switch_context();
         }
     }

@@ -26,7 +26,8 @@ mod spin;
 mod critical;
 mod condvar;
 
-pub use self::mutex::{Mutex, MutexGuard};
+pub use self::mutex::{RawMutex, Mutex, MutexGuard};
+pub use self::mutex::{LockResult, LockError, UnlockError};
 pub use self::mutex::mutex_from_guard;
 pub use self::spin::{SpinMutex, SpinGuard};
 pub use self::critical::CriticalSection;

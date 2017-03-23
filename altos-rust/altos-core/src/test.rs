@@ -27,7 +27,7 @@ use sched::{CURRENT_TASK, SLEEP_QUEUE, DELAY_QUEUE,
             OVERFLOW_DELAY_QUEUE, PRIORITY_QUEUES, NORMAL_TASK_COUNTER};
 
 use sync::{SpinMutex, SpinGuard};
-use task::{Priority, TaskControl, TaskHandle, State, Delay};
+use task::{Priority, TaskControl, TaskHandle, Delay};
 use task::args::Args;
 use atomic::Ordering;
 

@@ -18,15 +18,14 @@
 //! Syscall interface for the AltOS-Rust kernel.
 
 use sched::{CURRENT_TASK, SLEEP_QUEUE, DELAY_QUEUE, OVERFLOW_DELAY_QUEUE, PRIORITY_QUEUES};
-use task::{Delay, State, Priority};
+use task::Priority;
 use task::args::Args;
 use task::{TaskHandle, TaskControl};
 use queue::Node;
 use alloc::boxed::Box;
 use tick;
-use sync::{MutexGuard, CondVar, CriticalSection};
+use sync::{RawMutex, CondVar, CriticalSection};
 use arch;
-use atomic::{AtomicBool, Ordering};
 
 // FIXME: When we can guarantee that syscalls will be executed in an interrupt free context, get
 // rid of critical sections in this file.
@@ -251,31 +250,247 @@ pub fn system_tick() {
     }
 }
 
-pub fn mutex_lock(lock: &AtomicBool) {
-    while lock.compare_and_swap(false, true, Ordering::Acquire) != false {
-        // let another process run if we can't get the lock
-        let wchan = lock as *const _ as usize;
-        sleep(wchan);
+/// Lock a mutex
+///
+/// This system call will acquire a lock on the `RawMutex` passed in. If the lock is already held
+/// by another thread, the calling thread will block. When the lock is released by the other thread
+/// it will wake any threads waiting on the lock.
+///
+/// Normally you should not call this function directly, if you require a mutex lock primitive use
+/// the `Mutex` type provided in the `sync` module.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use altos_core::atomic::RawMutex;
+/// use altos_core::syscall::mutex_lock;
+///
+/// let raw_mutex: RawMutex = RawMutex::new();
+///
+/// // Lock the mutex to acquire exclusive access
+/// mutex_lock(&raw_mutex);
+/// ```
+///
+/// # Panics
+///
+/// This will panic if there is no task currently running, as is sometimes the case in kernel code,
+/// since there would be no task to put to sleep if we were to fail to acquire the lock.
+///
+/// In order to prevent deadlock, if a thread tries to acquire a lock that it already owns it will
+/// panic.
+///
+/// ```rust,no_run
+/// use altos_core::atomic::RawMutex;
+/// use altos_core::syscall::mutex_lock;
+///
+/// let raw_mutex: RawMutex = RawMutex::new();
+///
+/// // Acquire the lock
+/// mutex_lock(&raw_mutex);
+///
+/// // Try to acquire the lock again... panic!
+/// mutex_lock(&raw_mutex);
+/// ```
+pub fn mutex_lock(lock: &RawMutex) {
+    use sync::LockError;
+    // UNSAFE: Accessing CURRENT_TASK
+    let current_tid = match unsafe { CURRENT_TASK.as_ref() } {
+        Some(task) => task.tid(),
+        None => panic!("mutex_lock - current task doesn't exist!"),
+    };
+    loop {
+        match lock.try_lock(current_tid) {
+            Err(LockError::AlreadyOwned) => {
+                panic!("mutex_lock - attempted to acquire a lock that was already owned");
+            },
+            Err(LockError::Locked) => {
+                let wchan = lock.address();
+                sleep(wchan);
+            },
+            Ok(_) => break,
+        }
     }
 }
 
-pub fn mutex_unlock(lock: &AtomicBool) {
-    lock.store(false, Ordering::Release);
-    let wchan = lock as *const _ as usize;
-    wake(wchan);
+
+/// Attempt to acquire a mutex in a non-blocking fashion
+///
+/// This system call will acquire a lock on the `RawMutex` passed in. If the lock is already held
+/// by another thread, the function will return `false`. If the lock is successfully acquired the
+/// function will return `true`.
+///
+/// If the lock is already held by the calling thread, this function will return true as if it had
+/// just acquired the lock.
+///
+/// Normally you should not call this function directly, if you require a mutex lock primitive use
+/// the `Mutex` type provided in the `sync` module.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use altos_core::atomic::RawMutex;
+/// use altos_core::syscall::mutex_try_lock;
+///
+/// let raw_mutex: RawMutex = RawMutex::new();
+///
+/// // Lock the mutex to acquire exclusive access
+/// mutex_try_lock(&raw_mutex);
+/// ```
+///
+/// # Panics
+///
+/// This will panic if there is no task currently running, as is sometimes the case in kernel code,
+/// since we need to be able to check if the current task already have the lock, as well as mark
+/// that the current task has acquired it if it does so.
+pub fn mutex_try_lock(lock: &RawMutex) -> bool {
+    use sync::LockError;
+    // UNSAFE: Accessing CURRENT_TASK
+    let current_tid = match unsafe { CURRENT_TASK.as_ref() } {
+        Some(task) => task.tid(),
+        None => panic!("mutex_lock - current task doesn't exist!"),
+    };
+    match lock.try_lock(current_tid) {
+        // We don't really care if we try to reacquire the lock since we're non-blocking
+        Err(LockError::AlreadyOwned) => true,
+        Err(LockError::Locked) => false,
+        Ok(_) => true,
+    }
 }
 
-pub fn condvar_wait<'a, T>(condvar: &CondVar, guard: MutexGuard<'a, T>) {
+/// Unlock a mutex
+///
+/// This system call will unlock a locked mutex. There is no check to see if the calling thread
+/// actually has ownership over the lock. Calling this function will wake any tasks that are
+/// blocked on the lock.
+///
+/// Normally you should not call this function directly, if you require a mutex lock primitive use
+/// the `Mutex` type provided in the `sync` module.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use altos_core::sync::RawMutex;
+/// use altos_core::syscall::{mutex_lock, mutex_unlock};
+///
+/// let raw_mutex: RawMutex = RawMutex::new();
+///
+/// // Acquire the lock
+/// mutex_lock(&raw_mutex);
+///
+/// // Do something requiring exclusive access to a resource...
+///
+/// // Release the lock
+/// mutex_unlock(&raw_mutex);
+/// ```
+///
+/// # Panics
+///
+/// This will panic if there is no task currently running, as is sometimes the case in kernel code,
+/// since it needs to be able to verify that the current task is the one that acquired the lock.
+///
+/// In order to preserve exclusive access guarantees, if a thread tries to unlock a lock that it
+/// doesn't own it will panic.
+pub fn mutex_unlock(lock: &RawMutex) {
+    use sync::UnlockError;
+    // UNSAFE: Accessing CURRENT_TASK
+    let current_tid = match unsafe { CURRENT_TASK.as_ref() } {
+        Some(task) => task.tid(),
+        None => panic!("mutex_unlock - current task doesn't exist!"),
+    };
+    match lock.try_unlock(current_tid) {
+        // No-op if we try to unlock a lock that's not locked
+        Err(UnlockError::NotLocked) => {},
+
+        // We tried to unlock a lock that we didn't acquire
+        Err(UnlockError::NotOwned) => {
+            panic!("mutex_unlock - tried to unlock a lock that was not owned");
+        },
+
+        // We successfully unlocked the lock, so we don't have to do any more
+        Ok(_) => {
+            let wchan = lock.address();
+            wake(wchan);
+        },
+    }
+}
+
+/// Wait on a condition variable
+///
+/// This system call will wait for a signal from the condition variable before proceeding. It will
+/// unlock the mutex passed in before putting the running thread to sleep. Signals are not
+/// buffered, so calling wait after a signal will still put the calling thread to sleep. The lock
+/// *WILL NOT* be reacquired after returning from this system call, it must be manually reacquired.
+///
+/// Normally you should not call this function directly, if you require a condition variable
+/// primitive use the `CondVar` type in the `sync` module.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use altos_core::syscall::condvar_wait;
+/// use altos_core::sync::{CondVar, RawMutex};
+///
+/// let raw_mutex: RawMutex = RawMutex::new();
+/// let cond_var: CondVar = CondVar::new();
+///
+/// // Acquire the lock
+/// raw_mutex.lock();
+///
+/// // Wait on the condition variable
+/// condvar_wait(&cond_var, &raw_mutex);
+/// ```
+///
+/// # Panics
+///
+/// This funciton will panic if you attempt to pass in a mutex that you have not locked
+pub fn condvar_wait(condvar: &CondVar, lock: &RawMutex) {
     let _g = CriticalSection::begin();
+
+    mutex_unlock(lock);
+
     sleep(condvar as *const _ as usize);
-    // Explicitly drop guard so that the mutex is unlocked before context switching.
-    drop(guard);
+}
+
+/// Wake all threads waiting on a condition
+///
+/// This system call will notify all threads that are waiting on a given condition variable.
+/// Signals are not buffered, so calling `broadcast` before another thread calls `wait` will still
+/// put the other thread to sleep.
+///
+/// Normally you should not call this function directly, if you require a condition variable
+/// primitive use the `CondVar` type in the `sync` module.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use altos_core::syscall::{condvar_wait, condvar_broadcast};
+/// use altos_core::sync::{CondVar, RawMutex};
+///
+/// let raw_mutex: RawMutex = RawMutex::new();
+/// let cond_var: CondVar = CondVar::new();
+///
+/// // Acquire the lock
+/// raw_mutex.lock();
+///
+/// // Wait on the condition variable
+/// condvar_wait(&cond_var, &raw_mutex);
+///
+/// // From some other thread...
+/// condvar_broadcast(&cond_var);
+///
+/// // Original thread can now proceed
+/// ```
+pub fn condvar_broadcast(condvar: &CondVar) {
+    let _g = CriticalSection::begin();
+
+    wake(condvar as *const _ as usize);
 }
 
 #[cfg(test)]
 mod tests {
     use test;
     use super::*;
+    use task::{State, Priority};
     use task::args::Args;
     use sched::start_scheduler;
 

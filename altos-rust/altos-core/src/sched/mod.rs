@@ -126,18 +126,6 @@ pub fn start_scheduler() {
     task::init_idle_task();
     // UNSAFE: Accessing CURRENT_TASK
     unsafe { CURRENT_TASK = Some(select_task(Priority::all())) };
-    /*
-    for i in Priority::all() {
-        if let Some(mut task) = PRIORITY_QUEUES[i].dequeue() {
-            task.set_running();
-            // UNSAFE: Accessing CURRENT_TASK
-            unsafe { CURRENT_TASK = Some(task) };
-            break;
-        }
-    }
-    */
-    // UNSAFE: Accessing CURRENT_TASK
-    debug_assert!(unsafe { CURRENT_TASK.is_some() });
     arch::start_first_task();
 }
 

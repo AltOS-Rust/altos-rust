@@ -24,22 +24,22 @@ use kernel::collections::{Vec, String};
 use kernel::alloc::Box;
 use core::fmt::{self, Display};
 
-const LOGO: &str = "
-            .                                                                       
-            ;'                ..      '.                                            
-           .cc.              x0kk.   .Oo  .xc                                       
-           c,;:            .OO. xO.  .Oo 'dkxoc .d.  .o' .clccc.                    
-          ;'  ;'           kKdodd0k. .Oo  .kl   ,k,  'x; ,dc;,'.                    
-         ..    .          cXl   .o0o .Oo  .ko   ,k;  ;x;    ..ld.                   
-         c:.  .::         oO.     dx  xc   cddo, :dolcd' ;lcclc,                    
-        ;c;,',':c'                                                                  
-       .cc,    :cc.                                                                 
-      .ccl;    cll:        'dl   ;o;            ..                                  
-      :odxc    dxdd;       kK0d cOkO    .''.    ok    ...    .    .   .....  ...    
-     ,xkO0o    k00Ox.     .Kx.k0O':O, 'x'  'k:lookol.oxcx;. ;d.  ,d' ,oc.'ll:.'l:   
-    .k0KKKd    OXKK0k     ,Xl  l   O: xOoccccc  ck.  ox  '' ;d.  ,d' ,o.  :l.  :l   
-    d0KKXXd    OXXXKKl    ;Xl      Oc 'kd;      :k   ox     'dc  'd' ,o.  :l.  :l   
-  ;x0KXXO;      cKXXKKx,  xl.      0c.  lcccc   :l   ox      'cccc'   0   :l.  :l   
+const LOGO: &'static str = "
+            .
+            ;'                ..      '.
+           .cc.              x0kk.   .Oo  .xc
+           c,;:            .OO. xO.  .Oo 'dkxoc .d.  .o' .clccc.
+          ;'  ;'           kKdodd0k. .Oo  .kl   ,k,  'x; ,dc;,'.
+         ..    .          cXl   .o0o .Oo  .ko   ,k;  ;x;    ..ld.
+         c:.  .::         oO.     dx  xc   cddo, :dolcd' ;lcclc,
+        ;c;,',':c'
+       .cc,    :cc.
+      .ccl;    cll:        'dl   ;o;            ..
+      :odxc    dxdd;       kK0d cOkO    .''.    ok    ...    .    .   .....  ...
+     ,xkO0o    k00Ox.     .Kx.k0O':O, 'x'  'k:lookol.oxcx;. ;d.  ,d' ,oc.'ll:.'l:
+    .k0KKKd    OXKK0k     ,Xl  l   O: xOoccccc  ck.  ox  '' ;d.  ,d' ,o.  :l.  :l
+    d0KKXXd    OXXXKKl    ;Xl      Oc 'kd;      :k   ox     'dc  'd' ,o.  :l.  :l
+  ;x0KXXO;      cKXXKKx,  xl.      0c.  lcccc   :l   ox      'cccc'   0   :l.  :l
 .lxOKKXo          kXKK0ko.                                                          ";
 
 
@@ -246,8 +246,8 @@ pub fn shell(_args: &mut Args) {
                 },
                 Command::Rocket => {
                     let timer = if words.len() > 0 {
-                        words[0].parse::<isize>().unwrap_or(5)    
-                    } 
+                        words[0].parse::<isize>().unwrap_or(5)
+                    }
                     else {
                         5
                     };
@@ -366,22 +366,22 @@ fn uptime() -> (usize, usize, usize) {
 fn rocket(mut timer: isize) {
     let mut offset: isize = 15;
     let stationary: isize = offset;
-    let counter = timer + offset * 2; 
+    let counter = timer + offset * 2;
     let mut k = 0;
-    
+
     if timer < 0 {
         timer = 5;
     }
 
     let mut rocket = String::new();
-    
+
     while k < counter {
         rocket.clear();
-        
+
         print!("\x1b[2J");
 
-        newline_offset(&mut rocket, offset); 
-        
+        newline_offset(&mut rocket, offset);
+
         build_rocket_part(&mut rocket, "      /\\\n", offset);
         build_rocket_part(&mut rocket, "     /  \\\n", offset+1);
         build_rocket_part(&mut rocket, "    /    \\\n", offset+2);
@@ -391,7 +391,7 @@ fn rocket(mut timer: isize) {
         build_rocket_part(&mut rocket, "  / |  O | \\\n", offset+6);
         build_rocket_part(&mut rocket, "  ^^|  S |^^\n", offset+7);
         build_rocket_part(&mut rocket, "    |    |\n", offset+8);
-        
+
         if (offset % 2 == 0) && (offset < stationary) {
             build_rocket_part(&mut rocket, "     vwwv", offset+9);
         }
@@ -411,7 +411,7 @@ fn rocket(mut timer: isize) {
             println!("\t\t/-------------\\     Blast off in...{}", timer);
             delay_ms(1000);
         }
-       
+
         k += 1;
         timer -= 1;
     }
@@ -430,7 +430,7 @@ fn newline_offset(string: &mut String, offset: isize){
 
 fn build_rocket_part(rocket: &mut String,part: &str, offset: isize) {
     if offset < 0 {
-        return;    
+        return;
     }
     rocket.push_str("\t\t");
     rocket.push_str(part);

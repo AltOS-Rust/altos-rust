@@ -29,7 +29,6 @@
 #[cfg(feature="serial")]
 mod usart;
 
-use arm::asm::bkpt;
 use altos_core::syscall;
 
 // Interrupt vector table
@@ -39,7 +38,7 @@ use altos_core::syscall;
 #[export_name="_EXCEPTIONS"]
 pub static EXCEPTIONS: [Option<unsafe extern "C" fn()>; 46] = [
     Some(default_handler),  // NMI: 1
-    Some(default_handler),  // Hard Fault: 2
+    Some(hardfault_handler),  // Hard Fault: 2
     Some(default_handler),  // Memory Management Fault: 3
     Some(default_handler),  // Bus Fault: 4
     Some(default_handler),  // Usage Fault: 5
@@ -88,16 +87,24 @@ pub static EXCEPTIONS: [Option<unsafe extern "C" fn()>; 46] = [
 
 
 unsafe extern "C" fn default_handler() {
-    let instruction: usize;
-    asm!("mrs r0, PSP
-        ldr $0, [r0, #24]"
-        : "=r"(instruction)
-        : /* no inputs */
-        : "r0"
-        : "volatile"
-    );
-    kprintln!("Hard fault at instruction: {:x}", instruction);
-    loop { bkpt() };
+    kprintln!("Unhandled Interrupt");
+    loop { ::arm::asm::bkpt() };
+}
+
+unsafe extern "C" fn hardfault_handler() {
+    #[cfg(target_arch="arm")]
+    {
+        let instruction: usize;
+        asm!("mrs r0, PSP
+            ldr $0, [r0, #24]"
+            : "=r"(instruction)
+            : /* no inputs */
+            : "r0"
+            : "volatile"
+        );
+        kprintln!("Hard fault at instruction: {:x}", instruction);
+        loop { ::arm::asm::bkpt() };
+    }
 }
 
 /// Supervisor Call
@@ -117,12 +124,12 @@ unsafe extern "C" fn sv_call_handler() {
     asm!(
         concat!(
             "push {r7, lr}\n", /* Save link register for return */
-            //"bkpt\n", /* FIXME: FOR TESTING */
-            "cmp r0, #11\n", /* Make sure we're within the jump table */
-            "bhi svc_unknown\n",
             "adr r7, JUMP_TABLE\n",
             "lsls r0, r0, #2\n",
             "add r0, r7, r0\n",
+            "ldr r7, =JUMP_TABLE_END\n",
+            "cmp r7, r0\n", /* Make sure we're within the jump table */
+            "bhi svc_unknown\n",
             "ldr r0, [r0]\n",
             "mov pc, r0\n",
 
@@ -138,6 +145,7 @@ unsafe extern "C" fn sv_call_handler() {
             ".word SVC_7\n",
             ".word SVC_8\n",
             ".word SVC_9\n",
+        "JUMP_TABLE_END:\n",
 
         "SVC_0:\n", /* exit (void) */
             "bl sys_exit\n",

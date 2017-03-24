@@ -168,11 +168,11 @@ mod tests {
 
     #[test]
     fn test_multiply_bigger_first() {
-        assert_eq!(100, __aeabi_lmul(20, 5));
+        assert_eq!(100, __aeabi_lmul(20, 0, 5, 0));
     }
 
     #[test]
     fn test_multiply_bigger_second() {
-        assert_eq!(100, __aeabi_lmul(5, 20));
+        assert_eq!(100, __aeabi_lmul(5, 0, 20, 0));
     }
 }

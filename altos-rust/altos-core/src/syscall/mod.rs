@@ -18,7 +18,14 @@
 //! System call interface for the AltOS-Rust kernel.
 //!
 //! This module provides priviledged functions that interact directly with the kernel, modifying
-//! tasks and performing special operations. All system calls can be considered atomic.
+//! tasks and performing special operations. All system calls can be considered atomic. As an
+//! implementation note, some architectures do not allow supervisor calls while interrupts are
+//! disabled or while another interrupt is occuring, if this is the case, a `sys_*` version of each
+//! syscall is exposed (i.e. `sys_sleep(wchan)` as opposed to `sleep(wchan`). These are the
+//! underlying implementations of each system call, and so the functionality is exactly the same.
+//! These `sys_*` versions should only be called in an interrupt free environment to ensure that
+//! all their operations are atomic, otherwise use the regular system calls which will ensure
+//! atomicity for you.
 //!
 //! # Syscall Calling Convention
 //!
@@ -43,16 +50,23 @@
 //! for supervisor calls on those systems. In this case the implementor must ensure that the
 //! returned value is written back to the memory where the register was saved, so that upon return
 //! from the interrupt the correct value is stored in the return register.
+//!
+//! # Important Note
+//!
+//! This calling convention only applies to the way arguments will be passed to the supervisor
+//! interrupt. When actually implementing the supervisor call handler, calling each system call
+//! should be done in the platform's standard calling convention. This means you will likely have
+//! to shift the arguments over some registers or store some on the stack if neccessary.
 
 mod imp;
-mod syscall;
+mod defs;
 
 use task::Priority;
 use task::args::Args;
 use task::TaskHandle;
 use sync::{RawMutex, CondVar};
 use arch;
-pub use self::syscall::*;
+pub use self::defs::*;
 pub use self::imp::*;
 
 /// Create a new task and put it into the task queue for running.
@@ -276,7 +290,7 @@ pub fn mutex_lock(lock: &RawMutex) {
 /// since we need to be able to check if the current task already have the lock, as well as mark
 /// that the current task has acquired it if it does so.
 pub fn mutex_try_lock(lock: &RawMutex) -> bool {
-    return arch::syscall1(SYS_MX_TRY_LOCK, lock as *const _ as usize) != 0;
+    arch::syscall1(SYS_MX_TRY_LOCK, lock as *const _ as usize) != 0
 }
 
 /// Unlock a mutex

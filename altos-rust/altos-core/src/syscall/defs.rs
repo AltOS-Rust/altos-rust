@@ -15,7 +15,6 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-//pub const SYS_NEW_TASK: u32 = 0;
 /// System call number for `exit(void)`
 pub const SYS_EXIT: u32 = 0;
 
@@ -30,7 +29,6 @@ pub const SYS_SLEEP_FOR: u32 = 3;
 
 /// System call number for `wake(wchan)`
 pub const SYS_WAKE: u32 = 4;
-//pub const SYS_TICK: u32 = 6;
 
 /// System call number for `mutex_lock(lock)`
 pub const SYS_MX_LOCK: u32 = 5;

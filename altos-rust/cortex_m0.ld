@@ -14,12 +14,6 @@ ENTRY(_reset);
 
 SECTIONS
 {
-  /DISCARD/ :
-  {
-    *(.ARM.exidx*)
-    *(.note.gnu.build-id*)
-  }
-
   .text :
   {
     /* Vector Table */
@@ -78,5 +72,11 @@ SECTIONS
   {
     _heap_start = .;
   } > RAM
+
+  /DISCARD/ :
+  {
+    *(.ARM.exidx*)
+    *(.note.gnu.build-id*)
+  }
 }
 

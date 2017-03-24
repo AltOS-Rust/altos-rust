@@ -34,80 +34,13 @@ use cortex_m0::kernel::task::args::Args;
 use cortex_m0::kernel::sync::{Mutex, RawMutex};
 use cortex_m0::peripheral::gpio::{self, Port};
 use cortex_m0::io;
-use kernel::syscall;
-
-static TEST_MUTEX: RawMutex = RawMutex::new();
 
 #[no_mangle]
 pub fn application_entry() -> ! {
     // -----------------
     // Tasks go between the lines.
     // ----------------
-    //kernel::syscall::new_task(mutex_task, Args::empty(), 1024, Priority::Normal, "syscall");
-    //kernel::syscall::new_task(mutex_task_2, Args::empty(), 1024, Priority::Normal, "syscall");
     kernel::task::start_scheduler();
 
     loop { unsafe { arm::asm::bkpt() }; }
 }
-
-/*
-fn print_task(_args: &mut Args) {
-    loop {
-        println!("Hello world with a new syscall interface!");
-    }
-}
-
-fn exit_task(_args: &mut Args) {
-    loop {
-        println!("Exiting!");
-        syscall::exit();
-    }
-}
-
-fn delay_task(_args: &mut Args) {
-    let mut val = 0;
-    loop {
-        println!("About to sleep... Value is {}", val);
-        time::delay_s(1);
-        val += 1;
-    }
-}
-
-fn mutex_task(_args: &mut Args) {
-    loop {
-        let res = syscall::mutex_try_lock(&TEST_MUTEX);
-        //syscall::mutex_lock(&TEST_MUTEX);
-        //println!("(task 1) Acquired the lock");
-        //println!("(task 1) Result of try_lock: {}", res);
-        if res {
-            println!("(task 1) try_lock was true");
-            //panic!("Try lock was true");
-            syscall::mutex_unlock(&TEST_MUTEX);
-            syscall::sched_yield();
-        }
-        else {
-            println!("(task 1) try_lock was false");
-        }
-        //time::delay_ms(2000);
-        //if res {
-            //syscall::mutex_unlock(&TEST_MUTEX);
-            //syscall::sched_yield();
-        //}
-    }
-}
-
-fn mutex_task_2(_args: &mut Args) {
-    loop {
-        syscall::mutex_lock(&TEST_MUTEX);
-        //let res = syscall::mutex_try_lock(&TEST_MUTEX);
-        println!("(task 2) Acquired the lock");
-        syscall::mutex_unlock(&TEST_MUTEX);
-        syscall::sched_yield();
-        //time::delay_ms(2000);
-        //if res {
-            //syscall::mutex_unlock(&TEST_MUTEX);
-            //syscall::sched_yield();
-        //}
-    }
-}
-*/

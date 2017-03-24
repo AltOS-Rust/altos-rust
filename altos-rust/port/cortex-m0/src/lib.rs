@@ -114,12 +114,6 @@ extern "Rust" {
 pub fn init() -> ! {
     // TODO: set pendsv and systick interrupts to lowest priority
     unsafe { arm::asm::disable_interrupts() };
-
-    /*
-    unsafe {
-        asm!("svc 0" : : : : "volatile");
-    }
-    */
     init_data_segment();
     init_bss_segment();
     init_heap();

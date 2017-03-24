@@ -102,7 +102,7 @@ unsafe extern "C" fn hardfault_handler() {
             : "r0"
             : "volatile"
         );
-        kprintln!("Hard fault at instruction: {:x}", instruction);
+        kprintln!("Hard fault at instruction: {}", instruction);
         loop { ::arm::asm::bkpt() };
     }
 }

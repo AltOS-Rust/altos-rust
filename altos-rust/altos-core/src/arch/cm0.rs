@@ -147,6 +147,9 @@ pub extern "aapcs" fn syscall0(_call: u32) -> usize {
 
 #[cfg(not(feature="syscall"))]
 pub fn syscall0(call: u32) -> usize {
+
+    // Make sure any system call gets executed atomically
+    let _g = ::sync::CriticalSection::begin();
     match call {
         syscall::SYS_EXIT => syscall::sys_exit(),
         syscall::SYS_SCHED_YIELD => syscall::sys_sched_yield(),
@@ -177,6 +180,8 @@ pub extern "aapcs" fn syscall1(_call: u32, _arg1: usize) -> usize {
 pub fn syscall1(call: u32, arg1: usize) -> usize {
     use sync::{CondVar, RawMutex};
 
+    // Make sure any system call gets executed atomically
+    let _g = ::sync::CriticalSection::begin();
     match call {
         syscall::SYS_SLEEP => syscall::sys_sleep(arg1),
         syscall::SYS_WAKE => syscall::sys_wake(arg1),
@@ -223,6 +228,8 @@ pub extern "aapcs" fn syscall2(_call: u32, _arg1: usize, _arg2: usize) -> usize 
 pub fn syscall2(call: u32, arg1: usize, arg2: usize) -> usize {
     use sync::{CondVar, RawMutex};
 
+    // Make sure any system call gets executed atomically
+    let _g = ::sync::CriticalSection::begin();
     match call {
         syscall::SYS_SLEEP_FOR => syscall::sys_sleep_for(arg1, arg2),
         syscall::SYS_CV_WAIT => {

@@ -17,6 +17,15 @@
 
 //! This module handles defining exception handlers.
 
+// NOTE: When using system calls in these handlers, use the `sys_*` versions of those calls. With
+// the `svc` feature enabled, system calls are handled through the `sv_call` handler. These system
+// calls essentially just call the `sys_*` versions, but we can guarantee at that point that it's
+// an interrupt free environment. If, however, you do execute an `svc` instruction while either
+// within another interrupt handler or with interrupts disabled you will encounter a hard fault.
+//
+// If the `svc` feature is not enabled, these system calls have the same behavior, so there should
+// be no difference.
+
 #[cfg(feature="serial")]
 mod usart;
 
@@ -79,7 +88,16 @@ pub static EXCEPTIONS: [Option<unsafe extern "C" fn()>; 46] = [
 
 
 unsafe extern "C" fn default_handler() {
-    bkpt();
+    let instruction: usize;
+    asm!("mrs r0, PSP
+        ldr $0, [r0, #24]"
+        : "=r"(instruction)
+        : /* no inputs */
+        : "r0"
+        : "volatile"
+    );
+    kprintln!("Hard fault at instruction: {:x}", instruction);
+    loop { bkpt() };
 }
 
 /// Supervisor Call

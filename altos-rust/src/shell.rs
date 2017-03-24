@@ -293,20 +293,13 @@ impl Parser {
 enum Expr {
     Op(Box<Expr>, Operator, Box<Expr>),
     Val(isize),
-    Invalid(&'static str),
 }
 
 impl Expr {
-    fn eval(&self) -> ::core::result::Result<isize, &'static str> {
+    fn eval(&self) -> isize {
         match *self {
-            Expr::Op(ref lhs, ref op, ref rhs) => {
-                match (lhs.eval(), rhs.eval()) {
-                    (Ok(lhs), Ok(rhs)) => Ok(op.apply(lhs, rhs)),
-                    _ => Err("Invalid expression"),
-                }
-            },
-            Expr::Val(x) => Ok(x),
-            Expr::Invalid(msg) => Err(msg),
+            Expr::Op(ref lhs, ref op, ref rhs) => op.apply(lhs.eval(), rhs.eval()),
+            Expr::Val(x) => x,
         }
     }
 }
@@ -427,10 +420,7 @@ fn eval(args: Vec<&str>) {
     };
     let mut parser = Parser::new(tokens);
     match parser.parse() {
-        Ok(expr) => match expr.eval() {
-            Ok(result) => println!("Result: {}", result),
-            Err(msg) => println!("{}", msg),
-        },
+        Ok(expr) => println!("Result: {}", expr.eval()),
         Err(err) => println!("Parsing failed: {:?}", err),
     }
 }

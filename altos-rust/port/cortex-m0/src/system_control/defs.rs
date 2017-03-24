@@ -15,37 +15,8 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-//! This module is used to provide stubs for the architecture layer for testing.
+pub const SCB_ADDR: *const u32 = 0xE000_ED00 as *const _;
 
-use volatile::Volatile;
-use task::args::Args;
-use alloc::boxed::Box;
-use sched;
-
-pub fn yield_cpu() {
-    sched::switch_context();
-}
-
-pub fn initialize_stack(stack_ptr: Volatile<usize>, _code: fn(&mut Args), _args: &Box<Args>)
-    -> usize {
-
-    stack_ptr.as_ptr() as usize
-}
-
-pub fn start_first_task() {
-    // no-op
-}
-
-pub fn in_kernel_mode() -> bool {
-    // no-op
-    true
-}
-
-pub fn begin_critical() -> usize {
-    // no-op
-    0
-}
-
-pub fn end_critical(_mask: usize) {
-    // no-op
-}
+pub const ICSR_OFFSET: u32 = 0x04;
+pub const ICSR_PENDSVCLR: u32 = 0b1 << 27;
+pub const ICSR_PENDSVSET: u32 = 0b1 << 28;

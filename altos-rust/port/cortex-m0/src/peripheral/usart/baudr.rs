@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2017 AltOS-Rust Team
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2017 AltOS-Rust Team
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
 /* This submodule contains the function implementations for the Usartx_BRR.
  * The BRR is the baud rate register and is responsible for setting the
@@ -24,6 +24,7 @@ use super::super::Register;
 use super::defs::*;
 
 /// Five most common baud rates available.
+#[allow(missing_docs)]
 #[derive(Copy, Clone)]
 pub enum BaudRate {
     Hz4800,
@@ -62,9 +63,7 @@ impl BRR {
      *   BRR[2:0] = USARTDIV[3:0] shifted 1 bit to the right.
      *   BRR[3] must be kept cleared.
      */
-    pub fn set_baud_rate(&mut self, baud_rate: BaudRate,
-                         clock_rate: u32, over8: bool) {
-
+    pub fn set_baud_rate(&mut self, baud_rate: BaudRate, clock_rate: u32, over8: bool) {
         let mut rate = match baud_rate {
             BaudRate::Hz4800 => clock_rate/4_800,
             BaudRate::Hz9600 => clock_rate/9_600,

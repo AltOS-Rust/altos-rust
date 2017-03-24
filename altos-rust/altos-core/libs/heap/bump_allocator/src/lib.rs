@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2017  AltOS-Rust Team
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2017  AltOS-Rust Team
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #![feature(allocator)]
 #![feature(const_fn)]
@@ -24,9 +24,9 @@
 #![no_std]
 
 /*
- * Code adapted from:
- * https://github.com/phil-opp/blog_os/blob/master/libs/bump_allocator/src/lib.rs
- */
+* Code adapted from:
+* https://github.com/phil-opp/blog_os/blob/master/libs/bump_allocator/src/lib.rs
+*/
 
 #[cfg(test)]
 extern crate std;
@@ -34,6 +34,7 @@ extern crate std;
 #[cfg(all(target_arch="arm", not(target_has_atomic="ptr")))]
 extern crate cm0_atomic as atomic;
 
+#[allow(unused_imports)]
 #[macro_use]
 extern crate altos_macros;
 
@@ -43,7 +44,7 @@ use atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 
 static mut BUMP_ALLOCATOR: BumpAllocator = BumpAllocator::new();
 
-/// Call this before doing any heap allocation. This MUST only be called once
+/// Call this before doing any heap allocation. This MUST only be called once.
 pub fn init_heap(heap_start: usize, heap_size: usize) {
     unsafe { BUMP_ALLOCATOR.init(heap_start, heap_size) };
 }
@@ -65,6 +66,7 @@ impl BumpAllocator {
         }
     }
 
+    /// Initialize the heap with a start and end address.
     pub fn init(&mut self, heap_start: usize, heap_size: usize) {
         self.heap_start = heap_start;
         self.heap_size = heap_size;
@@ -91,8 +93,8 @@ impl BumpAllocator {
     }
 }
 
-/// Align downwards. Returns the greatest x with alignment `align` so that x <= addr. The alignment
-/// must be a power of 2.
+/// Align downwards. Returns the greatest x with alignment `align` so that x <= addr.
+/// The alignment must be a power of 2.
 pub fn align_down(addr: usize, align: usize) -> usize {
     if align.is_power_of_two() {
         addr & !(align - 1)
@@ -105,8 +107,8 @@ pub fn align_down(addr: usize, align: usize) -> usize {
     }
 }
 
-/// Align upwards. Returns the smallest x with alignment `align` so that x >= addr. The alignment
-/// must be a power of 2.
+/// Align upwards. Returns the smallest x with alignment `align` so that x >= addr.
+/// The alignment must be a power of 2.
 pub fn align_up(addr: usize, align: usize) -> usize {
     align_down(addr + align - 1, align)
 }
@@ -155,7 +157,7 @@ mod tests {
     use std::vec::Vec;
 
     #[test]
-    fn test_alloc_smoke() {
+    fn test_allocate_smoke() {
         let mut allocator = BumpAllocator::new();
         allocator.init(0, 10 * 1024 * 1024);
         assert!(allocator.allocate(1024, 1).is_some());
@@ -185,7 +187,7 @@ mod tests {
     }
 
     #[test]
-    fn test_oom() {
+    fn test_out_of_memory() {
         let mut allocator = BumpAllocator::new();
         allocator.init(0, 1024);
         assert!(allocator.allocate(1024, 1).is_some());

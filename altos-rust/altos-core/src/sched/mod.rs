@@ -1,23 +1,23 @@
 /*
- * Copyright (C) 2017 AltOS-Rust Team
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2017 AltOS-Rust Team
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
 //! Scheduling
 //!
-//! This module contains the code for the scheduler and initialization.
+//! This module contains functionality for scheduling tasks to run and scheduler initialization.
 
 use task::{self, TaskControl, Delay, Priority, State};
 use queue::{SyncQueue, Node};
@@ -39,13 +39,13 @@ pub static PRIORITY_QUEUES: [SyncQueue<TaskControl>; NUM_PRIORITIES] = [
     SyncQueue::new(),
     SyncQueue::new(),
     SyncQueue::new()
-    ];
+];
 pub static SLEEP_QUEUE: SyncQueue<TaskControl> = SyncQueue::new();
 pub static DELAY_QUEUE: SyncQueue<TaskControl> = SyncQueue::new();
 pub static OVERFLOW_DELAY_QUEUE: SyncQueue<TaskControl> = SyncQueue::new();
 pub static NORMAL_TASK_COUNTER: AtomicUsize = ATOMIC_USIZE_INIT;
-const NORMAL_TASK_MAX: usize = 10;
 
+const NORMAL_TASK_MAX: usize = 10;
 
 impl Index<Priority> for [SyncQueue<TaskControl>] {
     type Output = SyncQueue<TaskControl>;
@@ -63,15 +63,15 @@ pub fn switch_context() {
     // UNSAFE: Accessing CURRENT_TASK
     match unsafe { CURRENT_TASK.take() } {
         Some(mut running) => {
-            if running.destroy {
+            if running.is_destroyed() {
                 drop(running);
             } else {
-                let queue_index = running.priority;
+                let queue_index = running.priority();
                 if running.is_stack_overflowed() {
                     panic!("switch_context - The current task's stack overflowed!");
                 }
-                if running.state == State::Blocked {
-                    match running.delay_type {
+                if running.state() == State::Blocked {
+                    match running.delay_type() {
                         Delay::Timeout => DELAY_QUEUE.enqueue(running),
                         Delay::Overflowed => OVERFLOW_DELAY_QUEUE.enqueue(running),
                         Delay::Sleep => SLEEP_QUEUE.enqueue(running),
@@ -80,14 +80,13 @@ pub fn switch_context() {
                         ),
                     }
                 } else {
-                    running.state = State::Ready;
-                    running.delay_type = Delay::Invalid;
+                    running.set_ready();
                     PRIORITY_QUEUES[queue_index].enqueue(running);
                 }
             }
 
-            // If more than NORMAL_TASK_MAX Normal tasks have run don't try and schedule
-            // a normal priorty task and give low priority a shot at running.
+            // If more than NORMAL_TASK_MAX Normal tasks have run, don't try and schedule
+            // a normal priorty task, instead giving a low priority task a shot at running.
             let selected = if NORMAL_TASK_COUNTER.load(Ordering::Relaxed) >= NORMAL_TASK_MAX {
                 NORMAL_TASK_COUNTER.store(0, Ordering::Relaxed);
                 select_task(Priority::all_except(Priority::Normal))
@@ -95,7 +94,7 @@ pub fn switch_context() {
             else {
                 select_task(Priority::all())
             };
-            if let Priority::Normal = selected.priority {
+            if let Priority::Normal = selected.priority() {
                 NORMAL_TASK_COUNTER.fetch_add(1, Ordering::Relaxed);
             }
             unsafe { CURRENT_TASK = Some(selected) };
@@ -111,30 +110,22 @@ pub fn switch_context() {
 fn select_task<I: Iterator<Item=Priority>>(priorities: I) -> Box<Node<TaskControl>> {
     for priority in priorities {
         while let Some(mut new_task) = PRIORITY_QUEUES[priority].dequeue() {
-            if new_task.destroy {
+            if new_task.is_destroyed() {
                 drop(new_task);
             } else {
-                new_task.state = State::Running;
+                new_task.set_running();
                 return new_task;
             }
         }
     }
-    panic!("Task not selected!");
+    panic!("select_task - task not selected!");
 }
 
-/// Start running the first task in the queue
+/// Start running the first task in the queue.
 pub fn start_scheduler() {
     task::init_idle_task();
-    for i in Priority::all() {
-        if let Some(mut task) = PRIORITY_QUEUES[i].dequeue() {
-            task.state = State::Running;
-            // UNSAFE: Accessing CURRENT_TASK
-            unsafe { CURRENT_TASK = Some(task) };
-            break;
-        }
-    }
     // UNSAFE: Accessing CURRENT_TASK
-    debug_assert!(unsafe { CURRENT_TASK.is_some() });
+    unsafe { CURRENT_TASK = Some(select_task(Priority::all())) };
     arch::start_first_task();
 }
 
@@ -143,15 +134,26 @@ mod tests {
     use super::*;
     use test;
 
+    // A test helper function
+    fn run_scheduler_with_single_priority(priority: Priority) {
+        let _g = test::set_up();
+        assert!(test::current_task().is_none());
+        test::create_and_schedule_test_task(512, priority, "test task 1");
+        test::create_and_schedule_test_task(512, priority, "test task 2");
+        start_scheduler();
+        for _ in 0..100 {
+            assert!(test::current_task().is_some());
+            switch_context();
+        }
+    }
+
     #[test]
-    //Board does not have any tasks scheduled on boot
     fn test_system_starts_with_no_task_scheduled() {
         let _g = test::set_up();
         assert!(test::current_task().is_none());
     }
 
     #[test]
-    //Scheduler starts and is able to schedule tasks
     fn test_scheduler_starts() {
         let _g = test::set_up();
         assert!(test::current_task().is_none());
@@ -161,7 +163,6 @@ mod tests {
     }
 
     #[test]
-    //Scheduler selects the next task to run using Round Robin Algorithm
     fn test_scheduler_runs_tasks_in_round_robin() {
         let _g = test::set_up();
         assert!(test::current_task().is_none());
@@ -169,7 +170,7 @@ mod tests {
         let handle_2 = test::create_and_schedule_test_task(512, Priority::Normal, "test task 2");
 
         start_scheduler();
-        for _ in 0..5 { //TODO: After issue #42 is resolved range should be adjusted to be larger
+        for _ in 0..5 {
             assert!(test::current_task().is_some());
             assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
             switch_context();
@@ -181,7 +182,6 @@ mod tests {
     }
 
     #[test]
-    //Scheduler always picks a critical task frist
     fn test_scheduler_picks_critical_first() {
         let _g = test::set_up();
         assert!(test::current_task().is_none());
@@ -197,7 +197,6 @@ mod tests {
     }
 
     #[test]
-    //Scheduler picks the highest priority task that isn't blocked
     fn test_scheduler_picks_from_lower_queue_if_higher_is_blocked() {
         let _g = test::set_up();
         assert!(test::current_task().is_none());
@@ -224,7 +223,6 @@ mod tests {
     }
 
     #[test]
-    //Scheduler does not attempt to schedule destroyed tasks
     fn test_scheduler_doesnt_schedule_destroyed_tasks() {
         let _g = test::set_up();
         assert!(test::current_task().is_none());
@@ -242,35 +240,20 @@ mod tests {
     }
 
     #[test]
-    //Scheduler does not rely on a sinle priority in order to operate
     fn test_scheduler_runs_with_single_priority() {
         run_scheduler_with_single_priority(Priority::Critical);
         run_scheduler_with_single_priority(Priority::Normal);
         run_scheduler_with_single_priority(Priority::Low);
     }
 
-    fn run_scheduler_with_single_priority(priority:Priority) {
-        let _g = test::set_up();
-        assert!(test::current_task().is_none());
-        test::create_and_schedule_test_task(512, priority, "test task 1");
-        test::create_and_schedule_test_task(512, priority, "test task 2");
-        start_scheduler();
-        for _ in 0..100 {
-            assert!(test::current_task().is_some());
-            switch_context();
-        }
-    }
-
     #[test]
-    //Scheduler selects __Idle task if run when no tasks queued.
     fn test_pick_idle_when_no_task_in_queues() {
         let _g = test::set_up();
         start_scheduler();
-        assert_eq!(test::current_task().unwrap().priority, Priority::__Idle);
+        assert_eq!(test::current_task().unwrap().priority(), Priority::__Idle);
     }
 
     #[test]
-    //Scheduler selects __Idle task if run when all taks are blocked.
     fn test_pick_idle_when_all_tasks_are_blocked() {
         let _g = test::set_up();
         assert!(test::current_task().is_none());
@@ -287,13 +270,12 @@ mod tests {
         }
 
         for _ in 0 ..100 {
-            assert_eq!(test::current_task().unwrap().priority, Priority::__Idle);
+            assert_eq!(test::current_task().unwrap().priority(), Priority::__Idle);
             switch_context();
         }
     }
 
     #[test]
-    //Scheduler selects critical task when a Low task would be run before Normal
     fn test_scheduler_picks_critical_when_low_would_be_picked_before_normal() {
         let _g = test::set_up();
         let handle_1 = test::create_and_schedule_test_task(512, Priority::Normal, "Norm task");
@@ -305,14 +287,13 @@ mod tests {
             assert_eq!(handle_1.tid(), Ok(test::current_task().unwrap().tid()));
         }
 
-        //We get the normal counter to max and now insert a critical task, low shouldn't run
+        // We get the normal counter to max and now insert a critical task, low shouldn't run
         let handle_2 = test::create_and_schedule_test_task(512, Priority::Critical, "Critical task");
         switch_context();
         assert_eq!(handle_2.tid(), Ok(test::current_task().unwrap().tid()));
     }
 
     #[test]
-    //Scheduler picks Low over Normal at a ratio of 1:NORMAL_TASK_MAX
     fn test_scheduler_selects_low_over_normal_according_to_ratio() {
         let _g = test::set_up();
         let handle_1 = test::create_and_schedule_test_task(512, Priority::Normal, "Norm task");

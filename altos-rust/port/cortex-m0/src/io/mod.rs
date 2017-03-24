@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2017 AltOS-Rust Team
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2017 AltOS-Rust Team
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
 //! This module handles input and output through the serial port.
 //!
@@ -44,12 +44,10 @@ mod imp {
     use core::fmt::{self, Write, Arguments};
     use peripheral::usart::{UsartX, Usart, USART2_TX_CHAN, USART2_RX_CHAN};
 
-    pub type Result<T> = ::core::result::Result<T, ()>;
-
-    /// Buffer for transmitting bytes
+    /// A buffer for transmitting bytes.
     pub static mut TX_BUFFER: RingBuffer = RingBuffer::new();
 
-    /// Buffer for receiving bytes
+    /// A buffer for receiving bytes.
     pub static mut RX_BUFFER: RingBuffer = RingBuffer::new();
 
     // Mutex to ensure transmitted data is not jumbled.
@@ -95,7 +93,7 @@ mod imp {
             }
         }
 
-        fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+        fn read(&mut self, buf: &mut [u8]) -> usize {
             // UNSAFE: Accessing mutable static
             while unsafe {
                 let _g = CriticalSection::begin();
@@ -117,7 +115,7 @@ mod imp {
                     None => break,
                 }
             }
-            Ok(read)
+            read
         }
     }
 
@@ -217,9 +215,8 @@ mod imp {
         let mut buf: [u8; 1] = [0];
         let _g = READ_LOCK.lock();
         match serial.read(&mut buf) {
-            Ok(0) => None,
-            Ok(_) => Some(buf[0]),
-            Err(_) => unreachable!(),
+            0 => None,
+            _ => Some(buf[0]),
         }
     }
 }

@@ -1,33 +1,33 @@
 /*
- * Copyright (C) 2017 AltOS-Rust Team
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2017 AltOS-Rust Team
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
 //! This module is the highest level in the Usart heirarchy for implementing
 //! the serial driver.
 //!
 //! Configuration for each of the two Usart registers, and each of the registers
 //! that are offset from Usartx, and the public functions used to initialize,
-//! configure, and manipulate the bits for each register is defined in this file.
+//! configure, and manipulate the bits for each register are defined in this file.
 //!
 //! The functions here are used as wrappers that pass the call down through
 //! each necessary level (one or more), until the actual register is reached
 //! and is able to set the bits for itself accordingly.
 //!
 //! This module is also responsible for initial setup of the Usart register
-//! (Either Usart1 or Usart2)
+//! (Either Usart1 or Usart2).
 
 mod control;
 mod defs;
@@ -54,7 +54,7 @@ pub use self::baudr::BaudRate;
 
 /// Defines the wake/sleep channel for the TX buffer when full.
 pub const USART2_TX_CHAN: usize = 43;
-/// Defines the wake/sleep channel for when bytes are available in the receive buffer
+/// Defines the wake/sleep channel for when bytes are available in the receive buffer.
 pub const USART2_RX_CHAN: usize = 43 * 3;
 
 /// STM32F0 has two Usart registers available.
@@ -276,7 +276,7 @@ impl Usart {
 /// Connects the necessary GPIO pins, sets the clock, enables interrupts,
 /// and currently configures the Usart2 to 9600 8N1 configuration.
 pub fn init() {
-    let rcc = rcc::rcc();
+    let mut rcc = rcc::rcc();
     rcc.enable_peripheral(rcc::Peripheral::USART2);
 
     gpio::GPIO::enable(gpio::Group::A);
@@ -308,6 +308,6 @@ pub fn init() {
     usart2.enable_transmit_interrupt();
     usart2.enable_usart();
 
-    let nvic = interrupt::nvic();
+    let mut nvic = interrupt::nvic();
     nvic.enable_interrupt(interrupt::Hardware::USART2);
 }

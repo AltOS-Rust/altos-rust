@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2017 AltOS-Rust Team
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2017 AltOS-Rust Team
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 extern crate arm;
 
 use peripheral::usart::{Usart, USART2_TX_CHAN, USART2_RX_CHAN};
@@ -41,6 +41,9 @@ pub fn usart_tx(mut usart: Usart) {
 
 /// Handles receiving any bytes when an interrupt is generated
 pub fn usart_rx(mut usart: Usart) {
+    // Clears overrun error flag.
+    // If not cleared, interrupt gets repeatedly generated
+    // when it doesn't need to be, and loops infinitely.
     usart.clear_ore_flag();
     if usart.is_rx_reg_full() {
         let byte = usart.load_byte();

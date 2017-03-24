@@ -1,20 +1,21 @@
 /*
- * Copyright (C) 2017 AltOS-Rust Team
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* Copyright (C) 2017 AltOS-Rust Team
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
+// Clears the memory pointed at to 0.
 #[no_mangle]
 pub unsafe extern "C" fn __aeabi_memclr4(dest: *mut u8, n: usize) {
     memset(dest, 0, n);
@@ -44,6 +45,7 @@ pub unsafe extern "C" fn memcmp(s1: *const u8, s2: *const u8, n: usize) -> i32 {
     0
 }
 
+// Sets the memory pointed to the value passed in.
 unsafe fn memset(s: *mut u8, c: i32, n: usize) -> *mut u8 {
     let mut i = 0;
     while i < n {
@@ -89,20 +91,20 @@ unsafe fn memmove(dest: *mut u8,
 
 #[cfg(test)]
 mod tests {
-  use super::*;
+    use super::*;
 
-  #[test]
-  fn memclr() {
-    let mut block: [u8; 10] = [0xAA; 10];
+    #[test]
+    fn memclr() {
+        let mut block: [u8; 10] = [0xAA; 10];
 
-    for i in 0..10 {
-      assert_eq!(block[i], 0xAA);
+        for i in 0..10 {
+            assert_eq!(block[i], 0xAA);
+        }
+
+        unsafe { __aeabi_memclr4(block.as_mut_ptr(), 10) };
+
+        for i in 0..10 {
+            assert_eq!(block[i], 0x0);
+        }
     }
-
-    unsafe { __aeabi_memclr4(block.as_mut_ptr(), 10) };
-
-    for i in 0..10 {
-      assert_eq!(block[i], 0x0);
-    }
-  }
 }

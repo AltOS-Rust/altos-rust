@@ -302,7 +302,7 @@ pub fn init() {
     usart2.set_hardware_flow_control(HardwareFlowControl::None);
 
     let clock_rate = rcc.get_system_clock_rate();
-    usart2.set_baud_rate(BaudRate::Hz9600, clock_rate);
+    usart2.set_baud_rate(BaudRate::Hz115200, clock_rate);
 
     usart2.enable_receiver_not_empty_interrupt();
     usart2.enable_transmit_interrupt();

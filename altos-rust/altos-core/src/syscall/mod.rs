@@ -20,13 +20,12 @@
 mod imp;
 mod syscall;
 
-use sched::{CURRENT_TASK, SLEEP_QUEUE, DELAY_QUEUE, OVERFLOW_DELAY_QUEUE, PRIORITY_QUEUES};
+use sched::PRIORITY_QUEUES;
 use task::Priority;
 use task::args::Args;
 use task::{TaskHandle, TaskControl};
 use queue::Node;
 use alloc::boxed::Box;
-use tick;
 use sync::{RawMutex, CondVar, CriticalSection};
 use arch;
 use self::syscall::*;
@@ -123,10 +122,10 @@ pub fn exit() -> ! {
 ///   }
 /// }
 /// ```
+#[inline(always)]
 pub fn sched_yield() {
-    //imp::sched_yield();
-    //system_call(SystemCall::SchedYield);
     arch::syscall0(SYS_SCHED_YIELD);
+    //arch::yield_cpu();
 }
 
 /// Put the current task to sleep, waiting on a channel to be woken up.
@@ -191,42 +190,7 @@ pub fn wake(wchan: usize) {
 /// This function will wake any tasks that have a delay.
 #[doc(hidden)]
 pub fn system_tick() {
-    debug_assert!(arch::in_kernel_mode());
-
-    // TODO: Do we need a critical section here? We should be in the tick handler
-    let _g = CriticalSection::begin();
-    tick::tick();
-
-    // wake up all tasks sleeping until the current tick
-    let ticks = tick::get_tick();
-
-    let to_wake = DELAY_QUEUE.remove(|task| task.tick_to_wake() <= ticks);
-    for mut task in to_wake {
-        task.wake();
-        PRIORITY_QUEUES[task.priority()].enqueue(task);
-    }
-
-    // If ticks == all 1's then it's about to overflow.
-    if ticks == !0 {
-        let overflowed = OVERFLOW_DELAY_QUEUE.remove_all();
-        DELAY_QUEUE.append(overflowed);
-    }
-
-    // UNSAFE: Accessing CURRENT_TASK
-    let current_priority = unsafe {
-        match CURRENT_TASK.as_ref() {
-            Some(task) => task.priority(),
-            None => panic!("system_tick - current task doesn't exist!"),
-        }
-    };
-
-    for i in Priority::higher(current_priority) {
-        if !PRIORITY_QUEUES[i].is_empty() {
-            // Only context switch if there's another task at the same or higher priority level
-            sched_yield();
-            break;
-        }
-    }
+    imp::sys_system_tick();
 }
 
 /// Lock a mutex
@@ -274,7 +238,11 @@ pub fn mutex_lock(lock: &RawMutex) {
     //imp::mutex_lock(lock);
     //arch::push_arg(lock as usize);
     //system_call(SystemCall::MutexLock);
-    arch::syscall1(SYS_MX_LOCK, lock as *const _ as usize);
+    loop {
+        if arch::syscall1(SYS_MX_LOCK, lock as *const _ as usize) != 0 {
+            break;
+        }
+    }
 }
 
 /// Attempt to acquire a mutex in a non-blocking fashion

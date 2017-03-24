@@ -27,39 +27,3 @@ pub const SYS_MX_TRY_LOCK: u32 = 8;
 pub const SYS_MX_UNLOCK: u32 = 9;
 pub const SYS_CV_WAIT: u32 = 10;
 pub const SYS_CV_BROADCAST: u32 = 11;
-
-pub enum SystemCall {
-    //NewTask,
-    Exit,
-    SchedYield,
-    Sleep,
-    SleepFor,
-    Wake,
-    //SystemTick,
-    MutexLock,
-    MutexTryLock,
-    MutexUnlock,
-    CondVarWait,
-    CondVarBroadcast,
-}
-
-impl SystemCall {
-    pub fn call_number(&self) -> u32 {
-        use self::SystemCall::*;
-
-        match *self {
-            //NewTask => SYS_NEW_TASK,
-            Exit => SYS_EXIT,
-            SchedYield => SYS_SCHED_YIELD,
-            Sleep => SYS_SLEEP,
-            SleepFor => SYS_SLEEP_FOR,
-            Wake => SYS_WAKE,
-            //SystemTick => SYS_TICK,
-            MutexLock => SYS_MX_LOCK,
-            MutexTryLock => SYS_MX_TRY_LOCK,
-            MutexUnlock => SYS_MX_UNLOCK,
-            CondVarWait => SYS_CV_WAIT,
-            CondVarBroadcast => SYS_CV_BROADCAST,
-        }
-    }
-}

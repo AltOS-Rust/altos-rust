@@ -98,7 +98,7 @@ unsafe extern "C" fn sv_call_handler() {
     asm!(
         concat!(
             "push {r7, lr}\n", /* Save link register for return */
-            "bkpt\n", /* FIXME: FOR TESTING */
+            //"bkpt\n", /* FIXME: FOR TESTING */
             "cmp r0, #11\n", /* Make sure we're within the jump table */
             "bhi svc_unknown\n",
             "adr r7, JUMP_TABLE\n",

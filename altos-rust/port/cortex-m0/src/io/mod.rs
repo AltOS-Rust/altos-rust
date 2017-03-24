@@ -86,7 +86,7 @@ mod imp {
         fn buffer_byte(&mut self, byte: u8) {
             unsafe {
                 while !TX_BUFFER.insert(byte) {
-                    let _g = CriticalSection::begin();
+                    //let _g = CriticalSection::begin();
                     self.usart.enable_transmit_interrupt();
                     sleep(USART2_TX_CHAN);
                 }
@@ -133,10 +133,10 @@ mod imp {
                 }
                 self.buffer_byte(*byte);
             }
-            let g = CriticalSection::begin();
+            //let g = CriticalSection::begin();
             self.usart.enable_transmit_interrupt();
             sleep(USART2_TX_CHAN);
-            drop(g);
+            //drop(g);
             Ok(())
         }
     }

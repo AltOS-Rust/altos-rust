@@ -22,18 +22,26 @@
 //!
 //! A Time type is provided to make time calculations easier.
 
-use altos_core::sync::Mutex;
+use altos_core::sync::RawMutex;
 use altos_core::syscall;
 use altos_core::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 use core::ops::{Add, AddAssign, Sub};
 
-static SYSTEM_TIME: Mutex<Time> = Mutex::new(Time::new());
+// We use a RawMutex here because the system tick function needs to be able to lock the mutex from
+// within an interrupt handler, and so must use the sys_mutex_try_lock call rather than the normal
+// `Mutex` interface which would invoke a supervisor call (which causes a hard fault if done from
+// within an interrupt handler of higher or equal priority)
+static SYSTEM_TIME_MX: RawMutex = RawMutex::new();
+static mut SYSTEM_TIME: Time = Time::new();
 static MS_RESOLUTION: AtomicUsize = ATOMIC_USIZE_INIT;
 
 /// Get the current system time.
 pub fn now() -> Time {
-    let time = SYSTEM_TIME.lock();
-    time.clone()
+    syscall::mutex_lock(&SYSTEM_TIME_MX);
+    // UNSAFE: We've acquired a manual lock on the system time
+    let result = unsafe { SYSTEM_TIME.clone() };
+    syscall::mutex_unlock(&SYSTEM_TIME_MX);
+    result
 }
 
 /// Delay a task for a certain number of milliseconds.
@@ -78,11 +86,10 @@ pub fn system_tick() {
     unsafe {
         TICKS += 1;
         if TICKS % get_resolution() == 0 {
-            match SYSTEM_TIME.try_lock() {
+            if syscall::sys_mutex_try_lock(&SYSTEM_TIME_MX) {
                 // If someone else is holding the lock, we'll just have to continue on, this could
                 // cause some drift in our time measurement
-                Some(mut time) => time.increment(),
-                None => {}
+                SYSTEM_TIME.increment();
             }
         }
     }

@@ -17,22 +17,16 @@
 
 use sched::{CURRENT_TASK, SLEEP_QUEUE, DELAY_QUEUE, OVERFLOW_DELAY_QUEUE, PRIORITY_QUEUES};
 use task::Priority;
-use task::args::Args;
-use task::{TaskHandle, TaskControl};
-use queue::Node;
-use alloc::boxed::Box;
 use tick;
-use sync::{RawMutex, CondVar, CriticalSection};
+use sync::{RawMutex, CondVar};
 use arch;
-
-// FIXME: When we can guarantee that syscalls will be executed in an interrupt free context, get
-// rid of critical sections in this file.
 
 /// An alias for the channel to sleep on that will never be awoken by a wakeup signal. It will
 /// still be woken after a timeout.
 pub const FOREVER_CHAN: usize = 0;
 
 #[no_mangle]
+#[doc(hidden)]
 pub extern "C" fn sys_exit() {
     exit();
 }
@@ -52,6 +46,7 @@ fn exit() {
 }
 
 #[no_mangle]
+#[doc(hidden)]
 pub extern "C" fn sys_sched_yield() {
     sched_yield();
 }
@@ -61,15 +56,13 @@ fn sched_yield() {
 }
 
 #[no_mangle]
+#[doc(hidden)]
 pub extern "C" fn sys_sleep(wchan: usize) {
     sleep(wchan);
 }
 
 fn sleep(wchan: usize) {
     debug_assert!(wchan != FOREVER_CHAN);
-    // Make the critical section for the whole function, wouldn't want to be rude and make a task
-    // give up its time slice for no reason
-    let _g = CriticalSection::begin();
     // UNSAFE: Accessing CURRENT_TASK
     match unsafe { CURRENT_TASK.as_mut() } {
         Some(current) => current.sleep(wchan),
@@ -79,14 +72,12 @@ fn sleep(wchan: usize) {
 }
 
 #[no_mangle]
+#[doc(hidden)]
 pub extern "C" fn sys_sleep_for(wchan: usize, delay: usize) {
     sleep_for(wchan, delay);
 }
 
 fn sleep_for(wchan: usize, delay: usize) {
-    // Make the critical section for the whole function, wouldn't want to be rude and make a task
-    // give up its time slice for no reason
-    let _g = CriticalSection::begin();
     // UNSAFE: Accessing CURRENT_TASK
     match unsafe { CURRENT_TASK.as_mut() } {
         Some(current) => current.sleep_for(wchan, delay),
@@ -96,14 +87,12 @@ fn sleep_for(wchan: usize, delay: usize) {
 }
 
 #[no_mangle]
+#[doc(hidden)]
 pub extern "C" fn sys_wake(wchan: usize) {
     wake(wchan);
 }
 
 fn wake(wchan: usize) {
-    // Since we're messing around with all the task queues, lets make sure everything gets done at
-    // once
-    let _g = CriticalSection::begin();
     let mut to_wake = SLEEP_QUEUE.remove(|task| task.wchan() == wchan);
     to_wake.append(DELAY_QUEUE.remove(|task| task.wchan() == wchan));
     to_wake.append(OVERFLOW_DELAY_QUEUE.remove(|task| task.wchan() == wchan));
@@ -113,33 +102,76 @@ fn wake(wchan: usize) {
     }
 }
 
-#[no_mangle]
-pub extern "C" fn sys_mutex_lock(lock: &RawMutex) {
-    mutex_lock(lock);
+#[doc(hidden)]
+pub fn sys_system_tick() {
+    system_tick();
 }
 
-fn mutex_lock(lock: &RawMutex) {
+fn system_tick() {
+    debug_assert!(arch::in_kernel_mode());
+
+    tick::tick();
+
+    // wake up all tasks sleeping until the current tick
+    let ticks = tick::get_tick();
+
+    let to_wake = DELAY_QUEUE.remove(|task| task.tick_to_wake() <= ticks);
+    for mut task in to_wake {
+        task.wake();
+        PRIORITY_QUEUES[task.priority()].enqueue(task);
+    }
+
+    // If ticks == all 1's then it's about to overflow.
+    if ticks == !0 {
+        let overflowed = OVERFLOW_DELAY_QUEUE.remove_all();
+        DELAY_QUEUE.append(overflowed);
+    }
+
+    // UNSAFE: Accessing CURRENT_TASK
+    let current_priority = unsafe {
+        match CURRENT_TASK.as_ref() {
+            Some(task) => task.priority(),
+            None => panic!("system_tick - current task doesn't exist!"),
+        }
+    };
+
+    for i in Priority::higher(current_priority) {
+        if !PRIORITY_QUEUES[i].is_empty() {
+            // Only context switch if there's another task at the same or higher priority level
+            sched_yield();
+            break;
+        }
+    }
+}
+
+#[no_mangle]
+#[doc(hidden)]
+pub extern "C" fn sys_mutex_lock(lock: &RawMutex) -> bool {
+    mutex_lock(lock)
+}
+
+fn mutex_lock(lock: &RawMutex) -> bool {
     use sync::LockError;
     // UNSAFE: Accessing CURRENT_TASK
     let current_tid = match unsafe { CURRENT_TASK.as_ref() } {
         Some(task) => task.tid(),
         None => panic!("mutex_lock - current task doesn't exist!"),
     };
-    loop {
-        match lock.try_lock(current_tid) {
-            Err(LockError::AlreadyOwned) => {
-                panic!("mutex_lock - attempted to acquire a lock that was already owned");
-            },
-            Err(LockError::Locked) => {
-                let wchan = lock.address();
-                sleep(wchan);
-            },
-            Ok(_) => break,
-        }
+    match lock.try_lock(current_tid) {
+        Err(LockError::AlreadyOwned) => {
+            panic!("mutex_lock - attempted to acquire a lock that was already owned");
+        },
+        Err(LockError::Locked) => {
+            let wchan = lock.address();
+            sleep(wchan);
+            false
+        },
+        Ok(_) => true,
     }
 }
 
 #[no_mangle]
+#[doc(hidden)]
 pub extern "C" fn sys_mutex_try_lock(lock: &RawMutex) -> bool {
     mutex_try_lock(lock)
 }
@@ -160,6 +192,7 @@ fn mutex_try_lock(lock: &RawMutex) -> bool {
 }
 
 #[no_mangle]
+#[doc(hidden)]
 pub extern "C" fn sys_mutex_unlock(lock: &RawMutex) {
     mutex_unlock(lock);
 }
@@ -189,26 +222,24 @@ fn mutex_unlock(lock: &RawMutex) {
 }
 
 #[no_mangle]
+#[doc(hidden)]
 pub extern "C" fn sys_condvar_wait(condvar: &CondVar, lock: &RawMutex) {
     condvar_wait(condvar, lock);
 }
 
 fn condvar_wait(condvar: &CondVar, lock: &RawMutex) {
-    let _g = CriticalSection::begin();
-
     mutex_unlock(lock);
 
     sleep(condvar as *const _ as usize);
 }
 
 #[no_mangle]
+#[doc(hidden)]
 pub extern "C" fn sys_condvar_broadcast(condvar: &CondVar) {
     condvar_broadcast(condvar);
 }
 
 fn condvar_broadcast(condvar: &CondVar) {
-    let _g = CriticalSection::begin();
-
     wake(condvar as *const _ as usize);
 }
 

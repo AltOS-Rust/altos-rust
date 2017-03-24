@@ -24,6 +24,7 @@ use kernel::collections::{Vec, String};
 use kernel::alloc::Box;
 use core::fmt::{self, Display};
 
+/*
 const LOGO: &'static str = "
             .
             ;'                ..      '.
@@ -41,6 +42,7 @@ const LOGO: &'static str = "
     d0KKXXd    OXXXKKl    ;Xl      Oc 'kd;      :k   ox     'dc  'd' ,o.  :l.  :l
   ;x0KXXO;      cKXXKKx,  xl.      0c.  lcccc   :l   ox      'cccc'   0   :l.  :l
 .lxOKKXo          kXKK0ko.                                                          ";
+*/
 
 
 const HELP: &'static str = "Available Commands:
@@ -61,7 +63,7 @@ const EVAL_HELP: &'static str = "Evaluate an expression of the form x <op> y";
 const BLINK_HELP: &'static str = "Blink the LED at the given rate in milliseconds";
 const STOP_HELP: &'static str = "Stop blinking the LED";
 const UPTIME_HELP: &'static str = "Display how long the system has been running as HH:MM:SS";
-const ROCKET_HELP: &'static str = "Deploys a rocket?";
+//const ROCKET_HELP: &'static str = "Deploys a rocket?";
 const UNAME_HELP: &'static str = "Displays system information";
 const EXIT_HELP: &'static str = "Exit the shell";
 const HELP_HELP: &'static str = "Display available commands or more information about a certain command";
@@ -86,7 +88,7 @@ enum Command<'a> {
     Blink,
     Stop,
     Uptime,
-    Rocket,
+    //Rocket,
     Uname,
     Exit,
     Help,
@@ -102,7 +104,7 @@ impl<'a> Command<'a> {
             Command::Blink => (BLINK_HELP, ""),
             Command::Stop => (STOP_HELP, ""),
             Command::Uptime => (UPTIME_HELP, ""),
-            Command::Rocket => (ROCKET_HELP, ""),
+            //Command::Rocket => (ROCKET_HELP, ""),
             Command::Uname => (UNAME_HELP, ""),
             Command::Exit => (EXIT_HELP, ""),
             Command::Help => (HELP_HELP, ""),
@@ -120,11 +122,170 @@ impl<'a> From<&'a str> for Command<'a> {
             "blink" => Command::Blink,
             "stop" => Command::Stop,
             "uptime" => Command::Uptime,
-            "rocket" => Command::Rocket,
+            //"rocket" => Command::Rocket,
             "uname"=> Command::Uname,
             "exit" => Command::Exit,
             "help" => Command::Help,
             invalid => Command::Invalid(invalid),
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq)]
+enum Token {
+    Number(isize),
+    Op(Operator),
+    LeftParen,
+    RightParen,
+    EOF,
+}
+
+#[derive(Copy, Clone, Debug)]
+enum LexError {
+    InvalidToken
+}
+
+struct Lexer;
+
+impl Lexer {
+    fn lex(string: Vec<&str>) -> Result<Vec<Token>, LexError> {
+        let mut tokens = Vec::new();
+        for thing in string {
+            match thing {
+                "+" => tokens.push(Token::Op(Operator::Add)),
+                "-" => tokens.push(Token::Op(Operator::Sub)),
+                "*" => tokens.push(Token::Op(Operator::Mul)),
+                "/" => tokens.push(Token::Op(Operator::Div)),
+                "(" => tokens.push(Token::LeftParen),
+                ")" => tokens.push(Token::RightParen),
+                literal => {
+                    if let Ok(num) = literal.parse::<isize>() {
+                        tokens.push(Token::Number(num));
+                    }
+                    else {
+                        return Err(LexError::InvalidToken);
+                    }
+                }
+            }
+        }
+        tokens.push(Token::EOF);
+        Ok(tokens)
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+enum ParseError {
+    UnexpectedToken,
+    UnmatchedParens,
+    InvalidOperator,
+}
+
+// Grammar:
+//
+// expression := term
+// term := factor ( ( "-" | "+" ) factor )*
+// factor := primary ( ( "*" | "/" ) primary )*
+// primary := NUMBER | "(" expression ")"
+struct Parser {
+    tokens: Vec<Token>,
+    current: usize,
+}
+
+impl Parser {
+    fn new(tokens: Vec<Token>) -> Self {
+        Parser {
+            tokens: tokens,
+            current: 0,
+        }
+    }
+
+    fn matches(&mut self, op: Operator) -> bool {
+        if self.is_at_end() {
+            false
+        }
+        else {
+            match self.peek() {
+                Token::Op(operator) if op == operator => {
+                    self.advance();
+                    true
+                },
+                _ => false
+            }
+        }
+    }
+
+    fn advance(&mut self) -> Token {
+        if !self.is_at_end() {
+            self.current += 1;
+        }
+        self.previous()
+    }
+
+    fn is_at_end(&self) -> bool {
+        self.peek() == Token::EOF
+    }
+
+    fn peek(&self) -> Token {
+        self.tokens[self.current]
+    }
+
+    fn previous(&self) -> Token {
+        self.tokens[self.current - 1]
+    }
+
+    fn parse(&mut self) -> Result<Expr, ParseError> {
+        self.expression()
+    }
+
+    fn expression(&mut self) -> Result<Expr, ParseError> {
+        self.term()
+    }
+
+    fn term(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.factor()?;
+
+        while self.matches(Operator::Add) || self.matches(Operator::Sub) {
+            let operator = if let Token::Op(op) = self.previous() {
+                op
+            }
+            else {
+                return Err(ParseError::InvalidOperator);
+            };
+            let right = self.factor()?;
+            expr = Expr::Op(Box::new(expr), operator, Box::new(right));
+        }
+        Ok(expr)
+    }
+
+    fn factor(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.primary()?;
+
+        while self.matches(Operator::Mul) || self.matches(Operator::Div) {
+            let operator = if let Token::Op(op) = self.previous() {
+                op
+            }
+            else {
+                return Err(ParseError::InvalidOperator);
+            };
+            let right = self.primary()?;
+            expr = Expr::Op(Box::new(expr), operator, Box::new(right));
+        }
+        Ok(expr)
+    }
+
+    fn primary(&mut self) -> Result<Expr, ParseError> {
+        match self.advance() {
+            Token::Number(num) => Ok(Expr::Val(num)),
+            Token::LeftParen => {
+                let expr = self.expression()?;
+                if let Token::RightParen = self.advance() {
+                    Ok(expr)
+                }
+                else {
+                    Err(ParseError::UnmatchedParens)
+                }
+            },
+            _ => Err(ParseError::UnexpectedToken),
         }
     }
 }
@@ -150,6 +311,7 @@ impl Expr {
     }
 }
 
+#[derive(Copy, Clone, PartialEq)]
 enum Operator {
     Add,
     Sub,
@@ -194,29 +356,7 @@ pub fn shell(_args: &mut Args) {
                     print!("\x1b[2J")
                 },
                 Command::Eval => {
-                    if words.len() > 2 {
-                        let expr = match (words[0].parse(), words[2].parse()) {
-                            (Ok(x), Ok(y)) => {
-                                match words[1] {
-                                    "+" => Expr::Op(Box::new(Expr::Val(x)), Operator::Add, Box::new(Expr::Val(y))),
-                                    "-" => Expr::Op(Box::new(Expr::Val(x)), Operator::Sub, Box::new(Expr::Val(y))),
-                                    "*" => Expr::Op(Box::new(Expr::Val(x)), Operator::Mul, Box::new(Expr::Val(y))),
-                                    "/" => Expr::Op(Box::new(Expr::Val(x)), Operator::Div, Box::new(Expr::Val(y))),
-                                    _ => Expr::Invalid("Invalid operator"),
-                                }
-                            },
-                            (Err(_), Ok(_)) => Expr::Invalid("Left expression failed to parse"),
-                            (Ok(_), Err(_)) => Expr::Invalid("Right expression failed to parse"),
-                            (Err(_), Err(_)) => Expr::Invalid("Both expressions failed to parse"),
-                        };
-                        match expr.eval() {
-                            Ok(result) => println!("{} {} {} = {}", words[0], words[1], words[2], result),
-                            Err(msg) => println!("{}", msg),
-                        }
-                    }
-                    else {
-                        println!("USAGE: eval <lhs> <op> <rhs>");
-                    }
+                    eval(words);
                 },
                 Command::Blink => {
                     let rate: usize = if words.len() > 0 {
@@ -244,6 +384,7 @@ pub fn shell(_args: &mut Args) {
                     let hms = uptime();
                     println!("{:02}:{:02}:{:02}", hms.0, hms.1, hms.2);
                 },
+                /*
                 Command::Rocket => {
                     let timer = if words.len() > 0 {
                         words[0].parse::<isize>().unwrap_or(5)
@@ -253,8 +394,9 @@ pub fn shell(_args: &mut Args) {
                     };
                     rocket(timer);
                 },
+                */
                 Command::Uname => {
-                    println!("{}\n", LOGO);
+                    //println!("{}\n", LOGO);
                     //Find more info and place it here
                     println!("AltOS Rust");
                 },
@@ -275,15 +417,33 @@ pub fn shell(_args: &mut Args) {
     }
 }
 
+fn eval(args: Vec<&str>) {
+    let tokens = match Lexer::lex(args) {
+        Ok(tokens) => tokens,
+        Err(err) => {
+            println!("Lexing failed: {:?}", err);
+            return;
+        },
+    };
+    let mut parser = Parser::new(tokens);
+    match parser.parse() {
+        Ok(expr) => match expr.eval() {
+            Ok(result) => println!("Result: {}", result),
+            Err(msg) => println!("{}", msg),
+        },
+        Err(err) => println!("Parsing failed: {:?}", err),
+    }
+}
+
 fn turn_on_led() {
     use cortex_m0::peripheral::gpio::{self, Port};
-    let pb3 = Port::new(3, gpio::Group::B);
+    let mut pb3 = Port::new(3, gpio::Group::B);
     pb3.set();
 }
 
 fn turn_off_led() {
     use cortex_m0::peripheral::gpio::{self, Port};
-    let pb3 = Port::new(3, gpio::Group::B);
+    let mut pb3 = Port::new(3, gpio::Group::B);
     pb3.reset();
 }
 
@@ -363,6 +523,7 @@ fn uptime() -> (usize, usize, usize) {
     (hours, minutes, seconds)
 }
 
+/*
 fn rocket(mut timer: isize) {
     let mut offset: isize = 15;
     let stationary: isize = offset;
@@ -435,3 +596,4 @@ fn build_rocket_part(rocket: &mut String,part: &str, offset: isize) {
     rocket.push_str("\t\t");
     rocket.push_str(part);
 }
+*/

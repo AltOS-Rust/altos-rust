@@ -42,7 +42,7 @@ pub fn application_entry() -> ! {
     // -----------------
     // Tasks go between the lines.
     // ----------------
-    kernel::syscall::new_task(shell::shell, Args::empty(), 1024, Priority::Normal, "shell");
+    kernel::syscall::new_task(shell::shell, Args::empty(), 2048, Priority::Normal, "shell");
     kernel::task::start_scheduler();
 
     loop { unsafe { arm::asm::bkpt() }; }

@@ -15,7 +15,34 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-//! Syscall interface for the AltOS-Rust kernel.
+//! System call interface for the AltOS-Rust kernel.
+//!
+//! This module provides priviledged functions that interact directly with the kernel, modifying
+//! tasks and performing special operations. All system calls can be considered atomic.
+//!
+//! # Syscall Calling Convention
+//!
+//! System calls in the AltOS-Rust kernel have a special calling convention that any implementing
+//! portability layers must be aware of.
+//!
+//! ## Argument Passing
+//!
+//! System calls can have varying numbers of arguments. When a system call is initiated, the system
+//! call number must be passed in as the usual first argument register for whatever architecture is
+//! being used. All arguments to the system call must be passed in with the regular argument
+//! registers for the architecture that is being targeted. If the architecture's calling convention
+//! specifies that an argument should go on the stack, however, that argument should go into the
+//! next available caller saved register (after saving the original value onto the stack). This way
+//! all arguments to the system call are passed in registers for the supervisor call handler.
+//!
+//! ## Return Values
+//!
+//! Some system calls return a value, this value will be in the regular return register for the
+//! target architecture's calling convention. Some targets, like the `Cortex-M0` processor and many
+//! ARM targets, will save the scratch registers on entry to an interrupt handler, as is the case
+//! for supervisor calls on those systems. In this case the implementor must ensure that the
+//! returned value is written back to the memory where the register was saved, so that upon return
+//! from the interrupt the correct value is stored in the return register.
 
 mod imp;
 mod syscall;
@@ -28,8 +55,9 @@ use arch;
 pub use self::syscall::*;
 pub use self::imp::*;
 
-/// Creates a new task and puts it into the task queue for running. It returns a `TaskHandle`
-/// which is used to monitor the task.
+/// Create a new task and put it into the task queue for running.
+///
+/// This function returns a `TaskHandle` which is used to monitor the task.
 ///
 /// `new_task` takes several arguments, a `fn(&mut Args)` pointer which specifies the code to run
 /// for the task, an `Args` argument for the arguments that will be passed to the task, a `usize`
@@ -61,7 +89,7 @@ pub fn new_task(code: fn(&mut Args), args: Args, stack_depth: usize, priority: P
     imp::new_task(code, args, stack_depth, priority, name)
 }
 
-/// Exits and destroys the currently running task.
+/// Exit and destroy the currently running task.
 ///
 /// This function must only be called from within task code. Doing so from elsewhere (like an
 /// interrupt handler, for example) will still destroy the currently running task. Since something

@@ -11,7 +11,8 @@ default = []
 
 doc = []
 serial = []
-minicom = []
+minicom = ["serial"]
+svc = ["altos_core/syscall"]
 
 [dev-dependencies.altos_core]
 path = "../../altos-core"
@@ -24,8 +25,7 @@ altos-macros = { path = "../../altos-core/libs/altos-macros" }
 
 [dependencies.altos_core]
 path = "../../altos-core"
-features = ["free_list_allocator", "cm0", "syscall"]
-#optional = true
+features = ["free_list_allocator", "cm0"]
 
 #[dependencies.compiler_builtins]
 #git = "https://github.com/rust-lang-nursery/compiler-builtins"

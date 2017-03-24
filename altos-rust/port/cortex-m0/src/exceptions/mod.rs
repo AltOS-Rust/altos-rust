@@ -95,6 +95,7 @@ unsafe extern "C" fn default_handler() {
 #[naked]
 unsafe extern "C" fn sv_call_handler() {
     #[cfg(target_arch="arm")]
+    #[cfg(feature="svc")]
     asm!(
         concat!(
             "push {r7, lr}\n", /* Save link register for return */
@@ -183,6 +184,8 @@ unsafe extern "C" fn sv_call_handler() {
         : /* no clobbers */
         : "volatile"
     );
+    #[cfg(not(feature="svc"))]
+    default_handler();
 }
 
 unsafe extern "C" fn systick_handler() {

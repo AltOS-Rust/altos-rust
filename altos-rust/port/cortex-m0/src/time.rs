@@ -90,6 +90,7 @@ pub fn system_tick() {
                 // If someone else is holding the lock, we'll just have to continue on, this could
                 // cause some drift in our time measurement
                 SYSTEM_TIME.increment();
+                syscall::sys_mutex_unlock(&SYSTEM_TIME_MX);
             }
         }
     }

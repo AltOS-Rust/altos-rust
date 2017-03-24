@@ -128,7 +128,7 @@ unsafe extern "C" fn sv_call_handler() {
             "lsls r0, r0, #2\n",
             "add r0, r7, r0\n",
             "ldr r7, =JUMP_TABLE_END\n",
-            "cmp r7, r0\n", /* Make sure we're within the jump table */
+            "cmp r0, r7\n", /* Make sure we're within the jump table */
             "bhi svc_unknown\n",
             "ldr r0, [r0]\n",
             "mov pc, r0\n",

@@ -119,61 +119,53 @@ unsafe extern "C" fn sv_call_handler() {
             ".word SVC_7\n",
             ".word SVC_8\n",
             ".word SVC_9\n",
-            ".word SVC_10\n",
-            ".word SVC_11\n",
 
-        "SVC_0:\n", /* new_task (code, args, stack_size, priority, name)  DO_NOT_USE */
-            "b svc_end\n",
-
-        "SVC_1:\n", /* exit (void) */
+        "SVC_0:\n", /* exit (void) */
             "bl sys_exit\n",
             "b svc_end\n",
 
-        "SVC_2:\n", /* sched_yield (void) */
+        "SVC_1:\n", /* sched_yield (void) */
             "bl sys_sched_yield\n",
             "b svc_end\n",
 
-        "SVC_3:\n", /* sleep (wchan) */
+        "SVC_2:\n", /* sleep (wchan) */
             "mov r0, r1\n",
             "bl sys_sleep\n",
             "b svc_end\n",
 
-        "SVC_4:\n", /* sleep_for (wchan, delay) */
+        "SVC_3:\n", /* sleep_for (wchan, delay) */
             "mov r0, r1\n",
             "mov r1, r2\n",
             "bl sys_sleep_for\n",
             "b svc_end\n",
 
-        "SVC_5:\n", /* wake (wchan) */
+        "SVC_4:\n", /* wake (wchan) */
             "mov r0, r1\n",
             "bl sys_wake\n",
             "b svc_end\n",
 
-        "SVC_6:\n", /* tick DO_NOT_USE */
-            "b svc_end\n",
-
-        "SVC_7:\n", /* mutex_lock (lock) */
+        "SVC_5:\n", /* mutex_lock (lock) -> bool */
             "mov r0, r1\n",
             "bl sys_mutex_lock\n",
-            "b svc_end\n",
+            "b svc_return\n",
 
-        "SVC_8:\n", /* mutex_try_lock (lock) -> bool */
+        "SVC_6:\n", /* mutex_try_lock (lock) -> bool */
             "mov r0, r1\n",
             "bl sys_mutex_try_lock\n",
             "b svc_return\n",
 
-        "SVC_9:\n", /* mutex_unlock (lock) */
+        "SVC_7:\n", /* mutex_unlock (lock) */
             "mov r0, r1\n",
             "bl sys_mutex_unlock\n",
             "b svc_end\n",
 
-        "SVC_10:\n", /* condvar_wait (condvar, lock) */
+        "SVC_8:\n", /* condvar_wait (condvar, lock) */
             "mov r0, r1\n",
             "mov r1, r2\n",
             "bl sys_condvar_wait\n",
             "b svc_end\n",
 
-        "SVC_11:\n", /* condvar_broadcast (condvar, lock) */
+        "SVC_9:\n", /* condvar_broadcast (condvar, lock) */
             "mov r0, r1\n",
             "mov r1, r2\n",
             "bl sys_condvar_wait\n",

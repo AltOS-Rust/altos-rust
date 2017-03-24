@@ -16,14 +16,37 @@
 */
 
 use sched::{CURRENT_TASK, SLEEP_QUEUE, DELAY_QUEUE, OVERFLOW_DELAY_QUEUE, PRIORITY_QUEUES};
-use task::Priority;
+use task::{TaskHandle, TaskControl, Priority};
+use task::args::Args;
+use queue::Node;
+use alloc::boxed::Box;
 use tick;
-use sync::{RawMutex, CondVar};
+use sync::{RawMutex, CondVar, CriticalSection};
 use arch;
 
 /// An alias for the channel to sleep on that will never be awoken by a wakeup signal. It will
 /// still be woken after a timeout.
 pub const FOREVER_CHAN: usize = 0;
+
+#[doc(hidden)]
+pub fn sys_new_task(code: fn(&mut Args), args: Args, stack_depth: usize, priority: Priority, name: &'static str)
+    -> TaskHandle {
+
+    new_task(code, args, stack_depth, priority, name)
+}
+
+pub fn new_task(code: fn(&mut Args), args: Args, stack_depth: usize, priority: Priority, name: &'static str)
+    -> TaskHandle {
+
+    // Make sure the task is allocated in one fell swoop
+    let g = CriticalSection::begin();
+    let task = Box::new(Node::new(TaskControl::new(code, args, stack_depth, priority, name)));
+    drop(g);
+
+    let handle = TaskHandle::new(&**task);
+    PRIORITY_QUEUES[task.priority()].enqueue(task);
+    handle
+}
 
 #[no_mangle]
 #[doc(hidden)]

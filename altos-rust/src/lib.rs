@@ -43,13 +43,14 @@ pub fn application_entry() -> ! {
     // -----------------
     // Tasks go between the lines.
     // ----------------
-    kernel::syscall::new_task(mutex_task, Args::empty(), 1024, Priority::Normal, "syscall");
-    kernel::syscall::new_task(mutex_task_2, Args::empty(), 1024, Priority::Normal, "syscall");
+    //kernel::syscall::new_task(mutex_task, Args::empty(), 1024, Priority::Normal, "syscall");
+    //kernel::syscall::new_task(mutex_task_2, Args::empty(), 1024, Priority::Normal, "syscall");
     kernel::task::start_scheduler();
 
     loop { unsafe { arm::asm::bkpt() }; }
 }
 
+/*
 fn print_task(_args: &mut Args) {
     loop {
         println!("Hello world with a new syscall interface!");
@@ -75,15 +76,38 @@ fn delay_task(_args: &mut Args) {
 fn mutex_task(_args: &mut Args) {
     loop {
         let res = syscall::mutex_try_lock(&TEST_MUTEX);
-        println!("(task 1) Result of try lock is: {}", res);
-        time::delay_ms(2000);
+        //syscall::mutex_lock(&TEST_MUTEX);
+        //println!("(task 1) Acquired the lock");
+        //println!("(task 1) Result of try_lock: {}", res);
+        if res {
+            println!("(task 1) try_lock was true");
+            //panic!("Try lock was true");
+            syscall::mutex_unlock(&TEST_MUTEX);
+            syscall::sched_yield();
+        }
+        else {
+            println!("(task 1) try_lock was false");
+        }
+        //time::delay_ms(2000);
+        //if res {
+            //syscall::mutex_unlock(&TEST_MUTEX);
+            //syscall::sched_yield();
+        //}
     }
 }
 
 fn mutex_task_2(_args: &mut Args) {
     loop {
-        let res = syscall::mutex_try_lock(&TEST_MUTEX);
-        println!("(task 2) Result of try lock is: {}", res);
-        time::delay_ms(2000);
+        syscall::mutex_lock(&TEST_MUTEX);
+        //let res = syscall::mutex_try_lock(&TEST_MUTEX);
+        println!("(task 2) Acquired the lock");
+        syscall::mutex_unlock(&TEST_MUTEX);
+        syscall::sched_yield();
+        //time::delay_ms(2000);
+        //if res {
+            //syscall::mutex_unlock(&TEST_MUTEX);
+            //syscall::sched_yield();
+        //}
     }
 }
+*/

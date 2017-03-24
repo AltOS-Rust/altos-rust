@@ -24,7 +24,7 @@ altos-macros = { path = "../../altos-core/libs/altos-macros" }
 
 [dependencies.altos_core]
 path = "../../altos-core"
-features = ["free_list_allocator", "cm0"]
+features = ["free_list_allocator", "cm0", "syscall"]
 #optional = true
 
 #[dependencies.compiler_builtins]

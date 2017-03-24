@@ -16,14 +16,33 @@
 */
 
 //pub const SYS_NEW_TASK: u32 = 0;
-pub const SYS_EXIT: u32 = 1;
-pub const SYS_SCHED_YIELD: u32 = 2;
-pub const SYS_SLEEP: u32 = 3;
-pub const SYS_SLEEP_FOR: u32 = 4;
-pub const SYS_WAKE: u32 = 5;
+/// System call number for `exit(void)`
+pub const SYS_EXIT: u32 = 0;
+
+/// System call number for `sched_yield(void)`
+pub const SYS_SCHED_YIELD: u32 = 1;
+
+/// System call number for `sleep(wchan)`
+pub const SYS_SLEEP: u32 = 2;
+
+/// System call number for `sleep_for(wchan, delay)`
+pub const SYS_SLEEP_FOR: u32 = 3;
+
+/// System call number for `wake(wchan)`
+pub const SYS_WAKE: u32 = 4;
 //pub const SYS_TICK: u32 = 6;
-pub const SYS_MX_LOCK: u32 = 7;
-pub const SYS_MX_TRY_LOCK: u32 = 8;
-pub const SYS_MX_UNLOCK: u32 = 9;
-pub const SYS_CV_WAIT: u32 = 10;
-pub const SYS_CV_BROADCAST: u32 = 11;
+
+/// System call number for `mutex_lock(lock)`
+pub const SYS_MX_LOCK: u32 = 5;
+
+/// System call number for `mutex_try_lock(lock)`
+pub const SYS_MX_TRY_LOCK: u32 = 6;
+
+/// System call number for `mutex_unlock(lock)`
+pub const SYS_MX_UNLOCK: u32 = 7;
+
+/// System call number for `condvar_wait(condvar, lock)`
+pub const SYS_CV_WAIT: u32 = 8;
+
+/// System call number for `condvar_broadcast(lock)`
+pub const SYS_CV_BROADCAST: u32 = 9;

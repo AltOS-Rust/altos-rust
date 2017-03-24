@@ -88,10 +88,7 @@ pub fn new_task(code: fn(&mut Args), args: Args, stack_depth: usize, priority: P
 /// This function will panic if the task is not successfully destroyed (i.e. it gets scheduled
 /// after this function is called), but this should never happen.
 pub fn exit() -> ! {
-    #[cfg(feature="syscall")]
     arch::syscall0(SYS_EXIT);
-    #[cfg(not(feature="syscall"))]
-    imp::sys_exit();
     unreachable!();
 }
 
@@ -113,12 +110,8 @@ pub fn exit() -> ! {
 ///   }
 /// }
 /// ```
-#[inline(always)]
 pub fn sched_yield() {
-    #[cfg(feature="syscall")]
     arch::syscall0(SYS_SCHED_YIELD);
-    #[cfg(not(feature="syscall"))]
-    imp::sys_sched_yield();
 }
 
 /// Put the current task to sleep, waiting on a channel to be woken up.
@@ -140,10 +133,7 @@ pub fn sched_yield() {
 /// }
 /// ```
 pub fn sleep(wchan: usize) {
-    #[cfg(feature="syscall")]
     arch::syscall1(SYS_SLEEP, wchan);
-    #[cfg(not(feature="syscall"))]
-    imp::sys_sleep(wchan);
 }
 
 /// Put the current task to sleep with a timeout, waiting on a channel to be woken up.
@@ -160,10 +150,7 @@ pub fn sleep(wchan: usize) {
 /// sleep_for(FOREVER_CHAN, 300);
 /// ```
 pub fn sleep_for(wchan: usize, delay: usize) {
-    #[cfg(feature="syscall")]
     arch::syscall2(SYS_SLEEP_FOR, wchan, delay);
-    #[cfg(not(feature="syscall"))]
-    imp::sys_sleep_for(wchan, delay);
 }
 
 /// Wake up all tasks sleeping on a channel.
@@ -171,10 +158,7 @@ pub fn sleep_for(wchan: usize, delay: usize) {
 /// `wake` takes a `usize` argument that acts as an identifier. This will wake up any tasks
 /// sleeping on that identifier.
 pub fn wake(wchan: usize) {
-    #[cfg(feature="syscall")]
     arch::syscall1(SYS_WAKE, wchan);
-    #[cfg(not(feature="syscall"))]
-    imp::sys_wake(wchan);
 }
 
 /// Update the system tick count and wake up any delayed tasks that need to be woken.
@@ -228,12 +212,7 @@ pub fn system_tick() {
 /// ```
 pub fn mutex_lock(lock: &RawMutex) {
     loop {
-        #[cfg(feature="syscall")]
-        let lock_acquired = arch::syscall1(SYS_MX_LOCK, lock as *const _ as usize) != 0;
-        #[cfg(not(feature="syscall"))]
-        let lock_acquired = imp::sys_mutex_lock(lock);
-
-        if lock_acquired {
+        if arch::syscall1(SYS_MX_LOCK, lock as *const _ as usize) != 0 {
             break;
         }
     }
@@ -269,10 +248,7 @@ pub fn mutex_lock(lock: &RawMutex) {
 /// since we need to be able to check if the current task already have the lock, as well as mark
 /// that the current task has acquired it if it does so.
 pub fn mutex_try_lock(lock: &RawMutex) -> bool {
-    #[cfg(feature="syscall")]
     return arch::syscall1(SYS_MX_TRY_LOCK, lock as *const _ as usize) != 0;
-    #[cfg(not(feature="syscall"))]
-    return imp::sys_mutex_try_lock(lock);
 }
 
 /// Unlock a mutex
@@ -309,10 +285,7 @@ pub fn mutex_try_lock(lock: &RawMutex) -> bool {
 /// In order to preserve exclusive access guarantees, if a thread tries to unlock a lock that it
 /// doesn't own it will panic.
 pub fn mutex_unlock(lock: &RawMutex) {
-    #[cfg(feature="syscall")]
     arch::syscall1(SYS_MX_UNLOCK, lock as *const _ as usize);
-    #[cfg(not(feature="syscall"))]
-    imp::sys_mutex_unlock(lock);
 }
 
 /// Wait on a condition variable
@@ -345,10 +318,7 @@ pub fn mutex_unlock(lock: &RawMutex) {
 ///
 /// This function will panic if you attempt to pass in a mutex that you have not locked
 pub fn condvar_wait(condvar: &CondVar, lock: &RawMutex) {
-    #[cfg(feature="syscall")]
     arch::syscall2(SYS_CV_WAIT, condvar as *const _ as usize, lock as *const _ as usize);
-    #[cfg(not(feature="syscall"))]
-    imp::sys_condvar_wait(condvar, lock);
 }
 
 /// Wake all threads waiting on a condition
@@ -381,8 +351,5 @@ pub fn condvar_wait(condvar: &CondVar, lock: &RawMutex) {
 /// // Original thread can now proceed
 /// ```
 pub fn condvar_broadcast(condvar: &CondVar) {
-    #[cfg(feature="syscall")]
     arch::syscall1(SYS_CV_BROADCAST, condvar as *const _ as usize);
-    #[cfg(not(feature="syscall"))]
-    imp::sys_condvar_broadcast(condvar);
 }

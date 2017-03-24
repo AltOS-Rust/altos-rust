@@ -63,9 +63,6 @@ fn exit() {
         CURRENT_TASK.as_mut().unwrap().destroy();
     }
     sched_yield();
-
-    // TODO: Get rid of this so we can leave our interrupt free context
-    //panic!("syscall::exit - task returned from exit!");
 }
 
 #[no_mangle]

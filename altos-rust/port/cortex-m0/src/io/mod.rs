@@ -88,7 +88,7 @@ mod imp {
                 while !TX_BUFFER.insert(byte) {
                     let _g = CriticalSection::begin();
                     self.usart.enable_transmit_interrupt();
-                    sleep(USART2_TX_CHAN);
+                    ::altos_core::syscall::sys_sleep(USART2_TX_CHAN);
                 }
             }
         }
@@ -135,7 +135,7 @@ mod imp {
             }
             let g = CriticalSection::begin();
             self.usart.enable_transmit_interrupt();
-            sleep(USART2_TX_CHAN);
+            ::altos_core::syscall::sys_sleep(USART2_TX_CHAN);
             drop(g);
             Ok(())
         }

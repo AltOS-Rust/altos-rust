@@ -17,8 +17,17 @@
 
 
 // This is for unsigned 64-bit multiplication.
-#[no_mangle]
-pub extern "C" fn __aeabi_lmul(a: u64, b: u64) -> u64 {
+#[cfg_attr(not(test), no_mangle)]
+pub extern "C" fn __aeabi_lmul(b_low: u32, a_hi: u32, a_low: u32, b_hi: u32) -> u64 {
+    // NOTE: DANGER WILL ROBINSON, DANGER! Currently there's a bug where the high and low bits of
+    // the arguments being passed into this method are passed in the wrong order. This is a
+    // workaround to put the bits back into the correct order. This code will certainly shatter
+    // if/when this bug is fixed. Issue is at: https://github.com/rust-lang/rust/issues/39056
+    //
+    // Right now we're doing this mainly for demoing purposes just to get multiplication working
+    let a: u64 = ((a_hi as u64) << 32) | a_low as u64;
+    let b: u64 = ((b_hi as u64) << 32) | b_low as u64;
+
     let half_bits: u32 = 64 / 4;
     let lower_mask = !0 >> half_bits;
     let mut low = ((a as u32) & lower_mask).wrapping_mul((b as u32) & lower_mask);
@@ -41,13 +50,35 @@ pub extern "C" fn __aeabi_lmul(a: u64, b: u64) -> u64 {
 }
 
 // This is for unsigned 32-bit division.
-#[no_mangle]
+#[cfg_attr(not(test), no_mangle)]
+pub extern "aapcs" fn __aeabi_idiv(mut num: i32, mut den: i32) -> i32 {
+	let mut minus = 0;
+	let mut v;
+
+	if num < 0 {
+		num = -num;
+		minus = 1;
+	}
+	if den < 0 {
+		den = -den;
+		minus ^= 1;
+	}
+
+    v = __aeabi_uidiv(num as u32, den as u32) as i32;
+	if minus != 0 {
+		v = -v;
+    }
+
+	return v;
+}
+
+#[cfg_attr(not(test), no_mangle)]
 pub extern "C" fn __aeabi_uidiv(num: u32, den: u32) -> u32 {
     __udivmodsi4(num, den, None)
 }
 
 // This is a for unsigned 32-bit mod/division.
-#[no_mangle]
+#[cfg_attr(not(test), no_mangle)]
 pub extern "C" fn __udivmodsi4(mut num: u32, mut den: u32, rem_p: Option<&mut u32>) -> u32 {
     let mut quot = 0;
     let mut qbit = 1;
@@ -137,11 +168,11 @@ mod tests {
 
     #[test]
     fn test_multiply_bigger_first() {
-        assert_eq!(100, __aeabi_lmul(20, 5));
+        assert_eq!(100, __aeabi_lmul(20, 0, 5, 0));
     }
 
     #[test]
     fn test_multiply_bigger_second() {
-        assert_eq!(100, __aeabi_lmul(5, 20));
+        assert_eq!(100, __aeabi_lmul(5, 0, 20, 0));
     }
 }

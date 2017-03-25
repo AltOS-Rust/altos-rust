@@ -127,6 +127,121 @@ pub fn end_critical(primask: usize) {
     }
 }
 
+#[naked]
+#[inline(never)]
+#[cfg(feature="syscall")]
+pub extern "aapcs" fn syscall0(_call: u32) -> usize {
+    let res;
+    unsafe {
+        asm!("push {lr}
+            sub sp, sp, #4
+            svc 0
+            add sp, sp, #4
+            mov $0, r0
+            pop {pc}"
+        : "=r"(res)
+        );
+    }
+    res
+}
+
+#[cfg(not(feature="syscall"))]
+pub fn syscall0(call: u32) -> usize {
+
+    // Make sure any system call gets executed atomically
+    let _g = ::sync::CriticalSection::begin();
+    match call {
+        syscall::SYS_EXIT => syscall::sys_exit(),
+        syscall::SYS_SCHED_YIELD => syscall::sys_sched_yield(),
+        _ => panic!("Invalid syscall code for syscall0: {}", call),
+    }
+    return 0;
+}
+
+#[naked]
+#[inline(never)]
+#[cfg(feature="syscall")]
+pub extern "aapcs" fn syscall1(_call: u32, _arg1: usize) -> usize {
+    let res;
+    unsafe {
+        asm!("push {lr}
+            sub sp, sp, #4
+            svc 0
+            add sp, sp, #4
+            mov $0, r0
+            pop {pc}"
+        : "=r"(res)
+        );
+    }
+    res
+}
+
+#[cfg(not(feature="syscall"))]
+pub fn syscall1(call: u32, arg1: usize) -> usize {
+    use sync::{CondVar, RawMutex};
+
+    // Make sure any system call gets executed atomically
+    let _g = ::sync::CriticalSection::begin();
+    match call {
+        syscall::SYS_SLEEP => syscall::sys_sleep(arg1),
+        syscall::SYS_WAKE => syscall::sys_wake(arg1),
+        syscall::SYS_MX_LOCK => {
+            let lock = unsafe { &*(arg1 as *const RawMutex) };
+            return syscall::sys_mutex_lock(lock) as usize;
+        },
+        syscall::SYS_MX_TRY_LOCK => {
+            let lock = unsafe { &*(arg1 as *const RawMutex) };
+            return syscall::sys_mutex_try_lock(lock) as usize;
+        },
+        syscall::SYS_MX_UNLOCK => {
+            let lock = unsafe { &*(arg1 as *const RawMutex) };
+            syscall::sys_mutex_unlock(lock);
+        },
+        syscall::SYS_CV_BROADCAST => {
+            let condvar = unsafe { &*(arg1 as *const CondVar) };
+            syscall::sys_condvar_broadcast(condvar);
+        },
+        _ => panic!("Invalid syscall code for syscall1: {}", call),
+    }
+    return 0;
+}
+
+#[naked]
+#[inline(never)]
+#[cfg(feature="syscall")]
+pub extern "aapcs" fn syscall2(_call: u32, _arg1: usize, _arg2: usize) -> usize {
+    let res;
+    unsafe {
+        asm!("push {lr}
+            sub sp, sp, #4
+            svc 0
+            add sp, sp, #4
+            mov $0, r0
+            pop {pc}"
+        : "=r"(res)
+        );
+    }
+    res
+}
+
+#[cfg(not(feature="syscall"))]
+pub fn syscall2(call: u32, arg1: usize, arg2: usize) -> usize {
+    use sync::{CondVar, RawMutex};
+
+    // Make sure any system call gets executed atomically
+    let _g = ::sync::CriticalSection::begin();
+    match call {
+        syscall::SYS_SLEEP_FOR => syscall::sys_sleep_for(arg1, arg2),
+        syscall::SYS_CV_WAIT => {
+            let condvar = unsafe { &*(arg1 as *const CondVar) };
+            let lock = unsafe { &*(arg2 as *const RawMutex) };
+            syscall::sys_condvar_wait(condvar, lock);
+        },
+        _ => panic!("Invalid syscall code for syscall2: {}", call),
+    }
+    return 0;
+}
+
 fn exit_error() -> ! {
     syscall::exit();
 }

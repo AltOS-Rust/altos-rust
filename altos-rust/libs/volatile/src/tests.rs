@@ -20,6 +20,18 @@
 use super::Volatile;
 
 #[test]
+fn test_volatile_from_ref_is_safe() {
+    let num = 0x1000;
+    let _ = Volatile::from(&num);
+}
+
+#[test]
+fn test_volatile_from_mut_ref_is_safe() {
+    let mut num = 0x1000;
+    let _ = Volatile::from(&mut num);
+}
+
+#[test]
 fn test_ptr_positive_offset() {
     unsafe {
         let ptr = Volatile::new(100 as *const u32);
@@ -62,6 +74,44 @@ fn test_load_volatile() {
         let volatile = Volatile::new(&num);
         assert_eq!(num, volatile.load());
     }
+}
+
+#[test]
+fn test_modify_volatile() {
+    let num = 0x00;
+    unsafe {
+        let mut volatile = Volatile::new(&num);
+        volatile.modify(|x| {
+            *x = 0xAAAA;
+        });
+    }
+    assert_eq!(num, 0xAAAA);
+}
+
+#[test]
+fn test_volatile_field_access() {
+    struct Test {
+        a: u32,
+        b: u32,
+    }
+    let test = Test { a: 0, b: 0 };
+    unsafe {
+        let mut volatile = Volatile::new(&test);
+        volatile.a = 0x1234;
+        volatile.b = 0x5678;
+    }
+    assert_eq!(test.a, 0x1234);
+    assert_eq!(test.b, 0x5678);
+}
+
+#[test]
+fn test_assign_volatile_deref() {
+    let num = 0x00;
+    unsafe {
+        let mut volatile = Volatile::new(&num);
+        *volatile = 0xFFFF;
+    }
+    assert_eq!(num, 0xFFFF);
 }
 
 #[test]

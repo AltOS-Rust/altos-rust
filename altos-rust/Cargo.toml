@@ -7,7 +7,7 @@ authors = ["Daniel Seitz <dnseitz@gmail.com>"]
 crate-type = ["staticlib"]
 
 [target.thumbv6m-none-eabi.dependencies.cortex_m0]
-path = "port/cortex-m0"
+git = "https://github.com/AltOS-Rust/cm0-port"
 features = ["minicom", "svc"]
 
 [profile.dev]

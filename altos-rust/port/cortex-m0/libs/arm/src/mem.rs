@@ -16,9 +16,41 @@
 */
 
 // Clears the memory pointed at to 0.
-#[no_mangle]
-pub unsafe extern "C" fn __aeabi_memclr4(dest: *mut u8, n: usize) {
-    memset(dest, 0, n);
+#[cfg_attr(not(test), no_mangle)]
+pub unsafe extern "aapcs" fn __aeabi_memclr(dest: *mut u8, n: usize) {
+        memset(dest, 0, n);
+}
+#[cfg_attr(not(test), no_mangle)]
+pub unsafe extern "aapcs" fn __aeabi_memclr4(dest: *mut u8, n: usize) {
+        memset(dest, 0, n);
+}
+#[cfg_attr(not(test), no_mangle)]
+pub unsafe extern "aapcs" fn __aeabi_memclr8(dest: *mut u8, n: usize) {
+        memset(dest, 0, n);
+}
+
+#[cfg_attr(not(test), no_mangle)]
+pub unsafe extern "aapcs" fn __aeabi_memcpy(dest: *mut u8, src: *const u8, n: usize) {
+    memcpy(dest, src, n);
+}
+
+#[cfg_attr(not(test), no_mangle)]
+pub unsafe extern "aapcs" fn __aeabi_memmove4(dest: *mut u8, src: *const u8, n: usize) {
+    memmove(dest, src, n);
+}
+
+#[cfg_attr(not(test), no_mangle)]
+pub unsafe extern "C" fn memcmp(s1: *const u8, s2: *const u8, n: usize) -> i32 {
+    let mut i = 0;
+    while i < n {
+        let a = *s1.offset(i as isize);
+        let b = *s2.offset(i as isize);
+        if a != b {
+            return a as i32 - b as i32;
+        }
+        i += 1;
+    }
+    0
 }
 
 #[no_mangle]

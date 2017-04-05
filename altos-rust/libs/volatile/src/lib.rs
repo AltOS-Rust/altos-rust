@@ -17,6 +17,9 @@
 
 #![no_std]
 #![feature(core_intrinsics)]
+#![feature(asm)]
+#![feature(unsize)]
+#![feature(coerce_unsized)]
 #![deny(trivial_casts, trivial_numeric_casts)]
 
 //! Volatile memory operations.
@@ -26,12 +29,115 @@
 //! normally be optimized out by the compiler. The `Volatile` type wraps a memory address to
 //! perform volatile operations in order to force the compiler to keep these memory accesses and
 //! stores.
+//!
+//! The creation of a `Volatile` pointer is generally unsafe, but the actual operations that you
+//! can perform on it are considered safe by Rust's standards. This is because the actual memory
+//! operations are performed through the `Deref` and `DerefMut` traits, which are defined as safe
+//! methods. It is important to remember that a `Volatile` pointer is nearly identical to a
+//! primitive pointer, and so all dereferencing operations on one should be considered unsafe (even
+//! if not enforced by the compiler).
+//!
+//! # Examples
+//!
+//! ```rust,no_run
+//! use volatile::Volatile;
+//!
+//! const IO_ADDR: *const u32 = 0x4000_4400 as *const _;
+//!
+//! unsafe {
+//!     let mut io_ptr = Volatile::new(IO_ADDR);
+//!     // Some bit that we need to set for an IO operation
+//!     *io_ptr |= 0b1 << 5;
+//! }
+//! ```
+//!
+//! On some embedded devices you may want to do something like wait for a certain amount of time to
+//! pass measured by some amount of ticks.
+//!
+//! ```rust,no_run
+//! // Some tick counter that may be updated by a hardware interrupt
+//! static mut TICKS: usize = 0;
+//!
+//! while unsafe { TICKS < 10 } {/* wait for ticks to change */}
+//! ```
+//!
+//! Normally, the Rust compilier would optimize this kind of operation into just an infinite
+//! `loop`, since the value of `TICKS` can't change in a single threaded environment, but `TICKS`
+//! could be updated by some hardware interrupt, so we want to keep reloading the value in order to
+//! check it. So to get around this we can use a `Volatile` pointer to force the compiler to reload
+//! the value every time through the loop.
+//!
+//! ```rust,no_run
+//! use volatile::Volatile;
+//!
+//! static mut TICKS: usize = 0;
+//!
+//! unsafe {
+//!     let ticks_ptr = Volatile::new(&TICKS);
+//!     while *ticks_ptr < 10 {/* wait for ticks to change */}
+//! }
+//! ```
+//!
+//! Now the value of `TICKS` will be reloaded every time through the loop.
+//!
+//! Oftentimes when working with memory mapped peripherals, you will have a block of memory that
+//! you want to be working on that contains control, status, and data registers for some hardware
+//! peripheral. These are often best represented as structs with each of their registers as fields,
+//! but without volatile operations, loads and stores to these memory addresses often get optimized
+//! out by the compiler. To get around this you can use a `Volatile` pointer to point at the mapped
+//! address and have it be represented as a struct of the correct type.
+//!
+//! ```rust,no_run
+//! use volatile::Volatile;
+//!
+//! const USART_ADDR: *const Usart = 0x4000_4400 as *const _;
+//! // For transmitting and receiving data over serial
+//! #[repr(C)]
+//! struct Usart {
+//!     control_reg: u32,
+//!     status_reg: u32,
+//!     tx_data_reg: u32,
+//!     rx_data_reg: u32,
+//! }
+//!
+//! let recieved = unsafe {
+//!     let mut usart_block = Volatile::new(USART_ADDR);
+//!     // Set some bits, these will be hardware specific
+//!     usart_block.control_reg |= 0b11 << 5;
+//!
+//!     while usart_block.status_reg & 0b1 << 7 == 0 {/*wait for hardware to set a bit*/}
+//!
+//!     // Transmit some data
+//!     usart_block.tx_data_reg = 100;
+//!
+//!     while usart_block.status_reg & 0b1 << 6 == 0 {/*wait for hardware to set some other bit*/}
+//!
+//!     // Receive some data
+//!     usart_block.rx_data_reg
+//! };
+//! ```
+//!
+//! Every field access to a pointed at struct will be considered volatile and so will not be
+//! optimized out by the compiler.
+//!
+//! Just as with primitive pointers, `Volatile` pointers can be created from valid references
+//! safely, though their use should still be considered unsafe.
+//!
+//! ```rust
+//! # #![allow(dead_code)]
+//! use volatile::Volatile;
+//!
+//! let x: u32 = 0;
+//! let ptr = Volatile::from(&x);
+//! ```
 
 mod tests;
 
+use core::fmt;
+use core::hash;
 use core::ops::*;
+use core::marker::Unsize;
 use core::intrinsics::{volatile_load, volatile_store};
-use core::mem::size_of;
 
 /// A volatile pointer.
 ///
@@ -40,9 +146,13 @@ use core::mem::size_of;
 /// operations. This is especially useful for I/O operations where writing and reading from memory
 /// mapped I/O registers would normally be optimized out by the compiler.
 ///
+/// The `Volatile` type has the same syntax as a primitive pointer, so all functions that you can
+/// expect to use with a primitive pointer like `*const` or `*mut` can also be used with a
+/// `Volatile` pointer.
+///
 /// # Examples
 ///
-/// ```rust,no_run
+/// ```rust
 /// use volatile::Volatile;
 ///
 /// let value: i32 = 0;
@@ -53,284 +163,245 @@ use core::mem::size_of;
 /// }
 /// assert_eq!(value, 0x0F0F);
 /// ```
-#[derive(Copy, Clone)]
-pub struct Volatile<T>(RawVolatile<T>);
+///
+/// `Volatile` pointers can also be used to point at whole structs, and any memory accesses into
+/// that struct will also be considered volatile
+///
+/// ```rust
+/// use volatile::Volatile;
+/// use std::mem;
+///
+/// struct IODevice {
+///     reg1: u32,
+///     reg2: u32,
+///     reg3: u32,
+/// }
+///
+/// let io_device: IODevice = unsafe { mem::uninitialized() };
+///
+/// unsafe {
+///     let mut ptr = Volatile::new(&io_device);
+///     ptr.reg1 = 1;
+///     ptr.reg2 = 2;
+///     ptr.reg3 = 3;
+///     assert_eq!(ptr.reg1, 1);
+///     assert_eq!(ptr.reg2, 2);
+///     assert_eq!(ptr.reg3, 3);
+/// }
+/// ```
+///
+/// # Safety
+///
+/// Because `Volatile` pointers are often used for memory mapped peripherals, the compiler can not
+/// guarantee that the address pointed at is valid, so the creation of a `Volatile` pointer is
+/// unsafe. If you have a valid reference to some object, you can safely create a `Volatile`
+/// pointer to that object through the `From` trait implemented for references.
+///
+/// ```rust
+/// use volatile::Volatile;
+///
+/// let x: u32 = 0;
+/// let ptr = Volatile::from(&x);
+/// ```
+///
+/// Be wary however that a `Volatile` pointer provides interior mutability, so creating a pointer
+/// from a shared reference may break immutability guarantees if used improperly.
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub struct Volatile<T: ?Sized>(*const T);
 
-#[doc(hidden)]
-#[derive(Copy, Clone)]
-pub struct RawVolatile<T>(*const T);
-
-impl<T> Volatile<T> {
-    /// Creates a new `Volatile` pointer.
+impl<T: ?Sized> Volatile<T> {
+    /// Create a new `Volatile` pointer.
     ///
-    /// This is unsafe because the address could be potentially anywhere, and forcing a write to a
-    /// memory address could cause undefined behavior if the wrong address is chosen.
+    /// # Examples
+    ///
+    /// ```rust
+    /// use volatile::Volatile;
+    ///
+    /// const IO_ADDR: *const u32 = 0x4100_2000 as *const _;
+    ///
+    /// unsafe {
+    ///     let ptr = Volatile::new(IO_ADDR);
+    /// }
+    /// ```
+    ///
+    /// # Safety
+    ///
+    /// Because `Volatile` pointers are often used to point at essentially arbitrary memory
+    /// addresses, the compiler can not guarantee that the pointed at address is valid, so the
+    /// creation of a `Volatile` pointer is considered unsafe.
     pub unsafe fn new(ptr: *const T) -> Self {
-        Volatile(RawVolatile(ptr))
+        Volatile(ptr)
     }
 
-    /// Returns the inner pointer.
+    /// Return true if the pointer is null, false otherwise
+    pub fn is_null(self) -> bool where T: Sized {
+        (self.0).is_null()
+    }
+
+    /// Return the inner pointer.
+    ///
+    /// Future accesses to this inner pointer will not be volatile.
     pub fn as_ptr(self) -> *const T {
-        (self.0).0
+        self.0
     }
 
     /// Returns the inner pointer mutably.
+    ///
+    /// Future accesses to this inner pointer will not be volatile.
     pub fn as_mut(self) -> *mut T {
-        (self.0).0 as *mut T
+        self.0 as *mut T
     }
 
-    pub unsafe fn offset(self, count: isize) -> Self {
-        let base = self.as_ptr() as isize;
-        // TODO: See https://github.com/rust-lang/rust/issues/39056
-        // Change this back to a regular multiply once this gets fixed so we have overflow checking
-        let offset = count.wrapping_mul(size_of::<T>() as isize);
-        let addr = (base + offset) as *const T;
-        Volatile::new(addr)
+    /// Calculate the offset from the inner pointer, returning a new Volatile pointer.
+    ///
+    /// `count` is in units of T; e.g. a `count` of 3 represents a pointer offset of `3 *
+    /// size_of::<T>()` bytes.
+    ///
+    /// # Safety
+    ///
+    /// Both the starting and resulting pointer must be either in bounds or one byte past the end
+    /// of an allocated object. If either pointer is out of bounds or arithmetic overflow occurs
+    /// then any further use of the returned value will result in undefined behavior.
+    pub unsafe fn offset(self, count: isize) -> Self where T: Sized {
+        Volatile::new((self.0).offset(count))
     }
-}
 
-impl<T> Deref for Volatile<T> {
-    type Target = RawVolatile<T>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<T> DerefMut for Volatile<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-/*** Raw Volatile Implementation ***/
-
-impl<T: Copy> RawVolatile<T> {
-    /// Stores a value into the address pointed at.
-    pub unsafe fn store(&mut self, rhs: T) {
+    /// Store a value into the memory address pointed at.
+    ///
+    /// This operation is guaranteed to not be optimized out by the compiler, even if it believes
+    /// that it will have no effect on the program.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use volatile::Volatile;
+    ///
+    /// let x: u32 = 0;
+    /// unsafe {
+    ///     let mut ptr = Volatile::new(&x);
+    ///     ptr.store(0x1234);
+    /// }
+    ///
+    /// assert_eq!(x, 0x1234);
+    /// ```
+    ///
+    /// # Safety
+    ///
+    /// Storing to a `Volatile` pointer is equivalent to storing a value to a primitive raw pointer
+    /// so the operation could potentially be performed on some shared data or even an invalid
+    /// address.
+    pub unsafe fn store(&mut self, rhs: T) where T: Sized {
         volatile_store(self.0 as *mut T, rhs);
     }
 
-    /// Loads a value from the address pointed at.
-    pub unsafe fn load(&self) -> T {
+    /// Load a value from the memory address pointed at.
+    ///
+    /// This operation is guaranteed to not be optimized out by the compiler, even if it believes
+    /// that it will have no effect on the program.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use volatile::Volatile;
+    ///
+    /// let x: u32 = 0xAAAA;
+    /// unsafe {
+    ///     let ptr = Volatile::new(&x);
+    ///     assert_eq!(ptr.load(), 0xAAAA);
+    /// }
+    /// ```
+    ///
+    /// # Safety
+    ///
+    /// Loading from a `Volatile` pointer is equivalent to loading a value from a primitive raw
+    /// pointer so the operation could potentially be performed on an invalid address.
+    pub unsafe fn load(&self) -> T where T: Sized {
         volatile_load(self.0)
+    }
+
+    /// Perform a read-modify-write operation on the memory address pointed at.
+    ///
+    /// This operation is guaranteed to not be optimized out by the compiler, even if it believes
+    /// that it will have no effect on the program. The value stored in the address pointed at will
+    /// be loaded and passed into the given function before being written back out to memory.
+    ///
+    /// # Examples
+    /// ```rust
+    /// use volatile::Volatile;
+    ///
+    /// let x: u32 = 0;
+    /// unsafe {
+    ///     let mut ptr = Volatile::new(&x);
+    ///     ptr.modify(|x| {
+    ///         let old = *x;
+    ///         if old == 0 {
+    ///             *x = 100;
+    ///         }
+    ///         else {
+    ///             *x = 200;
+    ///         }
+    ///     });
+    /// }
+    /// assert_eq!(x, 100);
+    /// ```
+    ///
+    /// # Safety
+    ///
+    /// Modifying a `Volatile` pointer's contents involves both a load and store of the underlying
+    /// raw pointer so it could be performed on some shared data or even on an invalid address.
+    pub unsafe fn modify<F>(&mut self, f: F) where T: Sized, F: FnOnce(&mut T) {
+        let mut value = volatile_load(self.0);
+        f(&mut value);
+        volatile_store(self.0 as *mut T, value);
     }
 }
 
-impl<T> Deref for RawVolatile<T> {
+impl<'a, T: ?Sized + 'a> From<&'a T> for Volatile<T> {
+    fn from(reference: &'a T) -> Self {
+        unsafe { Volatile::new(reference) }
+    }
+}
+
+impl<'a, T: ?Sized + 'a> From<&'a mut T> for Volatile<T> {
+    fn from(reference: &'a mut T) -> Self {
+        unsafe { Volatile::new(reference) }
+    }
+}
+
+impl<T: ?Sized> Deref for Volatile<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        unsafe { &*self.0 }
+        unsafe {
+            // A bit of a hack to forcibly get Rust to reload the value from memory, we mark this
+            // empty assemby block here as clobbering memory, so the compiler thinks that the
+            // pointer we're about to load from may have been touched
+            asm!("" ::: "memory" : "volatile");
+            &*(self.0)
+        }
     }
 }
 
-impl<T> DerefMut for RawVolatile<T> {
+impl<T: ?Sized> DerefMut for Volatile<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { &mut *(self.0 as *mut _) }
-    }
-}
-
-impl<T: Add<Output=T> + Copy> Add<T> for RawVolatile<T> {
-    type Output = T;
-
-    fn add(self, rhs: T) -> Self::Output {
         unsafe {
-            volatile_load(self.0) + rhs
+            asm!("" ::: "memory" : "volatile");
+            &mut *((self.0) as *mut _)
         }
     }
 }
 
-impl<T: Add<Output=T> + Copy> AddAssign<T> for RawVolatile<T> {
-    fn add_assign(&mut self, rhs: T) {
-        unsafe {
-            volatile_store(self.0 as *mut T, volatile_load(self.0) + rhs);
-        }
+impl<T: ?Sized> hash::Hash for Volatile<T> where T: Sized {
+    fn hash<H: hash::Hasher>(&self, state: &mut H) {
+        (self.0).hash(state);
     }
 }
 
-impl<T: Sub<Output=T> + Copy> Sub<T> for RawVolatile<T> {
-    type Output = T;
-
-    fn sub(self, rhs: T) -> Self::Output {
-        unsafe {
-            volatile_load(self.0) - rhs
-        }
+impl<T> fmt::Pointer for Volatile<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Pointer::fmt(&self.0, f)
     }
 }
 
-impl<T: Sub<Output=T> + Copy> SubAssign<T> for RawVolatile<T> {
-    fn sub_assign(&mut self, rhs: T) {
-        unsafe {
-            volatile_store(self.0 as *mut T, volatile_load(self.0) - rhs);
-        }
-    }
-}
+impl<T: ?Sized + Unsize<U>, U: ?Sized> CoerceUnsized<Volatile<U>> for Volatile<T> {}
 
-impl<T: Mul<Output=T> + Copy> Mul<T> for RawVolatile<T> {
-    type Output = T;
-
-    fn mul(self, rhs: T) -> Self::Output {
-        unsafe {
-            volatile_load(self.0) * rhs
-        }
-    }
-}
-
-impl<T: Mul<Output=T> + Copy> MulAssign<T> for RawVolatile<T> {
-    fn mul_assign(&mut self, rhs: T) {
-        unsafe {
-            volatile_store(self.0 as *mut T, volatile_load(self.0) * rhs);
-        }
-    }
-}
-
-impl<T: Div<Output=T> + Copy> Div<T> for RawVolatile<T> {
-    type Output = T;
-
-    fn div(self, rhs: T) -> Self::Output {
-        unsafe {
-            volatile_load(self.0) / rhs
-        }
-    }
-}
-
-impl<T: Div<Output=T> + Copy> DivAssign<T> for RawVolatile<T> {
-    fn div_assign(&mut self, rhs: T) {
-        unsafe {
-            volatile_store(self.0 as *mut T, volatile_load(self.0) / rhs);
-        }
-    }
-}
-
-impl<T: Rem<Output=T> + Copy> Rem<T> for RawVolatile<T> {
-    type Output = T;
-
-    fn rem(self, rhs: T) -> Self::Output {
-        unsafe {
-            volatile_load(self.0) % rhs
-        }
-    }
-}
-
-impl<T: Rem<Output=T> + Copy> RemAssign<T> for RawVolatile<T> {
-    fn rem_assign(&mut self, rhs: T) {
-        unsafe {
-            volatile_store(self.0 as *mut T, volatile_load(self.0) % rhs);
-        }
-    }
-}
-
-/*** Bitwise Operators ***/
-
-impl<T: BitAnd<Output=T> + Copy> BitAnd<T> for RawVolatile<T> {
-    type Output = T;
-
-    fn bitand(self, rhs: T) -> Self::Output {
-        unsafe {
-            volatile_load(self.0) & rhs
-        }
-    }
-}
-
-impl<T: BitAnd<Output=T> + Copy> BitAndAssign<T> for RawVolatile<T> {
-    fn bitand_assign(&mut self, rhs: T) {
-        unsafe {
-            volatile_store(self.0 as *mut T, volatile_load(self.0) & rhs);
-        }
-    }
-}
-
-impl<T: BitOr<Output=T> + Copy> BitOr<T> for RawVolatile<T> {
-    type Output = T;
-
-    fn bitor(self, rhs: T) -> Self::Output {
-        unsafe {
-            volatile_load(self.0) | rhs
-        }
-    }
-}
-
-impl<T: BitOr<Output=T> + Copy> BitOrAssign<T> for RawVolatile<T> {
-    fn bitor_assign(&mut self, rhs: T) {
-        unsafe {
-            volatile_store(self.0 as *mut T, volatile_load(self.0) | rhs);
-        }
-    }
-}
-
-impl<T: BitXor<Output=T> + Copy> BitXor<T> for RawVolatile<T> {
-    type Output = T;
-
-    fn bitxor(self, rhs: T) -> Self::Output {
-        unsafe {
-            volatile_load(self.0) ^ rhs
-        }
-    }
-}
-
-impl<T: BitXor<Output=T> + Copy> BitXorAssign<T> for RawVolatile<T> {
-    fn bitxor_assign(&mut self, rhs: T) {
-        unsafe {
-            volatile_store(self.0 as *mut T, volatile_load(self.0) ^ rhs);
-        }
-    }
-}
-
-impl<T: Shl<T, Output=T> + Copy> Shl<T> for RawVolatile<T> {
-    type Output = T;
-
-    fn shl(self, rhs: T) -> Self::Output {
-        unsafe {
-            volatile_load(self.0) << rhs
-        }
-    }
-}
-
-impl<T: Shl<T, Output=T> + Copy> ShlAssign<T> for RawVolatile<T> {
-    fn shl_assign(&mut self, rhs: T) {
-        unsafe {
-            volatile_store(self.0 as *mut T, volatile_load(self.0) << rhs);
-        }
-    }
-}
-
-impl<T: Shr<T, Output=T> + Copy> Shr<T> for RawVolatile<T> {
-    type Output = T;
-
-    fn shr(self, rhs: T) -> Self::Output {
-        unsafe {
-            volatile_load(self.0) >> rhs
-        }
-    }
-}
-
-impl<T: Shr<T, Output=T> + Copy> ShrAssign<T> for RawVolatile<T> {
-    fn shr_assign(&mut self, rhs: T) {
-        unsafe {
-            volatile_store(self.0 as *mut T, volatile_load(self.0) >> rhs);
-        }
-    }
-}
-
-/*** Negation ***/
-
-impl<T: Neg<Output=T> + Copy> Neg for RawVolatile<T> {
-    type Output = T;
-
-    fn neg(self) -> Self::Output {
-        unsafe {
-            -volatile_load(self.0)
-        }
-    }
-}
-
-impl<T: Not<Output=T> + Copy> Not for RawVolatile<T> {
-    type Output = T;
-
-    fn not(self) -> Self::Output {
-        unsafe {
-            !volatile_load(self.0)
-        }
-    }
-}

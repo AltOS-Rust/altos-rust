@@ -17,10 +17,18 @@
 
 //! This module handles defining exception handlers.
 
+// NOTE: When using system calls in these handlers, use the `sys_*` versions of those calls. With
+// the `svc` feature enabled, system calls are handled through the `sv_call` handler. These system
+// calls essentially just call the `sys_*` versions, but we can guarantee at that point that it's
+// an interrupt free environment. If, however, you do execute an `svc` instruction while either
+// within another interrupt handler or with interrupts disabled you will encounter a hard fault.
+//
+// If the `svc` feature is not enabled, these system calls have the same behavior, so there should
+// be no difference.
+
 #[cfg(feature="serial")]
 mod usart;
 
-use arm::asm::bkpt;
 use altos_core::syscall;
 
 // Interrupt vector table
@@ -30,7 +38,7 @@ use altos_core::syscall;
 #[export_name="_EXCEPTIONS"]
 pub static EXCEPTIONS: [Option<unsafe extern "C" fn()>; 46] = [
     Some(default_handler),  // NMI: 1
-    Some(default_handler),  // Hard Fault: 2
+    Some(hardfault_handler),  // Hard Fault: 2
     Some(default_handler),  // Memory Management Fault: 3
     Some(default_handler),  // Bus Fault: 4
     Some(default_handler),  // Usage Fault: 5
@@ -38,7 +46,7 @@ pub static EXCEPTIONS: [Option<unsafe extern "C" fn()>; 46] = [
     None,                   // Reserved: 7
     None,                   // Reserved: 8
     None,                   // Reserved: 9
-    Some(default_handler),  // SVCall: 10
+    Some(sv_call_handler),  // SVCall: 10
     None,                   // Reserved for Debug: 11
     None,                   // Reserved: 12
     Some(pend_sv_handler),  // PendSV: 13
@@ -79,7 +87,131 @@ pub static EXCEPTIONS: [Option<unsafe extern "C" fn()>; 46] = [
 
 
 unsafe extern "C" fn default_handler() {
-    bkpt();
+    kprintln!("Unhandled Interrupt");
+    loop { ::arm::asm::bkpt() };
+}
+
+unsafe extern "C" fn hardfault_handler() {
+    #[cfg(target_arch="arm")]
+    {
+        let instruction: usize;
+        asm!("mrs r0, PSP
+            ldr $0, [r0, #24]"
+            : "=r"(instruction)
+            : /* no inputs */
+            : "r0"
+            : "volatile"
+        );
+        kprintln!("Hard fault at instruction: {}", instruction);
+        loop { ::arm::asm::bkpt() };
+    }
+}
+
+/// Supervisor Call
+///
+/// This call enters priviledged mode to provide system call services to application code. It uses
+/// a special calling convention specific to the Altos-Rust kernel.
+///
+/// System calls in the Altos-Rust kernel have varying numbers of arguments, when a system call is
+/// initiated, the system call number will be passed in as `r0`, all arguments to the system call
+/// will be passed in with registers starting from `r1`. So the first argument would go in `r1`,
+/// the second argument in `r2` and so on, even past the regular argument registers (`r0`-`r3`) for
+/// the `aapcs` calling convention. This is to avoid having to get arguments off of the stack.
+#[naked]
+unsafe extern "C" fn sv_call_handler() {
+    #[cfg(target_arch="arm")]
+    #[cfg(feature="svc")]
+    asm!(
+        concat!(
+            "push {r7, lr}\n", /* Save link register for return */
+            "adr r7, JUMP_TABLE\n",
+            "lsls r0, r0, #2\n",
+            "add r0, r7, r0\n",
+            "ldr r7, =JUMP_TABLE_END\n",
+            "cmp r0, r7\n", /* Make sure we're within the jump table */
+            "bhi svc_unknown\n",
+            "ldr r0, [r0]\n",
+            "mov pc, r0\n",
+
+        ".align 4\n",
+        "JUMP_TABLE:\n",
+            ".word SVC_0\n",
+            ".word SVC_1\n",
+            ".word SVC_2\n",
+            ".word SVC_3\n",
+            ".word SVC_4\n",
+            ".word SVC_5\n",
+            ".word SVC_6\n",
+            ".word SVC_7\n",
+            ".word SVC_8\n",
+            ".word SVC_9\n",
+        "JUMP_TABLE_END:\n",
+
+        "SVC_0:\n", /* exit (void) */
+            "bl sys_exit\n",
+            "b svc_end\n",
+
+        "SVC_1:\n", /* sched_yield (void) */
+            "bl sys_sched_yield\n",
+            "b svc_end\n",
+
+        "SVC_2:\n", /* sleep (wchan) */
+            "mov r0, r1\n",
+            "bl sys_sleep\n",
+            "b svc_end\n",
+
+        "SVC_3:\n", /* sleep_for (wchan, delay) */
+            "mov r0, r1\n",
+            "mov r1, r2\n",
+            "bl sys_sleep_for\n",
+            "b svc_end\n",
+
+        "SVC_4:\n", /* wake (wchan) */
+            "mov r0, r1\n",
+            "bl sys_wake\n",
+            "b svc_end\n",
+
+        "SVC_5:\n", /* mutex_lock (lock) -> bool */
+            "mov r0, r1\n",
+            "bl sys_mutex_lock\n",
+            "b svc_return\n",
+
+        "SVC_6:\n", /* mutex_try_lock (lock) -> bool */
+            "mov r0, r1\n",
+            "bl sys_mutex_try_lock\n",
+            "b svc_return\n",
+
+        "SVC_7:\n", /* mutex_unlock (lock) */
+            "mov r0, r1\n",
+            "bl sys_mutex_unlock\n",
+            "b svc_end\n",
+
+        "SVC_8:\n", /* condvar_wait (condvar, lock) */
+            "mov r0, r1\n",
+            "mov r1, r2\n",
+            "bl sys_condvar_wait\n",
+            "b svc_end\n",
+
+        "SVC_9:\n", /* condvar_broadcast (condvar, lock) */
+            "mov r0, r1\n",
+            "mov r1, r2\n",
+            "bl sys_condvar_wait\n",
+            "b svc_end\n",
+
+        "svc_return:\n", /* we have a value to return, return value in r0 */
+            "mrs r7, psp\n", /* assume we are called from user code */
+            "str r0, [r7]\n", /* replace old r0 value with our new one */
+        "svc_unknown:\n",
+        "svc_end:\n",
+            "pop {r7, pc}\n" /* restore r7 and return */
+        )
+        : /* no outputs */
+        : /* no inputs */
+        : /* no clobbers */
+        : "volatile"
+    );
+    #[cfg(not(feature="svc"))]
+    default_handler();
 }
 
 unsafe extern "C" fn systick_handler() {

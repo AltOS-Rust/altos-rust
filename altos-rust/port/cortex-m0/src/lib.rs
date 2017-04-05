@@ -83,7 +83,7 @@ pub mod kernel {
     }
     /// Synchronization primitives.
     pub mod sync {
-        pub use altos_core::sync::{Mutex, MutexGuard};
+        pub use altos_core::sync::{RawMutex, Mutex, MutexGuard};
         pub use altos_core::sync::CondVar;
         pub use altos_core::sync::CriticalSection;
     }
@@ -104,7 +104,7 @@ extern "C" fn panic_fmt(fmt: core::fmt::Arguments, (file, line): (&'static str, 
     }
 }
 
-extern {
+extern "Rust" {
     // The application layer's entry point
     fn application_entry() -> !;
 }
@@ -244,3 +244,4 @@ fn init_usart() {
     #[cfg(feature="serial")]
     peripheral::usart::init();
 }
+

@@ -28,13 +28,13 @@ pub fn usart_tx(mut usart: Usart) {
         }
         else {
             usart.disable_transmit_interrupt();
-            syscall::wake(USART2_TX_CHAN);
+            syscall::sys_wake(USART2_TX_CHAN);
         }
     }
 
     if usart.is_transmission_complete() {
         usart.disable_transmit_complete_interrupt();
-        syscall::wake(USART2_TX_CHAN);
+        syscall::sys_wake(USART2_TX_CHAN);
         usart.clear_tc_flag();
     }
 }
@@ -48,6 +48,6 @@ pub fn usart_rx(mut usart: Usart) {
     if usart.is_rx_reg_full() {
         let byte = usart.load_byte();
         unsafe { RX_BUFFER.insert(byte) };
-        syscall::wake(USART2_RX_CHAN);
+        syscall::sys_wake(USART2_RX_CHAN);
     }
 }

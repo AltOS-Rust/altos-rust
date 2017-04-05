@@ -31,7 +31,7 @@ use cortex_m0::kernel;
 use cortex_m0::time;
 use cortex_m0::kernel::task::Priority;
 use cortex_m0::kernel::task::args::Args;
-use cortex_m0::kernel::sync::Mutex;
+use cortex_m0::kernel::sync::{Mutex, RawMutex};
 use cortex_m0::peripheral::gpio::{self, Port};
 use cortex_m0::io;
 

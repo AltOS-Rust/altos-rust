@@ -39,6 +39,7 @@ const HOLDER_MASK: usize = !LOCK_MASK;
 ///
 /// This result will only carry error information about why a locking operation has failed,
 /// otherwise if an operation was successful there is no data to pass on to the calling routine.
+#[must_use]
 pub type LockResult<E> = Result<(), E>;
 
 /// Errors that can occur when trying to acquire a lock

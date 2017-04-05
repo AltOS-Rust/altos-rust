@@ -1,7 +1,0 @@
-[package]
-name = "cm0_sync"
-version = "0.1.0"
-authors = ["Daniel Seitz <dnseitz@gmail.com>"]
-
-[target.thumbv6m-none-eabi.dependencies]
-cm0_atomic = { path = "../cm0_atomic" }

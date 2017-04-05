@@ -17,6 +17,7 @@
 
 
 // This is for unsigned 64-bit multiplication.
+
 #[cfg_attr(not(test), no_mangle)]
 pub extern "C" fn __aeabi_lmul(b_low: u32, a_hi: u32, a_low: u32, b_hi: u32) -> u64 {
     // NOTE: DANGER WILL ROBINSON, DANGER! Currently there's a bug where the high and low bits of
@@ -71,6 +72,7 @@ pub extern "aapcs" fn __aeabi_idiv(mut num: i32, mut den: i32) -> i32 {
 
 	return v;
 }
+
 
 #[cfg_attr(not(test), no_mangle)]
 pub extern "C" fn __aeabi_uidiv(num: u32, den: u32) -> u32 {
